@@ -15,6 +15,11 @@ An advanced, interactive virtual desktop pet featuring physics simulation, contr
 
 ---
 
+## 📸 Screenshots
+<div align="center">
+  <img width="800" height="450" alt="2026-06-22 18-40-51" src="https://github.com/user-attachments/assets/74f2b2ec-055e-4af8-a9c6-826a366df9b3" />
+</div>
+
 ## ✨ Key Features
 
 - 🐉 **Intelligent Pet**
