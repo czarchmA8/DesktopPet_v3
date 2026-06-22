@@ -4,19 +4,19 @@ from dataclasses import is_dataclass, dataclass, fields, field
 from typing import Optional
 import time
 
-def formatuj_liczbe(liczba: int | float | str, separator: str = " ") -> str:
-    """Formatuj liczbę, dodając separator co 3 cyfry (separator tysięcy)."""
-    if isinstance(liczba, str):
-        liczba = liczba.strip()
-        liczba = float(liczba) if "." in liczba else int(liczba)
-    if isinstance(liczba, float):
-        sformatowana = f"{liczba:,}".rstrip("0").rstrip(".")
+def format_number(number: int | float | str, separator: str = " ") -> str:
+    """Formats a number by adding thousand separators"""
+    if isinstance(number, str):
+        number = number.strip()
+        number = float(number) if "." in number else int(number)
+    if isinstance(number, float):
+        formatted = f"{number:,}".rstrip("0").rstrip(".")
     else:
-        sformatowana = f"{liczba:,}"
-    return sformatowana.replace(",", separator)
+        formatted = f"{number:,}"
+    return formatted.replace(",", separator)
 
 class Color:
-    """Kolor jako zakotwiczony znacznik. Użycie: f'{Color.White}tekst{Color.Red}inny tekst'"""
+    """Color as an anchored marker for text coloring. Use: f'{Color.White}text{Color.Red}some text'"""
 
     # Predefiniowane kolory
     WHITE = "\x00WHITE\x00"
@@ -44,7 +44,7 @@ class Color:
     }
 
     def __init__(self, r: int, g: int, b: int):
-        """Tworzy kolor z RGB. Użycie: Color(255, 0, 0)"""
+        """Creates a color from RGB. Usage: Color(255, 0, 0)"""
         self.r = r
         self.g = g
         self.b = b
@@ -54,6 +54,7 @@ class Color:
         return self.marker
 
     class StringifyColors:
+        '''Color configuration for different value types'''
         def __init__(self,
                      color_str: 'Color'=None,
                      color_int: 'Color'=None,
@@ -83,7 +84,7 @@ class Color:
             return self._stringify_recursive(obj)
 
         def _stringify_recursive(self, val, depth=0):
-            """Rekurencyjna konwersja z obsługą zagnieżdżonych struktur."""
+            """Recursively converts values to colored strings with nesting support"""
             # None
             if val is None:
                 return f"{self.color_none}None"
@@ -144,6 +145,7 @@ class Color:
             return f"{self.color_class}{str(val)}"
 
 class HitboxOverlay(QtWidgets.QWidget):
+    '''Widget for displaying hitbox overlays'''
     def __init__(self):
         super().__init__()
 
@@ -178,6 +180,8 @@ class HitboxOverlay(QtWidgets.QWidget):
 
     def update_hitboxes(self, rects: list = None, masks: list = None):
         """
+        Updates hitbox overlay with rectangles and masks
+
         rects: lista krotek ((x,y,w,h), kolor)
         masks: lista krotek (QImage, x, y)
         """
@@ -186,6 +190,7 @@ class HitboxOverlay(QtWidgets.QWidget):
         self.update()
 
     def paintEvent(self, event):
+        '''Paints hitboxes and masks on the overlay'''
         painter = QtGui.QPainter(self)
         # painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
@@ -215,9 +220,9 @@ class HitboxOverlay(QtWidgets.QWidget):
 
 class DebugWindow(QtWidgets.QWidget):
     """
-    Panel debugowy z inline'owym kolorowaniem tekstu.
+    Debug information display window
 
-    Użycie:
+    Use:
         debug = DebugWindow()
         debug.update_debug(f"{Color.White}pos: {Color(255, 255, 0)}({x}, {y})")
         debug.update_debug(f"{Color.Red}ERROR: {Color.White}Something went wrong")
@@ -262,9 +267,9 @@ class DebugWindow(QtWidgets.QWidget):
     @staticmethod
     def _parse_colored_text(text: str) -> str:
         """
-        Parsuje tekst ze znacznikami kolorów i zamienia na HTML.
+        Parses text with color markers and converts to HTML
 
-        Format znaczników:
+        Tag formats:
             \x00WHITE\x00
             \x00RGB:255,0,0\x00
         """
@@ -307,9 +312,9 @@ class DebugWindow(QtWidgets.QWidget):
 
     def update_debug(self, text: str):
         """
-        Aktualizuje zawartość debugera ze znacznikami kolorów.
+        Updates debug window content with color markers
 
-        Przykład:
+        Example:
             debug.update_debug(f"{Color.White}pos: {Color(255, 255, 0)}({x}, {y})")
             debug.update_debug(f"{Color.Red}Line 1\n{Color.Green}Line 2")
         """
@@ -322,21 +327,24 @@ class DebugWindow(QtWidgets.QWidget):
         event.ignore()
         self.hide()
 
-def show_details(zmienna, logger) -> None:
-    '''Funkcja do debugowania kodu, wyświetlająca zawartość danej zmiennej'''
+def show_details(variable, logger) -> None:
+    '''Debug function that displays the contents of a variable'''
     from logging import DEBUG as logging_DEBUG
     if not logger.isEnabledFor(logging_DEBUG):
         return
-    logger.debug(f"--- Szczegóły obiektu typu: {type(zmienna).__name__} ---")
-    details = {z: getattr(zmienna, z) for z in dir(zmienna) if not z.startswith('__')}
-    for klucz, wartosc in details.items():
-        logger.debug(f"\033[31m{klucz}\033[39m: \033[32m{wartosc}  \033[39m(\033[33m{type(wartosc)}\033[39m)")
+    logger.debug(f"--- Details of object type: {type(variable).__name__} ---")
+    details = {z: getattr(variable, z) for z in dir(variable) if not z.startswith('__')}
+    for key, value in details.items():
+        logger.debug(f"\033[31m{key}\033[39m: \033[32m{value}  \033[39m(\033[33m{type(value)}\033[39m)")
     # input("Kliknij Enter: ")
 
 class NamedStopwatch:
+    '''Named timer for performance measurement'''
     class _Timer:
+        '''Individual timer container'''
         @dataclass
         class _Time:
+            '''Time sample dataclass'''
             start: float
             end: Optional[float] = None
 
@@ -352,14 +360,14 @@ class NamedStopwatch:
         self.timers: dict[str, NamedStopwatch._Timer] = {}
 
         if self.samples_per_update is not None and self.update_rate_sec is not None:
-            raise ValueError("Możesz podać albo 'samples_per_update', albo 'update_rate_sec', ale nie oba jednocześnie.")
+            raise ValueError("You can provide either 'samples_per_update' or 'update_rate_sec', but not both.")
         elif self.samples_per_update is None and self.update_rate_sec is None:
             self.samples_per_update = 10
 
     def start(self, name: str) -> None:
         timer = self.timers.setdefault(name, self._Timer())
         if timer.samples and timer.samples[-1].end is None:
-            raise ValueError("Musisz zakończyć stoper przed następnym uruchomieniem")
+            raise ValueError("You must stop the stopwatch before starting it again")
         timer.samples.append(self._Timer._Time(time.perf_counter()))
 
     def stop(self, name: str) -> None:
@@ -368,9 +376,9 @@ class NamedStopwatch:
 
         timer = self.timers[name]
         if not timer.samples:
-            raise ValueError("Przed zakończeniem musisz uruchomić stoper")
+            raise ValueError("You must start the stopwatch before stopping it")
         if timer.samples[-1].end is not None:
-            raise ValueError("Nie można zakończyć stopera więcej niż jeden raz")
+            raise ValueError("Cannot stop the stopwatch more than once")
 
         now = time.perf_counter()
         last = timer.samples[-1]

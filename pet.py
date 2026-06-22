@@ -16,13 +16,15 @@ import logging
 from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
 from windows_layer import is_real_window as is_real_window
 import debug_overlay
-from logger_setup import skonfiguruj_logger_procesu
+from logger_setup import setup_process_logger
 
 logger: logging.Logger = None
 
 class CustomHitboxCollisions:
+    '''Utility class for custom collision detection'''
     @staticmethod
     def check_rect_hitbox_collision(rect, rect2) -> bool:
+        '''Checks if two rectangles collide'''
         x1, y1, x2, y2 = rect
         a1, b1, a2, b2 = rect2
 
@@ -35,6 +37,7 @@ class CustomHitboxCollisions:
 
     @staticmethod
     def check_pixel_solid(hitbox_x, hitbox_y, hitbox, global_x, global_y) -> bool:
+        '''Checks if hitbox collide with pixel at given position'''
         # Przeliczanie współrzędnych globalnych na lokalne współrzędne obrazka
         local_x = int(global_x - hitbox_x)
         local_y = int(global_y - hitbox_y)
@@ -54,6 +57,8 @@ class CustomHitboxCollisions:
     @staticmethod
     def check_hitbox_collision(pos1, img1, pos2, img2) -> bool:
         """
+        Pixel-perfect collision detection between two images
+
         pos1, pos2: krotki (x, y) lewego górnego rogu
         img1, img2: obiekty QImage (maski hitboxów)
         """
@@ -81,11 +86,13 @@ class CustomHitboxCollisions:
         return False
 
 class CollisionTypes(IntEnum):
-    OBIEKT = auto()
-    PLATFORMA = auto()
+    '''Enumeration of collision types (OBJECT, PLATFORM)'''
+    OBJECT = auto()
+    PLATFORM = auto()
 
 @dataclass
 class XYXY_Rectangle:
+    '''Rectangle defined by (x, y, x2, y2) coordinates'''
     x: int
     y: int
     x2: int
@@ -93,7 +100,7 @@ class XYXY_Rectangle:
 
     @property
     def as_tuple(self) -> tuple[int, int, int, int]:
-        """Zwraca prostokąt jako czystą krotkę (x, y, x2, y2)"""
+        """Returns rectangle as a clean tuple (x, y, x2, y2)"""
         return (self.x, self.y, self.x2, self.y2)
 
     def __iter__(self):
@@ -101,8 +108,10 @@ class XYXY_Rectangle:
         yield self.y
         yield self.x2
         yield self.y2
+
 @dataclass
 class XYWH_Rectangle:
+    '''Rectangle defined by (x, y, width, height)'''
     x: int
     y: int
     width: int
@@ -110,7 +119,7 @@ class XYWH_Rectangle:
 
     @property
     def as_tuple(self) -> tuple[int, int, int, int]:
-        """Zwraca prostokąt jako czystą krotkę (x, y, width, height)"""
+        """Returns rectangle as a clean tuple (x, y, width, height)"""
         return (self.x, self.y, self.width, self.height)
 
     def __iter__(self):
@@ -120,6 +129,7 @@ class XYWH_Rectangle:
         yield self.height
 
 class WorldObject(QtWidgets.QWidget):
+    '''Interactive physics object'''
     def __init__(
         self,
         shared_data,
@@ -157,7 +167,7 @@ class WorldObject(QtWidgets.QWidget):
         self.platform_shape = pymunk.Poly.create_box(self.platform_body, (100, 1))
         self.platform_shape.elasticity = 0.5
         self.platform_shape.friction = 0.5
-        self.platform_shape.collision_type = CollisionTypes.PLATFORMA
+        self.platform_shape.collision_type = CollisionTypes.PLATFORM
         self.platform_shape.data = self.hwnd_self
         self.space.add(self.platform_body, self.platform_shape)
         self.old_window_rect: XYXY_Rectangle = None
@@ -172,7 +182,7 @@ class WorldObject(QtWidgets.QWidget):
         self.shape = pymunk.Poly(self.body, hull)
         self.shape.elasticity = elasticity
         self.shape.friction = friction
-        self.shape.collision_type = CollisionTypes.OBIEKT
+        self.shape.collision_type = CollisionTypes.OBJECT
         self.shape.data = self.hwnd_self
         self.space.add(self.body, self.shape)
 
@@ -187,6 +197,7 @@ class WorldObject(QtWidgets.QWidget):
         self.angle, self.old_angle = 0.0, 0.0
 
     def generate_hull_vertices(self, pixmap) -> list[pymunk.Vec2d] | list[tuple[float, float]]:
+        '''Generates convex hull vertices from image transparency'''
         image = pixmap.toImage()
         width, height = image.width(), image.height()
         points = []
@@ -197,6 +208,7 @@ class WorldObject(QtWidgets.QWidget):
         return pymunk.autogeometry.to_convex_hull(points, 0) if points else [(-10, -10), (10, -10), (10, 10), (-10, 10)]
 
     def tick(self, dt: float, window_XYXY_Rect: tuple[int, int, int, int]):
+        '''Updates physics and visuals for world object'''
         window_XYXY_Rect: XYXY_Rectangle = XYXY_Rectangle(window_XYXY_Rect[0], window_XYXY_Rect[1], window_XYXY_Rect[2], window_XYXY_Rect[3])
         if self.old_window_rect is None or self.old_on_window_hwnd != self.on_window_hwnd:
             self.old_window_rect = window_XYXY_Rect
@@ -238,7 +250,7 @@ class WorldObject(QtWidgets.QWidget):
         self.platform_shape = pymunk.Poly.create_box(self.platform_body, (width, height))
         self.platform_shape.elasticity = elasticity
         self.platform_shape.friction = friction
-        self.platform_shape.collision_type = CollisionTypes.PLATFORMA
+        self.platform_shape.collision_type = CollisionTypes.PLATFORM
         self.platform_shape.data = self.hwnd_self
         self.space.add(self.platform_shape)
 
@@ -252,7 +264,7 @@ class WorldObject(QtWidgets.QWidget):
         # Usuwanie obiektu jeżeli jest poza ekranami
         screen_geo = QtWidgets.QApplication.primaryScreen().virtualGeometry()
         if self.pos_x < screen_geo.left() - self.w or self.pos_x > screen_geo.right() + self.w or self.pos_y > screen_geo.bottom() + self.h:
-            logger.info(f"[Obj] Usunięto WorldObject: {self.hwnd_self}")
+            logger.info(f"[Obj] Removed WorldObject: {self.hwnd_self}")
             self.world_objects.remove(self)
             self.space.remove(self.platform_body, self.platform_shape)
             self.space.remove(self.body, self.shape)
@@ -260,6 +272,7 @@ class WorldObject(QtWidgets.QWidget):
             self.deleteLater()
 
     def update_visuals(self):
+        '''Updates visual position and rotation'''
         if self.pos_x is None or self.pos_y is None: return
         if math.isnan(self.pos_x) or math.isnan(self.pos_y): return
 
@@ -272,6 +285,7 @@ class WorldObject(QtWidgets.QWidget):
         self.move(int(self.pos_x - self.rotated_pixmap.width() / 2), int(self.pos_y - self.rotated_pixmap.height() / 2))
 
     def mousePressEvent(self, event):
+        '''Handles mouse press for dragging objects'''
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             m_pos = event.globalPosition()
             new_pos = pymunk.Vec2d(m_pos.x(), m_pos.y())
@@ -293,6 +307,7 @@ class WorldObject(QtWidgets.QWidget):
                 win32gui.SetWindowPos(self.hwnd_self, above_hwnd, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
 
     def mouseMoveEvent(self, event):
+        '''Handles mouse movement during drag'''
         if not self.is_dragging:
             return
 
@@ -300,6 +315,7 @@ class WorldObject(QtWidgets.QWidget):
         self.mouse_body.position = pymunk.Vec2d(m_pos.x(), m_pos.y())
 
     def mouseReleaseEvent(self, event):
+        '''Handles mouse release after drag'''
         if event.button() == QtCore.Qt.MouseButton.LeftButton and self.is_dragging:
             self.is_dragging = False
 
@@ -319,6 +335,7 @@ class WorldObject(QtWidgets.QWidget):
             self.angle = math.degrees(self.body.angle)
 
 class PetWidget(QtWidgets.QWidget):
+    '''Main pet character widget with physics and animation'''
     def __init__(self, conn, shared_data):
         super().__init__()
         self.conn = conn
@@ -334,44 +351,44 @@ class PetWidget(QtWidgets.QWidget):
         logger.info(f"[Pet] hwnd: {self.hwnd_self} ({win32gui.GetWindowText(self.hwnd_self)})")
 
         # Ładowanie animacji i hitboxu
-        self.animacje: dict = {}
-        self.animacje_hitbox: dict = {}
-        for plik in os.listdir("Assets\\animations"):
-            if plik.endswith("_hitbox.gif"):
+        self.animations: dict = {}
+        self.hitbox_animations: dict = {}
+        for filename in os.listdir("Assets\\animations"):
+            if filename.endswith("_hitbox.gif"):
                 continue
 
-            self.animacje[plik] = QtGui.QMovie(f"Assets\\animations\\{plik}")
-            self.animacje[plik].setCacheMode(QtGui.QMovie.CacheMode.CacheAll)
+            self.animations[filename] = QtGui.QMovie(f"Assets\\animations\\{filename}")
+            self.animations[filename].setCacheMode(QtGui.QMovie.CacheMode.CacheAll)
 
-            # nazwa_base = os.path.splitext(plik)[0]
+            # base_name = os.path.splitext(plik)[0]
             # ext = os.path.splitext(plik)[1]
-            # hitbox_plik = f"{nazwa_base}_hitbox{ext}"
-            hitbox_plik = plik
+            # hitbox_file = f"{base_name}_hitbox{ext}"
+            hitbox_file = filename
 
-            self.animacje_hitbox[plik] = QtGui.QMovie(f"Assets\\animations\\{hitbox_plik}")
-            self.animacje_hitbox[plik].setCacheMode(QtGui.QMovie.CacheMode.CacheAll)
+            self.hitbox_animations[filename] = QtGui.QMovie(f"Assets\\animations\\{hitbox_file}")
+            self.hitbox_animations[filename].setCacheMode(QtGui.QMovie.CacheMode.CacheAll)
 
         # Ustawianie wagi zadań
         @dataclass
-        class KontenerZadan:
-            wagi: list[int]
-            nazwy: list[str]
+        class TaskContainer:
+            weights: list[int]
+            names: list[str]
 
-        self.zadania = [(4, "Chodzenie"), (2, "Stanie"), (2, "Siedzenie"), (0, "Zmień okno"), (1, "Spanie")]
-        wagi: list[int] = [waga for waga, _ in self.zadania]
-        nazwy: list[str] = [nazwa for _, nazwa in self.zadania]
-        self.zadania: KontenerZadan = KontenerZadan(wagi, nazwy)
-        sum_wagi_zadan = sum(self.zadania.wagi)
-        logger.debug(f"[Pet] Łączna waga zadań: {sum_wagi_zadan}")
-        for waga, nazwa in sorted(zip(self.zadania.wagi, self.zadania.nazwy)):
-            logger.debug(f"[Pet] {nazwa}: {round(waga / sum_wagi_zadan * 100, 1)}%")
+        self.tasks = [(4, "Walking"), (2, "Standing"), (2, "Sitting"), (0, "Change window"), (1, "Sleeping")]
+        weights: list[int] = [weight for weight, _ in self.tasks]
+        names: list[str] = [task_name for _, task_name in self.tasks]
+        self.tasks: TaskContainer = TaskContainer(weights, names)
+        total_task_weight = sum(self.tasks.weights)
+        logger.debug(f"[Pet] Total task weight: {total_task_weight}")
+        for weight, task_name in sorted(zip(self.tasks.weights, self.tasks.names)):
+            logger.debug(f"[Pet] {task_name}: {round(weight / total_task_weight * 100, 1)}%")
 
-        self.current_task: str = "Spadanie"
+        self.current_task: str = "Falling"
         self.pet_label = QtWidgets.QLabel(self)
         self.current_animation: str = None
-        self.orientation: str = "lewo"
+        self.orientation: str = "left"
         self.task_end_time: float = time.perf_counter()
-        self.ustaw_animacje("lewo_spada.gif")
+        self.set_animation("left_falling.gif")
 
         # Stan okien / platformy
         self.on_window_hwnd: int = None
@@ -384,7 +401,7 @@ class PetWidget(QtWidgets.QWidget):
         # Fizyka obiektów
         self.space = pymunk.Space()
         self.space.gravity = (0.0, 2000.0)
-        self.space.on_collision(CollisionTypes.OBIEKT, CollisionTypes.PLATFORMA, pre_solve=self._platform_pre_solve, post_solve=self._platform_post_solve)
+        self.space.on_collision(CollisionTypes.OBJECT, CollisionTypes.PLATFORM, pre_solve=self._platform_pre_solve, post_solve=self._platform_post_solve)
 
         # Podłoga ekranu
         screen_geo = QtWidgets.QApplication.primaryScreen().availableGeometry()
@@ -469,14 +486,14 @@ class PetWidget(QtWidgets.QWidget):
         self.process_timer.start("hwnd update")
         if self.on_window_hwnd is None or not is_real_window(self.on_window_hwnd): # Jeżeli okno nie istnieje
             above_rwindow_hwnd, below_rwindow_hwnd = get_immediate_neighbors_above_and_below(self.hwnd_self, True, [obj.hwnd_self for obj in self.world_objects])
-            logger.debug(f"[Pet] Ustawiono \"on_window_hwnd\" na {below_rwindow_hwnd} ({win32gui.GetWindowText(below_rwindow_hwnd)}) z powodu wykrycia nieistniejącego okna {self.on_window_hwnd}")
+            logger.debug(f"[Pet] Set \"on_window_hwnd\" to {below_rwindow_hwnd} ({win32gui.GetWindowText(below_rwindow_hwnd)}) due to detection of non-existent window {self.on_window_hwnd}")
             self.on_window_hwnd = below_rwindow_hwnd
         else: # Jeżeli okno istnieje, ale na przykład zmieniło z-index
             above_rwindow_hwnd, below_rwindow_hwnd = get_immediate_neighbors_above_and_below(self.hwnd_self, True, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self])
             if below_rwindow_hwnd != self.on_window_hwnd: # Zmień z-index zwierzątka tylko wtedy gdy `self.on_window_hwnd` zmieniło z-index
                 above_window_hwnd, below_window_hwnd = get_immediate_neighbors_above_and_below(self.on_window_hwnd, False, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self, self.on_window_hwnd])
                 win32gui.SetWindowPos(self.hwnd_self, above_window_hwnd, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
-                # logger.debug(f"[Pet] Zmieniono z-index zwierzątka")
+                # logger.debug(f"[Pet] Changed pet z-index")
         self.process_timer.stop("hwnd update")
 
         self.process_timer.start("window rect update")
@@ -522,54 +539,54 @@ class PetWidget(QtWidgets.QWidget):
             if time.perf_counter() - self.task_end_time > 0:
                 # Ustawianie zadań priorytetowych
                 screen_geo = QtWidgets.QApplication.primaryScreen().virtualGeometry()
-                size = self.animacje[self.current_animation].frameRect().size()
+                size = self.animations[self.current_animation].frameRect().size()
                 if self.real_x < screen_geo.left() - size.width() // 2:
-                    self.current_task = "Chodzenie"
+                    self.current_task = "Walking"
                     self.task_end_time = time.perf_counter() + random.randint(5, 10)
-                    self.orientation = "prawo"
-                    self.ustaw_animacje(f"{self.orientation}_ruch.gif")
+                    self.orientation = "right"
+                    self.set_animation(f"{self.orientation}_walking.gif")
                 elif self.real_x > screen_geo.right() - size.width() // 2:
-                    self.current_task = "Chodzenie"
+                    self.current_task = "Walking"
                     self.task_end_time = time.perf_counter() + random.randint(5, 10)
-                    self.orientation = "lewo"
-                    self.ustaw_animacje(f"{self.orientation}_ruch.gif")
+                    self.orientation = "left"
+                    self.set_animation(f"{self.orientation}_walking.gif")
                 else:
                     # Szansa na zmiane kierunku
                     r = random.randint(0, 100)
                     if r <= 25:
-                        self.orientation = "prawo" if self.orientation == "lewo" else "lewo"
+                        self.orientation = "right" if self.orientation == "left" else "left"
 
                     # Ustawianie zadań nie priorytetowych
-                    zadanie = random.choices(self.zadania.nazwy, self.zadania.wagi)[0]
-                    if zadanie == "Stanie":
-                        self.current_task = "Stanie"
+                    task = random.choices(self.tasks.names, self.tasks.weights)[0]
+                    if task == "Standing":
+                        self.current_task = "Standing"
                         self.task_end_time = time.perf_counter() + random.randint(5, 10)
-                        self.ustaw_animacje(f"{self.orientation}.gif")
-                    elif zadanie == "Spanie":
-                        self.current_task = "Spanie"
+                        self.set_animation(f"{self.orientation}.gif")
+                    elif task == "Sleeping":
+                        self.current_task = "Sleeping"
                         self.task_end_time = time.perf_counter() + random.randint(60, 120)
-                        self.ustaw_animacje(f"{self.orientation}_spi.gif")
-                    elif zadanie == "Siedzenie":
-                        self.current_task = "Siedzenie"
+                        self.set_animation(f"{self.orientation}_sleeping.gif")
+                    elif task == "Sitting":
+                        self.current_task = "Sitting"
                         self.task_end_time = time.perf_counter() + random.randint(10, 20)
-                        self.ustaw_animacje(f"{self.orientation}_siedzi.gif")
-                    elif zadanie == "Chodzenie":
-                        self.current_task = "Chodzenie"
+                        self.set_animation(f"{self.orientation}_sitting.gif")
+                    elif task == "Walking":
+                        self.current_task = "Walking"
                         self.task_end_time = time.perf_counter() + random.randint(5, 10)
-                        self.ustaw_animacje(f"{self.orientation}_ruch.gif")
+                        self.set_animation(f"{self.orientation}_walking.gif")
                     else:
-                        raise Exception("Błąd: Nie ustawiono żadnego zadania. To nie powinno się stać!")
+                        raise Exception("Error: No task was set. This should not happen!")
 
             # Wykonywanie zadania
-            if self.current_task == "Chodzenie":
-                if self.orientation == "lewo":
+            if self.current_task == "Walking":
+                if self.orientation == "left":
                     self.real_x -= 50 * self.dt
-                elif self.orientation == "prawo":
+                elif self.orientation == "right":
                     self.real_x += 50 * self.dt
         else:
-            self.current_task = "Spadanie"
+            self.current_task = "Falling"
             self.task_end_time = time.perf_counter() + 0.1
-            self.ustaw_animacje(f"{self.orientation}_spada.gif")
+            self.set_animation(f"{self.orientation}_falling.gif")
 
         # --- Zapisywanie starej pozycji zwierzątka ---
         self.old_window_rect = window_rect
@@ -664,7 +681,7 @@ class PetWidget(QtWidgets.QWidget):
             # --- Pobieranie hwnd okna pod obiektem ---
             if object.on_window_hwnd is None or not win32gui.IsWindow(object.on_window_hwnd):
                 object.on_window_hwnd = get_immediate_neighbors_above_and_below(object.hwnd_self, True, ignored_hwnds)[1]
-                logger.debug(f"[Obj] Ustawiono \"on_window_hwnd\" na {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) w obiekcie {object.hwnd_self}")
+                logger.debug(f"[Obj] Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
 
             if object.on_window_hwnd in calculated_above_hwnds:
                 if calculated_above_hwnds[object.on_window_hwnd] is not None:
@@ -682,7 +699,7 @@ class PetWidget(QtWidgets.QWidget):
                     calculated_above_hwnds[object.on_window_hwnd] = above_hwnd
                     # if hdwp:
                     hdwp = self.user32.DeferWindowPos(hdwp, object.hwnd_self, calculated_above_hwnds[object.on_window_hwnd], 0, 0, 0, 0, flags)
-                    logger.debug(f"[Obj] Ustawiono nowy \"on_window_hwnd\" na {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) w obiekcie {object.hwnd_self}")
+                    logger.debug(f"[Obj] Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
         self.process_timer.stop("objects update hwnd")
 
         self.process_timer.start("objects DeferWindowPos")
@@ -725,22 +742,23 @@ f'''{c_name}on_window_hwnd: {stringifyColors.stringify(self.on_window_hwnd)}{c_n
 {c_name}platform_expand: {stringifyColors.stringify((expanded_platform_rect.x2 - window_rect.x2, expanded_platform_rect.y2 - window_rect.y2))}
 {c_name}platform_velocity_x: {stringifyColors.stringify(round(platform_vx)) if "platform_vx" in locals() else None}
 {c_name}platform_velocity_y": {stringifyColors.stringify(round(platform_vy)) if "platform_vy" in locals() else None}
-{"".join([f"{c_name}{name}: {c_int}{debug_overlay.formatuj_liczbe(self.process_timer.get_avg_fps(name), f"{c(0, 150, 0)}'{c_int}")} {c(200, 255, 200)}FPS\n" for name in self.process_timer.get_timers()])}'''
+{"".join([f"{c_name}{name}: {c_int}{debug_overlay.format_number(self.process_timer.get_avg_fps(name), f"{c(0, 150, 0)}'{c_int}")} {c(200, 255, 200)}FPS\n" for name in self.process_timer.get_timers()])}'''
             )
 
     def send_message(self, msg):
         if msg:
-            logger.info(f"[Pet] Wysłano IPC: {msg}")
+            logger.info(f"[Pet] Sent IPC: {msg}")
             self.conn.send(msg)
 
     def check_messages(self):
+        '''Checks messages from other processes'''
         if self.conn.poll():
             msg = self.conn.recv()
-            logger.info(f"[Pet] Otrzymano IPC: {msg}")
+            logger.info(f"[Pet] Received IPC: {msg}")
             if msg[0] == "spawn_object":
                 img_path = os.path.join("Assets", "Objects", msg[1])
                 if not os.path.exists(img_path):
-                    logger.error("[Obj] Brak pliku:", img_path)
+                    logger.error("[Obj] File not found:", img_path)
 
                 x, y = win32gui.GetCursorPos()
                 obj = WorldObject(self.shared_data, self.world_objects, self.space, img_path, x, y)
@@ -760,41 +778,45 @@ f'''{c_name}on_window_hwnd: {stringifyColors.stringify(self.on_window_hwnd)}{c_n
             elif msg[0] == "hide_pet":
                 self.hide()
             elif msg[0] == "teleport_pet":
-                size = self.animacje[self.current_animation].frameRect().size()
+                size = self.animations[self.current_animation].frameRect().size()
                 pos = QtGui.QCursor.pos()
                 self.velocity = [0, 0]
                 self.real_x, self.real_y = pos.x() - size.width() // 2, pos.y() - size.height() // 2
                 self.is_dragging = False
             else:
-                logger.error(f"Nie znane polecenie: {msg}")
+                logger.error(f"Unknown command: {msg}")
 
     def update_debug_visibility(self):
+        '''Updates visibility of debug overlays'''
         if self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["hitbox_overlay"]: self.hitbox_overlay.show()
         else: self.hitbox_overlay.hide()
         if self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["debug_window"]: self.debug_window.show()
         else: self.debug_window.hide()
 
     def _platform_pre_solve(self, arbiter, space, data): # Obiekty mogą przelatywać od dołu do góry przez platformę
+        '''Collision callback - objects can pass through platform from below'''
         if arbiter.contact_point_set.normal.y < 0:
             arbiter.process_collision = False
 
-        ksztalt_obiektu, ksztalt_platformy = arbiter.shapes
-        if ksztalt_obiektu.data != ksztalt_platformy.data:
+        object_shape, platform_shape = arbiter.shapes
+        if object_shape.data != platform_shape.data:
             arbiter.process_collision = False
 
     def _platform_post_solve(self, arbiter, space, data): # Obiekty po kolizji z platformą są teleportowane nad platformę
-        ksztalt_obiektu, ksztalt_platformy = arbiter.shapes
-        cialo_obiektu = ksztalt_obiektu.body
+        '''Collision callback - objects teleported above platform after collision'''
+        object_shape, platform_shape = arbiter.shapes
+        object_body = object_shape.body
 
-        platforma_top_y = ksztalt_platformy.bb.bottom
-        offset_dolu = ksztalt_obiektu.bb.top - cialo_obiektu.position.y
+        platform_top_y = platform_shape.bb.bottom
+        bottom_offset = object_shape.bb.top - object_body.position.y
 
-        cialo_obiektu.position = pymunk.Vec2d(cialo_obiektu.position.x, platforma_top_y - offset_dolu)
+        object_body.position = pymunk.Vec2d(object_body.position.x, platform_top_y - bottom_offset)
 
-        if cialo_obiektu.velocity.y > 0:
-            cialo_obiektu.velocity = pymunk.Vec2d(cialo_obiektu.velocity.x, 0)
+        if object_body.velocity.y > 0:
+            object_body.velocity = pymunk.Vec2d(object_body.velocity.x, 0)
 
     def compute_launch_velocity(self, target_x: int, target_y: int) -> tuple[float, float]:
+        '''Calculates velocity needed to reach target position'''
         start_x, start_y = self.real_x, self.real_y
 
         # Przesunięcie do celu
@@ -841,6 +863,7 @@ f'''{c_name}on_window_hwnd: {stringifyColors.stringify(self.on_window_hwnd)}{c_n
         return (vx, vy)
 
     def keyPressEvent(self, event): # Tymczasowa funkcja do debugowania i testowania
+        '''Temporary function for debugging and testing'''
         if event.key() == QtCore.Qt.Key.Key_Space:
             self.real_x, self.real_y = 800 , 200
             self.velocity: list = [400.0, -800.0]
@@ -848,30 +871,31 @@ f'''{c_name}on_window_hwnd: {stringifyColors.stringify(self.on_window_hwnd)}{c_n
             self.velocity = list(self.compute_launch_velocity(0, self.taskbar_y))
         elif event.key() == QtCore.Qt.Key.Key_Up:
             self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects])[0]
-            logger.debug(f"[Pet] Ustawiono \"on_window_hwnd\" na {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+            logger.debug(f"[Pet] Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
         elif event.key() == QtCore.Qt.Key.Key_Down:
             self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects] + [self.on_window_hwnd])[1]
-            logger.debug(f"[Pet] Ustawiono \"on_window_hwnd\" na {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+            logger.debug(f"[Pet] Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
         else:
             super().keyPressEvent(event)
 
-    def ustaw_animacje(self, animacja):
-        if animacja != self.current_animation:
+    def set_animation(self, animation):
+        '''Sets and starts a new animation'''
+        if animation != self.current_animation:
             # Zatrzymanie poprzednich animacji
             if self.current_animation:
-                self.animacje[self.current_animation].stop()
-                self.animacje_hitbox[self.current_animation].stop()
+                self.animations[self.current_animation].stop()
+                self.hitbox_animations[self.current_animation].stop()
 
             #Ustawienie i start nowej animacji
-            self.pet_label.setMovie(self.animacje[animacja])
-            self.animacje[animacja].start()
+            self.pet_label.setMovie(self.animations[animation])
+            self.animations[animation].start()
             # Ustawienie i start nowej maski hitboxa
-            self.animacje_hitbox[animacja].start()
-            self.animacje_hitbox[animacja].jumpToFrame(0)
+            self.hitbox_animations[animation].start()
+            self.hitbox_animations[animation].jumpToFrame(0)
 
-            self.pet_label.resize(self.animacje[animacja].frameRect().size())
-            self.resize(self.animacje[animacja].frameRect().size())
-            self.current_animation = animacja
+            self.pet_label.resize(self.animations[animation].frameRect().size())
+            self.resize(self.animations[animation].frameRect().size())
+            self.current_animation = animation
 
     def mousePressEvent(self, event):
         self.is_dragging = True
@@ -890,9 +914,10 @@ f'''{c_name}on_window_hwnd: {stringifyColors.stringify(self.on_window_hwnd)}{c_n
         ]
 
 def run_app(conn, shared_data, log_queue):
+    '''Entry point for the pet process'''
     global logger
-    logger = skonfiguruj_logger_procesu("pet", log_queue)
-    logger.info("Uruchamianie procesu PET...")
+    logger = setup_process_logger("pet", log_queue)
+    logger.info("Starting the PET process...")
 
     app = QtWidgets.QApplication(sys.argv)
     pet = PetWidget(conn, shared_data)

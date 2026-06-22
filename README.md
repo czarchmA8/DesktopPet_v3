@@ -1,127 +1,127 @@
 ![language](https://img.shields.io/badge/language-python-239120)
 ![platform](https://img.shields.io/badge/platform-windows%2011-0078d4)
-![status](https://img.shields.io/badge/status-w%20rozwoju-yellow)
+![status](https://img.shields.io/badge/status-in%20development-yellow)
 [![GitHub release](https://img.shields.io/github/v/release/czarchmA8/DesktopPet_v3)](#)
 
 # 🐉 DesktopPet_v3
 
-Zaawansowane, interaktywne wirtualne zwierzątko na pulpit z systemem fizyki, panelem sterowania i zaawansowaną warstewizacją okien Windows.
+An advanced, interactive virtual desktop pet featuring physics simulation, control panel, and sophisticated Windows window layering.
 
 ---
 
-## 📄 O Projekcie
+## 📄 About the Project
 
-**DesktopPet_v3** to aplikacja stworzona w Pythonie, która umożliwia użytkownikowi posiadanie inteligentnego, fizycznie symulowanego wirtualnego zwierzątka na pulpicie. Zwierzątko autonomicznie porusza się po ekranie, wchodzi w interakcje z oknami systemowymi, reaguje na działania użytkownika i posiada własny system statystyk.
-
----
-
-## ✨ Główne Funkcje
-
-- 🐉 **Inteligentne Zwierzątko**
-  - Autonomiczny system zachowania z wieloma stanami animacji (chodzenie, siedzenie, spanie, upadek)
-  - Zaawansowany system fizyki — grawitacja, kolizje, inercja ruchu
-  - Reaktywność na działania myszki — łapanie, ciągnięcie i rzucanie
-  - Animacje w formacie GIF z płynnym odświeżaniem
-
-- 🎮 **Interaktywne Obiekty**
-  - Dynamiczne obiekty umieszczane na pulpicie (piłki, jedzenie, przedmioty)
-  - Fizyka kolizji między zwierzątkiem a obiektami oraz obiektów między sobą
-  - Obsługa krawędzi okien i platformowania na oknach systemowych
-
-- 📊 **System Statystyk i Emocji**
-  - Zmienne statystyk zwierzątka: zadowolenie, kondycja, głód, senność
-  - Dynamiczna zmiana nastroju na podstawie interakcji użytkownika
-  - Śledzenie czasu spędzonego z zwierzątkiem
-
-- 🎛️ **Panel Sterowania**
-  - Dedykowany interfejs do konfiguracji aplikacji
-  - Obsługa hotkeys — przypisywanie skrótów klawiszowych do akcji
-  - Kontrola głośności dźwięków zwierzątka
-  - Regulacja FPS i poziomów debugowania
-
-- 📝 **System Logowania**
-  - Centralizowane logowanie z obsługą wielu procesów
-  - Kolorowy output na konsoli + zapis do pliku
-  - Automatyczne czyszczenie starych logów
-
-- 🖥️ **Tryb Debugowania**
-  - Overlay hitbox z wizualizacją kolizji i masek zwierzątka
-  - Debug panel z real-time informacjami o stanie aplikacji
-  - Ścieżki animacji i statystyki FPS
+**DesktopPet_v3** is a Python application that allows users to have an intelligent, physically simulated virtual pet on their desktop. The pet autonomously moves around the screen, interacts with system windows, responds to user actions, and maintains its own statistics system.
 
 ---
 
-## 🚀 Instalacja
+## ✨ Key Features
 
-1. **Sklonuj repozytorium**
+- 🐉 **Intelligent Pet**
+  - Autonomous behavior system with multiple animation states (walking, sitting, sleeping, falling)
+  - Advanced physics system — gravity, collisions, movement inertia
+  - Responsiveness to mouse actions — catching, dragging, and throwing
+  - Smooth GIF-based animations with fluid refresh rates
+
+- 🎮 **Interactive Objects**
+  - Dynamic objects placed on the desktop (balls, food, items)
+  - Collision physics between pet and objects, and between objects
+  - Window edge handling and platforming on system windows
+
+- 📊 **Statistics and Mood System**
+  - Pet statistics variables: happiness, health, hunger, sleepiness
+  - Dynamic mood changes based on user interactions
+  - Tracking time spent with the pet
+
+- 🎛️ **Control Panel**
+  - Dedicated interface for application configuration
+  - Hotkey support — assign keyboard shortcuts to actions
+  - Pet sound volume control
+  - FPS adjustment and debug level settings
+
+- 📝 **Logging System**
+  - Centralized logging with multi-process support
+  - Colored console output + file logging
+  - Automatic old log cleanup
+
+- 🖥️ **Debug Mode**
+  - Hitbox overlay with collision visualization and pet masks
+  - Debug panel with real-time application state information
+  - Animation paths and FPS statistics
+
+---
+
+## 🚀 Installation
+
+1. **Clone the repository**
    ```bash
    git clone https://github.com/czarchmA8/DesktopPet_v3.git
    cd DesktopPet_v3
    ```
 
-2. **Utwórz wirtualne środowisko (opcjonalnie, ale rekomendowane)**
+2. **Create a virtual environment (optional, but recommended)**
    ```bash
    python -m venv .venv
    .venv\Scripts\activate
    ```
 
-3. **Zainstaluj wymagane biblioteki**
+3. **Install required libraries**
    ```bash
    pip install -r requirements.txt
    ```
 
-## ▶️ Uruchomienie
+## ▶️ Running the Application
 
-### Normalne Uruchomienie
+### Normal Launch
 
 ```bash
 python main.py
 ```
 
-### Opcje Uruchomienia z Argumentami
+### Launch Options with Arguments
 
-Aplikacja obsługuje następujące parametry wiersza komend:
+The application supports the following command-line parameters:
 
-| Argument  | Skrót | Typ   | Opis                     | Domyślnie |
-|-----------|-------|-------|--------------------------|-----------|
-| `--debug` | `-D`  | `int` | Poziom debugowania (0-2) | `0`       |
+| Argument  | Short | Type  | Description              | Default |
+|-----------|-------|-------|--------------------------|---------|
+| `--debug` | `-D`  | `int` | Debug level (0-2)        | `0`     |
 
 ```bash
 python main.py --debug 0
 ```
 
-### Tworzenie pliku .exe (Windows, opcjonalne)
-Jeśli chcesz stworzyć plik wykonywalny .exe, możesz użyć poniższej komendy:
+### Creating an .exe file (Windows, optional)
+If you want to create an executable .exe file, you can use the following command:
 ```bash
 pyinstaller main.py --onedir --windowed --icon=icon.ico --name=DesktopPet_v3
 ```
 
 ---
 
-## ⚙️ Konfiguracja
+## ⚙️ Configuration
 
-Wszystkie ustawienia aplikacji znajdują się w pliku `settings.json`, a tylko niektóre są możliwe do zmiany przez panel sterowania. Zalecane jest zmienianie ustawień za pomocą panelu sterowania, aby uniknąć pomyłek. Niektóre ustawienia wymagają zostać zmienione za pomocą panelu sterowania, aby poprawnie działać (np. `autostart`)
-
----
-
-## 🎯 Architektura i Wydajność
-
-### Architektura Wieloprocesowa
-
-Aplikacja działa na dwóch niezależnych procesach:
-
-- **Proces PET** — silnik zwierzątka, fizyka, animacje, obsługa systemu warstw okien Windows
-- **Proces DASHBOARD** — interfejs kontrolny, obsługa ustawień
-
-Komunikacja między procesami odbywa się poprzez strukturalizowany protokół JSON wysyłany przez `multiprocessing.Pipe`.
-
-### Optymalizacje Wydajności
-
-- **BeginDeferWindowPos / EndDeferWindowPos** — batching aktualizacji z-order dla wszystkich obiektów
-- **Cached Z-Order Neighbors** — optymalizowana funkcja `get_immediate_neighbors_above_and_below()` do benchmarkowania
+All application settings are located in the `settings.json` file, with only some configurable through the control panel. It is recommended to change settings via the control panel to avoid errors. Some settings must be changed through the control panel to work correctly (e.g., `autostart`).
 
 ---
 
-## 📄 Licencja
+## 🎯 Architecture and Performance
 
-Projekt jest rozwijany samodzielnie przez czarchmA8. Szczegóły licencji znajdują się w pliku LICENSE.
+### Multi-Process Architecture
+
+The application runs on two independent processes:
+
+- **PET Process** — pet engine, physics, animations, Windows window layer management
+- **DASHBOARD Process** — control interface, settings handling
+
+Communication between processes occurs via a structured JSON protocol sent through `multiprocessing.Pipe`.
+
+### Performance Optimizations
+
+- **BeginDeferWindowPos / EndDeferWindowPos** — batching z-order updates for all objects
+- **Cached Z-Order Neighbors** — optimized `get_immediate_neighbors_above_and_below()` function for benchmarking
+
+---
+
+## 📄 License
+
+This project is independently developed by czarchmA8. License details can be found in the LICENSE file.

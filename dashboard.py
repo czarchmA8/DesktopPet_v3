@@ -8,11 +8,12 @@ import win32api, win32con, ctypes
 from ctypes import wintypes
 import logging
 
-from logger_setup import skonfiguruj_logger_procesu
+from logger_setup import setup_process_logger
 
 logger: logging.Logger = None
 
 class StatRow(QtWidgets.QWidget):
+    '''Widget displaying a statistic with label, progress bar, and percentage'''
     def __init__(self, label_text, icon_char, parent=None):
         super().__init__(parent)
         layout = QtWidgets.QHBoxLayout(self)
@@ -43,7 +44,8 @@ class StatRow(QtWidgets.QWidget):
         layout.addWidget(self.progress)
         layout.addWidget(self.value_label)
 
-    def update_value(self, value):
+    def update_value(self, value: int) -> None:
+        '''Updates the statistic value and progress bar color'''
         val = int(max(0, min(100, value)))
         self.progress.setValue(val)
         self.value_label.setText(f"{val}%")
@@ -69,6 +71,7 @@ class StatRow(QtWidgets.QWidget):
         """)
 
 class CustomKeySequenceEdit(QtWidgets.QLineEdit):
+    '''Custom QLineEdit for capturing keyboard hotkey sequences'''
     keySequenceChanged = QtCore.pyqtSignal(QtGui.QKeySequence)
 
     user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -84,6 +87,7 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
     user32.GetKeyNameTextW.argtypes = (wintypes.LPARAM, wintypes.LPWSTR, ctypes.c_int)
 
     def get_key_name(self, vk_code: int = None, scan_code: int = None) -> str | None:
+        '''Gets the display name of a key from virtual key code'''
         if vk_code is None and scan_code is None:
             raise Exception()
 
@@ -150,6 +154,7 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
         # print(f"Up = {self.get_key_name(38)}")
 
     def keyPressEvent(self, event: QtGui.QKeyEvent):
+        '''Handles key press events for hotkey capture'''
         if event.isAutoRepeat():
             return
 
@@ -195,11 +200,13 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
         self.selectAll()
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent):
+        '''Handles key release events'''
         if event.isAutoRepeat():
             return
         self.clear_keys_pressed = True
 
 class HotkeyDialog(QtWidgets.QDialog):
+    '''Dialog for binding keyboard hotkeys to actions'''
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Nagraj skrót klawiszowy")
@@ -235,6 +242,7 @@ class HotkeyDialog(QtWidgets.QDialog):
             self.accept()
 
 class ControlWindow(QtWidgets.QWidget):
+    '''Main control panel window for application'''
     exit_requested = QtCore.pyqtSignal()
     def __init__(self, conn, shared_data):
         super().__init__()
@@ -242,12 +250,12 @@ class ControlWindow(QtWidgets.QWidget):
         self.shared_data = shared_data
 
         def _add_hotkey(sequence, callback):
-            """Rejestruje hotkey jeśli sequence nie jest None/pusty, wpp zwraca None."""
+            """Registers hotkey if sequence is not None/empty, otherwise returns None."""
             if sequence:
                 try:
                     return keyboard.add_hotkey(sequence, callback)
                 except Exception as e:
-                    logger.error(f"[Hotkey] Nie udało się zarejestrować '{sequence}': {e}")
+                    logger.error(f"[Hotkey] Failed to register '{sequence}': {e}")
             return None
 
         self.hotkey_callbacks: dict[str, dict] = {
@@ -265,15 +273,14 @@ class ControlWindow(QtWidgets.QWidget):
                 "remove_all": lambda: self.clear_all_objects()
             }
         }
-        hk: dict = shared_data.settings["hotkeys"]
+        hotkeys_settings: dict = shared_data.settings["hotkeys"]
         self.hotkeys: dict[str, dict] = {}
         for category in self.hotkey_callbacks:
             for key in self.hotkey_callbacks[category]:
-                self.hotkeys.setdefault(category, {})[key] = _add_hotkey(hk[category][key], self.hotkey_callbacks[category][key])
-        logger.debug(self.hotkeys)
+                self.hotkeys.setdefault(category, {})[key] = _add_hotkey(hotkeys_settings[category][key], self.hotkey_callbacks[category][key])
         self.hotkeys["objects"]["create"] = {
-            name: _add_hotkey(hk["objects"]["create"][name], lambda name=name: conn.send(["spawn_object", name]))
-            for name in hk["objects"].get("create", {})
+            name: _add_hotkey(hotkeys_settings["objects"]["create"][name], lambda name=name: conn.send(["spawn_object", name]))
+            for name in hotkeys_settings["objects"].get("create", {})
             if os.path.exists(os.path.join("Assets", "Objects", name))
         }
 
@@ -332,7 +339,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.exit_requested.connect(QtCore.QCoreApplication.quit)
 
     # ================= STATYSTYKI =================
-    def setup_stats_ui(self):
+    def setup_stats_ui(self) -> None:
+        '''Sets up the pet statistics display UI tab'''
         layout = QtWidgets.QVBoxLayout(self.tab_stats)
 
         # Słownik mapujący nazwę pola w klasie Stats na opis i ikonę
@@ -572,6 +580,7 @@ class ControlWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, "Informacja", "Brak przypisanego skrótu.")
 
     def save_settings_state(self) -> None:
+        '''Saves current settings to settings.json'''
         settings = self.shared_data.settings
         settings["volume"] = self.slider_vol.value()
         settings["autostart"] = self.check_autostart.isChecked()
@@ -587,6 +596,7 @@ class ControlWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Błąd zapisu", f"Nie udało się zapisać ustawień: {e}")
 
     def toggle_autostart(self, checked) -> None:
+        '''Toggles application autostart in Windows registry'''
         key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
         app_name = "DesktopPet_v3"
 
@@ -624,11 +634,13 @@ class ControlWindow(QtWidgets.QWidget):
         self.save_settings_state()
 
     def _update_debug_check_states(self):
+        '''Updates enabled/disabled state of debug checkboxes'''
         checked = self.check_debug_mode.isChecked()
         self.check_hitbox_overlay.setEnabled(checked)
         self.check_debug_window.setEnabled(checked)
 
     def update_debug_visibility(self, checked: bool=None):
+        '''Updates visibility of debug overlays'''
         self._update_debug_check_states()
 
         self.save_settings_state()
@@ -636,6 +648,7 @@ class ControlWindow(QtWidgets.QWidget):
 
     # ================= OBIEKTY =================
     def setup_objects_ui(self):
+        '''Sets up the interactive objects UI tab'''
         layout = QtWidgets.QVBoxLayout(self.tab_objects)
 
         # Lista plików
@@ -675,7 +688,8 @@ class ControlWindow(QtWidgets.QWidget):
 
         self.list_objects.itemClicked.connect(self.on_object_selected)
 
-    def remove_hotkey(self):
+    def remove_hotkey(self) -> None:
+        '''Removes hotkey binding from selected object'''
         item = self.list_objects.currentItem()
         if not item:
             QtWidgets.QMessageBox.information(self, "Brak obiektu", "Zaznacz obiekt z listy.")
@@ -694,7 +708,8 @@ class ControlWindow(QtWidgets.QWidget):
         else:
             QtWidgets.QMessageBox.information(self, "Informacja", "Ten obiekt nie ma obecnie przypisanego skrótu.")
 
-    def refresh_objects_list(self):
+    def refresh_objects_list(self) -> None:
+        '''Refreshes the list of available objects'''
         self.list_objects.clear()
         ASSETS_DIR = os.path.join("Assets", "Objects")
         if os.path.exists(ASSETS_DIR):
@@ -706,12 +721,14 @@ class ControlWindow(QtWidgets.QWidget):
         else:
             self.list_objects.addItem("Brak folderu Assets/Objects!")
 
-    def spawn_selected(self):
+    def spawn_selected(self) -> None:
+        '''Creates selected object at cursor position'''
         item = self.list_objects.currentItem()
         if item:
             self.conn.send(["spawn_object", item.text()])
 
     def bind_hotkey(self):
+        '''Binds keyboard hotkey to object creation'''
         item = self.list_objects.currentItem()
         if not item:
             QtWidgets.QMessageBox.information(self, "Brak obiektu", "Zaznacz obiekt z listy.")
@@ -738,6 +755,7 @@ class ControlWindow(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.information(self, "Błąd", f"Wystąpił problem podczas przypisywania '{seq_str}' do '{filename}'")
 
     def on_object_selected(self, item):
+        '''Handles object selection in list'''
         filename = item.text()
         hotkey = self.shared_data.settings["hotkeys"]["objects"]["create"].get(filename)
         if hotkey:
@@ -750,16 +768,19 @@ class ControlWindow(QtWidgets.QWidget):
         self.btn_spawn.setEnabled(True)
 
     def clear_all_objects(self):
+        '''Removes all spawned objects from the world'''
         self.conn.send(["clear_all_objects"])
 
     def closeEvent(self, event):
+        '''Hides window instead of closing'''
         event.ignore()
         self.hide()
 
 def run_app(conn, shared_data, log_queue) -> None:
+    '''Entry point for the dashboard process'''
     global logger
-    logger = skonfiguruj_logger_procesu("dashboard", log_queue)
-    logger.info("Uruchamianie procesu DASHBOARD...")
+    logger = setup_process_logger("dashboard", log_queue)
+    logger.info("Starting the DASHBOARD process...")
 
     app = QtWidgets.QApplication(sys.argv)
 

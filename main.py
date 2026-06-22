@@ -8,12 +8,14 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 import argparse
-from logger_setup import skonfiguruj_glowny_listener, skonfiguruj_logger_procesu
+from logger_setup import setup_main_listener, setup_process_logger
 
 def except_hook(cls, exception, traceback_obj) -> None:
+    '''Global exception hook for uncaught exceptions'''
     sys.__excepthook__(cls, exception, traceback_obj)
 
 def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_queue) -> None:
+    '''Safely runs a process function with exception handling'''
     def child_except_hook(cls, exception, traceback_obj):
         error_msg = f"{process_name} PROCESS ERROR:\n{''.join(traceback.format_exception(cls, exception, traceback_obj))}"
         error_queue.put(error_msg)
@@ -29,13 +31,14 @@ def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_qu
         # print(error_msg)
 
 def show_error_msg_box(error_msg) -> None:
+    '''Displays an error message dialog box'''
     app = QApplication(sys.argv)
     msg_box = QMessageBox()
-    msg_box.setWindowTitle("DesktopPet v3 - Krytyczny błąd")
+    msg_box.setWindowTitle("DesktopPet v3 - Critical Error")
     msg_box.setWindowIcon(QIcon("icon.ico"))
     msg_box.setIcon(QMessageBox.Icon.Critical)
-    msg_box.setText("Wystąpił błąd w procesie potomnym!")
-    msg_box.setInformativeText("Aby zobaczyć pełny zapis błędu kliknij 'Show Details...' poniżej.")
+    msg_box.setText("An error occurred in the child process!")
+    msg_box.setInformativeText("To view the full error log, click 'Show Details...' below.")
     msg_box.setDetailedText(error_msg)
     msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
@@ -51,6 +54,7 @@ def show_error_msg_box(error_msg) -> None:
     msg_box.exec()
 
 def main() -> None:
+    '''Main entry point of the application'''
     sys.excepthook = except_hook
     # Połączenie pomiędzy procesami
     conn1, conn2 = Pipe()
@@ -62,13 +66,13 @@ def main() -> None:
 
     # Obsługa argumentów przekazywanych z linii komend
     parser = argparse.ArgumentParser(description="DesktopPet_v3")
-    parser.add_argument("--debug", "-D", type=int, help="Poziom debugowania 0-2", required=False, default=0, choices=[0, 1, 2])
+    parser.add_argument("--debug", "-D", type=int, help="Debug level 0-2", required=False, default=0, choices=[0, 1, 2])
     args = parser.parse_args()
 
-    log_queue_listener = skonfiguruj_glowny_listener("main", log_queue, debug=False if args.debug == 0 else True, max_stare_logi=settings["debug"]["delete_logs_older_than"])
+    log_queue_listener = setup_main_listener("main", log_queue, debug=False if args.debug == 0 else True, max_old_logs=settings["debug"]["delete_logs_older_than"])
     log_queue_listener.start()
 
-    logger = skonfiguruj_logger_procesu("main", log_queue)
+    logger = setup_process_logger("main", log_queue)
 
     error_msg = None
 
@@ -84,7 +88,7 @@ def main() -> None:
         try:
             p1.start()
             p2.start()
-            logger.info("[✅] Oba procesy uruchomione")
+            logger.info("[✅] Both processes started")
 
             # Monitoruj procesy i błędy
             while True:
@@ -92,26 +96,26 @@ def main() -> None:
                 if not error_queue.empty():
                     error_msg = error_queue.get()
                     logger.critical(f"\n[❌] {error_msg}\n")
-                    logger.critical("[⚠️]  Wyłapano błąd, zamykam aplikację...")
+                    logger.critical("[⚠️] Error caught, closing application...")
                     break
 
                 p1_alive = p1.is_alive()
                 p2_alive = p2.is_alive()
                 # Jeśli jeden proces się zakończył, drugi powinien się też zamknąć
                 if not p1_alive and p2_alive:
-                    logger.info(f"[⚠️]  Proces PET się zakończył (exit code: {p1.exitcode}), zamykam DASHBOARD...")
+                    logger.info(f"[⚠️] PET process ended (exit code: {p1.exitcode}), closing DASHBOARD...")
                     if p1.exitcode != 0:
-                        error_msg = f"PET proces zakończył się z kodem błędu: {p1.exitcode}"
+                        error_msg = f"PET process exited with error code: {p1.exitcode}"
                     break
                 if not p2_alive and p1_alive:
-                    logger.info(f"[⚠️]  Proces DASHBOARD się zakończył (exit code: {p2.exitcode}), zamykam PET...")
+                    logger.info(f"[⚠️] DASHBOARD process ended (exit code: {p2.exitcode}), closing PET...")
                     if p2.exitcode != 0:
-                        error_msg = f"DASHBOARD proces zakończył się z kodem błędu: {p2.exitcode}"
+                        error_msg = f"DASHBOARD process exited with error code: {p2.exitcode}"
                     break
 
                 # Jeśli oba się skończyły normalnie
                 if not p1_alive and not p2_alive:
-                    logger.info("[✅] Oba procesy zakończyły się normalnie")
+                    logger.info("[✅] Both processes ended normally")
                     break
 
                 # Czekaj krótko przed następnym sprawdzeniem
@@ -119,20 +123,20 @@ def main() -> None:
                 p2.join(timeout=0.1)
 
         except KeyboardInterrupt:
-            logger.error("[⚠️]  Przerwanie użytkownika")
+            logger.error("[⚠️] User interruption")
         except Exception:
-            logger.exception(f"[❌] Niespodziewany błąd krytyczny głównej pętli")
+            logger.exception(f"[❌] Unexpected critical error in main loop")
         finally:
             for p in processes:
                 if p.is_alive():
-                    logger.warning(f"[⚠️]  Kończę proces {p.name}...")
+                    logger.warning(f"[⚠️] Terminating process {p.name}...")
                     p.terminate()
                     p.join(timeout=2)
                     if p.is_alive():
-                        logger.error(f"[⚠️]️  Wymuszam zabicie procesu {p.name}")
+                        logger.error(f"[⚠️]️ Force killing process {p.name}")
                         p.kill()
                     p.join()
-            logger.info("[✅] Wszystkie procesy zamknięte")
+            logger.info("[✅] All processes closed")
 
             if error_msg is not None:
                 show_error_msg_box(error_msg)

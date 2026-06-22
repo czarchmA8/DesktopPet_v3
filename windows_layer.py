@@ -104,6 +104,7 @@ def is_real_window(hwnd: int) -> bool:
     return True
 
 def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows: bool = True, blacklist_hwnd: list[int] = None) -> tuple[int, int]:
+    '''Gets the nearest visible windows above and below a target window'''
     if not win32gui.IsWindow(target_hwnd):
         return None, None
 
@@ -162,6 +163,7 @@ def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows:
         return above, below
 
 def get_windows_above_and_below(target_hwnd: int, only_real_windows: bool, blacklist_hwnd: list[int] = None) -> tuple[list[int], list[int]]:
+    '''Gets all windows above and below a target window in z-order'''
     blacklist_hwnd = [] if blacklist_hwnd is None else blacklist_hwnd
     above_list = []
     below_list = []
@@ -190,12 +192,12 @@ if __name__ == "__main__":
     import timeit
     try:
         import archive.windows_layer_old as windows_layer_old
-        stare_funkcje_nie_istnieja = False
+        old_functions_not_exist = False
     except ModuleNotFoundError:
-        print("Wystąpił problem z zaimportowaniem modułu zawierającym archiwalne funkcje")
-        stare_funkcje_nie_istnieja = True
+        print("Failed to import module containing legacy functions")
+        old_functions_not_exist = True
 
-    hwnd: str = input("Wpisz hwnd okna: ")
+    hwnd: str = input("Enter window hwnd: ")
     if hwnd == "":
         hwnd: int = win32gui.GetForegroundWindow()
     elif hwnd.isdigit():
@@ -208,56 +210,56 @@ if __name__ == "__main__":
     print(f"above ({len(above)}):", above, "-", [win32gui.GetWindowText(a) for a in above])
     print(f"below ({len(below)}):", below, "-", [win32gui.GetWindowText(a) for a in below])
 
-    def skroc_liczbe(liczba: float) -> str:
-        if liczba == 0:
+    def abbreviate_number(number: float) -> str:
+        if number == 0:
             return "0"
-        wykladnik = math.floor(math.log10(abs(liczba)))
-        precyzja = 3 - wykladnik - 1
-        p = max(0, precyzja)
-        mnoznik = 10 ** p
-        temp = int(liczba * mnoznik + (1e-15 if liczba > 0 else -1e-15))
-        wynik_float = temp / mnoznik
-        formatowany = f"{wynik_float:.15f}"
-        if '.' in formatowany:
-            formatowany = formatowany.rstrip('0').rstrip('.')
-        return formatowany
+        exponent = math.floor(math.log10(abs(number)))
+        precision = 3 - exponent - 1
+        p = max(0, precision)
+        multiplier = 10 ** p
+        temp = int(number * multiplier + (1e-15 if number > 0 else -1e-15))
+        result_float = temp / multiplier
+        formatted = f"{result_float:.15f}"
+        if '.' in formatted:
+            formatted = formatted.rstrip('0').rstrip('.')
+        return formatted
 
-    def przetestuj_predkosc(nazwa_testu, lista, oblicz_srednia: int = 30):
-        wyniki = []
-        for funkcja, nazwa in lista:
-            wyniki.append([timeit.timeit(stmt=funkcja, number=oblicz_srednia), nazwa])
+    def benchmark_performance(test_name, functions_list, average_samples: int = 30):
+        results = []
+        for function, name in functions_list:
+            results.append([timeit.timeit(stmt=function, number=average_samples), name])
 
-        wyniki.sort(key=lambda x: x[0])
-        najlepszy_czas = wyniki[0][0]
+        results.sort(key=lambda x: x[0])
+        best_time = results[0][0]
 
-        max_name_len = max(len(w[1]) for w in wyniki) + 2
+        max_name_len = max(len(w[1]) for w in results) + 2
 
-        print(f"Wyniki testu \"{nazwa_testu}\":")
-        for index, (czas, nazwa) in enumerate(wyniki):
+        print(f"Test results \"{test_name}\":")
+        for index, (elapsed_time, name) in enumerate(results):
             if index > 0:
-                roznica_prev = czas - wyniki[index - 1][0]
-                col_diff = f"różnica: +{skroc_liczbe(roznica_prev)}s"
+                diff_previous = elapsed_time - results[index - 1][0]
+                col_diff = f"difference: +{abbreviate_number(diff_previous)}s"
             else:
-                col_diff = "(najszybszy)"
+                col_diff = "(fastest)"
 
             if index > 0:
-                roznica_best = czas - najlepszy_czas
-                mnoznik = czas / najlepszy_czas
-                col_max_diff = f"od najlepszego: +{skroc_liczbe(roznica_best)}s ({mnoznik:.2f}x)"
+                diff_best = elapsed_time - best_time
+                multiplier = elapsed_time / best_time
+                col_max_diff = f"from best: +{abbreviate_number(diff_best)}s ({multiplier:.2f}x)"
             else:
                 col_max_diff = ""
 
-            col_time = f"{index + 1}. {skroc_liczbe(czas)}s"
-            col_name = f"- {nazwa},"
+            col_time = f"{index + 1}. {abbreviate_number(elapsed_time)}s"
+            col_name = f"- {name},"
 
             print(f"{col_time:<18} {col_name:<{max_name_len + 2}} {col_diff:<22} {col_max_diff}")
         print()
 
-    print("\nWyniki tekstów mogą drastycznie się zmienić w zależności od aktywnych okien i prędkości komputera")
+    print("\nTest results can vary drastically depending on active windows and computer speed")
     for only_real_windows in [True, False]:
-        przetestuj_predkosc(f"real_windows={only_real_windows}", [
+        benchmark_performance(f"real_windows={only_real_windows}", [
             [lambda: get_immediate_neighbors_above_and_below(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v4"]
-        ] + [] if stare_funkcje_nie_istnieja else [
+        ] + [] if old_functions_not_exist else [
             [lambda: windows_layer_old.get_immediate_neighbors_above_and_below_v3(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v3"],
             [lambda: windows_layer_old.get_immediate_neighbors_above_and_below_v2(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v2"],
             [lambda: windows_layer_old.get_immediate_neighbors_above_and_below_v1(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v1"],
@@ -266,9 +268,9 @@ if __name__ == "__main__":
             [lambda: windows_layer_old.get_window_above_v1(hwnd, only_real_windows), "get_window_above_v1"]
         ])
 
-    przetestuj_predkosc(f"is_real_window()", [
+    benchmark_performance(f"is_real_window()", [
         [lambda: is_real_window(hwnd), "is_real_window_v3"]
-    ] + [] if stare_funkcje_nie_istnieja else [
+    ] + [] if old_functions_not_exist else [
         [lambda: windows_layer_old.is_real_window_v2(hwnd), "is_real_window_v2"],
         [lambda: windows_layer_old.is_real_window_v1(hwnd), "is_real_window_v1"],
     ])

@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 class ColorFormatter(logging.Formatter):
-    """Formatter z kolorami ANSI dla konsoli"""
+    """Formatter with ANSI colors for console"""
 
     COLORS = {
         'DEBUG': '\033[36m',  # Cyan
@@ -26,80 +26,82 @@ class ColorFormatter(logging.Formatter):
         return result
 
 class PlainFormatter(logging.Formatter):
-    """Formatter bez kolorów ANSI"""
+    """Formatter without ANSI colors"""
 
     def format(self, record):
         # Zwykły format bez kolorów
         return super().format(record)
 
-def _czyszcz_stare_logi(folder_logow: Path, prefiks: str, logger, max_pliki: int = 3) -> None:
-    """Usuwa stare pliki logów, zachowując tylko określoną liczbę najnowszych"""
-    if not folder_logow.exists():
+def _clean_old_logs(logs_folder: Path, prefiks: str, logger, max_old_logs: int = 3) -> None:
+    """Deletes old log files, keeping only a specified number of the most recent ones"""
+    if not logs_folder.exists():
         return
 
     # Znajdź wszystkie pliki logów z danym prefiksem
-    pliki_logow = sorted(
-        folder_logow.glob(f"{prefiks}_*.log"),
+    log_files = sorted(
+        logs_folder.glob(f"{prefiks}_*.log"),
         key=lambda p: p.stat().st_mtime,
         reverse=True  # Najnowsze pierwsze
     )
 
     # Usuń pliki starsze niż top N
-    for plik_do_usuniecia in pliki_logow[max_pliki:]:
+    for file_to_delete in log_files[max_old_logs:]:
         try:
-            plik_do_usuniecia.unlink()
-            logger.debug(f"Usunięto stary plik logu: {plik_do_usuniecia.name}")
+            file_to_delete.unlink()
+            logger.debug(f"Old log file deleted: \"{file_to_delete.name}\"")
         except Exception as e:
-            logger.warning(f"Nie udało się usunąć {plik_do_usuniecia.name}: {e}")
+            logger.warning(f"Failed to delete \"{file_to_delete.name}\": {e}")
 
-def skonfiguruj_glowny_listener(nazwa_pliku: str, kolejka, debug=False, max_stare_logi: int=3) -> QueueListener:
-    folder_logow = Path("logs")
-    if not folder_logow.exists():
-        folder_logow.mkdir()
+def setup_main_listener(file_name: str, queue, debug=False, max_old_logs: int=3) -> QueueListener:
+    '''Sets up the main logging listener with queue support'''
+    logs_folder = Path("logs")
+    if not logs_folder.exists():
+        logs_folder.mkdir()
 
     # Tworzenie nazwy pliku z datą i czasem
-    teraz = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    nazwa_z_data = f"{nazwa_pliku}_{teraz}.log"
-    sciezka_pliku = folder_logow / nazwa_z_data
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename_with_datetime = f"{file_name}_{now}.log"
+    file_path = logs_folder / filename_with_datetime
 
     # Handler konsoli (z kolorami)
-    handler_konsola = logging.StreamHandler()
-    handler_konsola.setLevel(logging.DEBUG if debug else logging.INFO)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
 
-    format_konsoli = ColorFormatter(fmt="%(levelname)s [%(name)s]: %(message)s")
-    handler_konsola.setFormatter(format_konsoli)
+    console_formatter = ColorFormatter(fmt="%(levelname)s [%(name)s]: %(message)s")
+    console_handler.setFormatter(console_formatter)
 
     # Handler pliku (bez kolorów)
-    handler_plik = logging.FileHandler(
-        sciezka_pliku,
+    file_handler = logging.FileHandler(
+        file_path,
         mode="w",
         encoding="utf-8"
     )
-    handler_plik.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.DEBUG)
 
-    format_pliku = PlainFormatter(
+    file_formatter = PlainFormatter(
         fmt="[%(asctime)s]-[%(levelname)s]-(%(filename)s:%(lineno)d) -> %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
-    handler_plik.setFormatter(format_pliku)
+    file_handler.setFormatter(file_formatter)
 
-    listener = QueueListener(kolejka, handler_konsola, handler_plik, respect_handler_level=True)
+    listener = QueueListener(queue, console_handler, file_handler, respect_handler_level=True)
 
     # Czyszczenie starych plików logów
-    logger = skonfiguruj_logger_procesu("logger_setup", kolejka)
-    logger.info("[✅] Uruchomiono centralny systemu logowania")
-    _czyszcz_stare_logi(folder_logow, nazwa_pliku, logger, max_stare_logi)
+    logger = setup_process_logger("logger_setup", queue)
+    logger.info("[✅] Started central logging system")
+    _clean_old_logs(logs_folder, file_name, logger, max_old_logs)
 
     return listener
 
-def skonfiguruj_logger_procesu(nazwa_loggera: str, kolejka) -> logging.Logger:
-    logger = logging.getLogger(nazwa_loggera)
+def setup_process_logger(logger_name: str, queue) -> logging.Logger:
+    '''Configures a process-specific logger with queue handler'''
+    logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG)
 
     if logger.hasHandlers():
         logger.handlers.clear()
 
-    handler_kolejki = QueueHandler(kolejka)
-    logger.addHandler(handler_kolejki)
+    queue_handler = QueueHandler(queue)
+    logger.addHandler(queue_handler)
 
     return logger
