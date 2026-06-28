@@ -16,12 +16,12 @@ body:
   - type: textarea
     id: rationale
     attributes:
-      label: It should be implemented because
+      label: It should be implemented because (optional)
       placeholder: It will allow to do Y that is needed for Z
   - type: textarea
     id: context
     attributes:
-      label: Additional context
+      label: Additional context (optional)
       placeholder: |
         Add any other context or screenshots about the feature request here.
   - type: textarea
@@ -35,7 +35,7 @@ body:
   - type: dropdown
     id: assign
     attributes:
-      label: "Would you like to work on this issue?"
+      label: "Would you like to work on this issue? (optional)"
       options:
         - "No"
         - "Yes"

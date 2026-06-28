@@ -26,8 +26,13 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: What was the expected result?
+      label: What was the expected result? (optional)
       placeholder: I expected this to happen
+  - type: textarea
+    id: cause
+    attributes:
+      label: Probable cause (optional)
+      placeholder: This issue is probably caused by
   - type: textarea
     id: screenshots
     attributes:
@@ -43,7 +48,7 @@ body:
   - type: dropdown
     id: assign
     attributes:
-      label: "Would you like to work on this issue?"
+      label: "Would you like to work on this issue? (optional)"
       options:
         - "No"
         - "Yes"
