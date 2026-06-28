@@ -1,6 +1,6 @@
 {
     "FPS": 60,
-    "volume": 35,
+    "volume": 50,
     "autostart": false,
     "hotkeys": {
         "app": {
@@ -14,10 +14,8 @@
             "teleport": null
         },
         "objects": {
-            "remove_all": "Ctrl+Space",
-            "create": {
-                "ball.png": "Ctrl+Alt+A"
-            }
+            "remove_all": null,
+            "create": {}
         }
     },
     "windows_layers": {
@@ -30,7 +28,7 @@
     },
     "debug": {
         "delete_logs_older_than": 3,
-        "active": true,
+        "active": false,
         "hitbox_overlay": false,
         "debug_window": true
     }

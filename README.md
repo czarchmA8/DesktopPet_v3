@@ -58,6 +58,8 @@ An advanced, interactive virtual desktop pet featuring physics simulation, contr
 
 ## 🚀 Installation
 
+**Requirements:** Requires Python 3.13 and Windows 11.
+
 1. **Clone the repository**
    ```bash
    git clone https://github.com/czarchmA8/DesktopPet_v3.git
@@ -119,6 +121,25 @@ The application runs on two independent processes:
 - **DASHBOARD Process** — control interface, settings handling
 
 Communication between processes occurs via a structured JSON protocol sent through `multiprocessing.Pipe`.
+
+### Project Structure
+
+| File                           | Description                                                                                                                                                               |
+|:-------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`main.py`**                  | **Starting point.** Launches `dashboard.py` and `desktop/app.py` as separate processes.                                                                                   |
+| **`logger_setup.py`**          | **Log management.** Handles message logging, file saving, and automatic cleanup of old log files.                                                                         |
+| **`dashboard.py`**             | **Control Panel & GUI.** Central hub for application control, displaying statistics, settings, and object creation via interactive buttons, including a system tray icon. |
+| **`utils_debug.py`**           | **Debugging utilities.** Debug info window, hitbox rendering, and general helper functions.                                                                               |
+| **`windows_layer.py`**         | **Window layering (Z-order).** Retrieves windows directly above and below a specified window handle (`hwnd`).                                                             |
+| **`desktop/app.py`**           | **Desktop manager.** Launches and manages the pet and world objects.                                                                                                      |
+| **`desktop/pet.py`**           | **Pet.** The virtual pet itself.                                                                                                                                          |
+| **`desktop/world_objects.py`** | **World Objects.** Manages interactive, physical objects within the pet's environment.                                                                                    |
+| **`desktop/collisions.py`**    | **Collisions and types.** Helper module containing classes and functions for collision detection.                                                                         |
+
+| Directory      | Description                                                                   |
+|:---------------|:------------------------------------------------------------------------------|
+| **`logs/`**    | Stores application log files.                                                 |
+| **`Assets/`**  | Contains all project assets, including sounds, animations, and object images. |
 
 ### Performance Optimizations
 

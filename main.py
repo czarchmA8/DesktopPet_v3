@@ -9,6 +9,8 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 import argparse
 from logger_setup import setup_main_listener, setup_process_logger
+import os
+import shutil
 
 def except_hook(cls, exception, traceback_obj) -> None:
     '''Global exception hook for uncaught exceptions'''
@@ -60,6 +62,10 @@ def main() -> None:
     conn1, conn2 = Pipe()
     error_queue = Queue()
     log_queue = Queue()
+
+    if not os.path.exists("settings.json"):
+        shutil.copy("settings.default.json", "settings.json")
+        print("🔄 Created a local settings.json file from the template.")
 
     with open("settings.json", "r", encoding="utf-8") as f:
         settings = json.load(f)

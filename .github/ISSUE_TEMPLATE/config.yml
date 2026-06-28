@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💡 Discussion
+    url: https://github.com/czarchmA8/DesktopPet_v3/discussions/new/choose
+    about: Not sure if you found a bug or have a feature request? Start a discussion to get community input
