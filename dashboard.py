@@ -121,7 +121,7 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
         # VK_PRIOR = 0x21
         # VK_HELP = 0x2F
         # if (VK_PRIOR <= vk_code <= VK_HELP) or vk_code in (0x5B, 0x5C, 0x5D):
-        #     lparam |= 0x01000000
+        #      lparam |= 0x01000000
 
         # 5. Pobranie nazwy
         buffer = ctypes.create_unicode_buffer(BUFFER_LEN + 1)
@@ -184,7 +184,7 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
         # keys = {getattr(win32con, v): v for v in dir(win32con) if v.startswith("VK_")}
         #
         # def get_key_text(key):
-        #     return keys.get(key, chr(key))
+        #      return keys.get(key, chr(key))
 
         real_key_name = self.get_key_name(vk_code=virtual_key, scan_code=scan_code)
         if real_key_name and real_key_name not in self.keys_pressed:
@@ -338,6 +338,15 @@ class ControlWindow(QtWidgets.QWidget):
 
         self.exit_requested.connect(QtCore.QCoreApplication.quit)
 
+        self.version_label = QtWidgets.QLabel("Version 1.0.0", self)
+        self.version_label.setStyleSheet("color: rgba(255, 255, 255, 0.4); font-size: 11px; background: transparent;")
+        self.version_label.setAttribute(QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.version_label.adjustSize()
+        self.version_label.move(self.width() - self.version_label.width() - 10, self.height() - self.version_label.height() - 5)
+
     # ================= STATYSTYKI =================
     def setup_stats_ui(self) -> None:
         '''Sets up the pet statistics display UI tab'''
@@ -422,8 +431,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.check_autostart.toggled.connect(self.toggle_autostart)
 
         # if winreg is None:
-        #     self.check_autostart.setEnabled(False)
-        #     self.check_autostart.setToolTip("Autostart dostępny tylko na Windows (moduł winreg niedostępny).")
+        #      self.check_autostart.setEnabled(False)
+        #      self.check_autostart.setToolTip("Autostart dostępny tylko na Windows (moduł winreg niedostępny).")
 
         sys_layout.addWidget(self.check_autostart)
         sys_group.setLayout(sys_layout)
@@ -776,6 +785,14 @@ class ControlWindow(QtWidgets.QWidget):
         event.ignore()
         self.hide()
 
+def show_about_dialog(parent=None):
+    msg = QtWidgets.QMessageBox(parent)
+    msg.setWindowTitle("About DesktopPet v3")
+    msg.setText("<b>DesktopPet v3</b><br><br>An interactive desktop pet application featuring physics simulation, control panel, and sophisticated system windows behavior.<br><br>Version: 1.0.0<br>Repository: <a href='https://github.com/czarchmA8/DesktopPet_v3' style='color: #0d6efd;'>czarchmA8/DesktopPet_v3</a>")
+    msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
+    msg.setStyleSheet("QWidget { background-color: #2b2b2b; color: #ffffff; } QPushButton { background-color: #0d6efd; color: white; padding: 5px 15px; }")
+    msg.exec()
+
 def run_app(conn, shared_data, log_queue) -> None:
     '''Entry point for the dashboard process'''
     global logger
@@ -792,6 +809,10 @@ def run_app(conn, shared_data, log_queue) -> None:
     menu = QtWidgets.QMenu()
     show_action = menu.addAction("Pokaż Panel")
     show_action.triggered.connect(lambda: (window.show(), window.raise_(), window.activateWindow()))
+
+    about_action = menu.addAction("About/Info")
+    about_action.triggered.connect(lambda: show_about_dialog(window))
+
     menu.addSeparator()
     quit_action = menu.addAction("Wyjdź")
     quit_action.triggered.connect(app.quit)
