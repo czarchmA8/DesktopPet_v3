@@ -785,10 +785,10 @@ class ControlWindow(QtWidgets.QWidget):
         event.ignore()
         self.hide()
 
-def show_about_dialog():
-    msg = QtWidgets.QMessageBox()
+def show_about_dialog(parent=None):
+    msg = QtWidgets.QMessageBox(parent)
     msg.setWindowTitle("About DesktopPet v3")
-    msg.setText("<b>DesktopPet v3</b><br><br>An interactive desktop pet application featuring physics simulation, control panel, and sophisticated system windows behavior.<br><br>Version: 1.0.0<br>Repository: <a href='https://github.com/czarchma8/desktop_pet_v2' style='color: #0d6efd;'>czarchma8/desktop_pet_v2</a>")
+    msg.setText("<b>DesktopPet v3</b><br><br>An interactive desktop pet application featuring physics simulation, control panel, and sophisticated system windows behavior.<br><br>Version: 1.0.0<br>Repository: <a href='https://github.com/czarchmA8/DesktopPet_v3' style='color: #0d6efd;'>czarchmA8/DesktopPet_v3</a>")
     msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
     msg.setStyleSheet("QWidget { background-color: #2b2b2b; color: #ffffff; } QPushButton { background-color: #0d6efd; color: white; padding: 5px 15px; }")
     msg.exec()
@@ -811,7 +811,7 @@ def run_app(conn, shared_data, log_queue) -> None:
     show_action.triggered.connect(lambda: (window.show(), window.raise_(), window.activateWindow()))
 
     about_action = menu.addAction("About/Info")
-    about_action.triggered.connect(show_about_dialog)
+    about_action.triggered.connect(lambda: show_about_dialog(window))
 
     menu.addSeparator()
     quit_action = menu.addAction("Wyjdź")
