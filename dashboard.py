@@ -27,6 +27,14 @@ class Translator:
         self.change_language(lang_code)
 
     def tr(self, func):
+        """
+        Registers and executes a translation callback function.
+
+        Example:
+            translator.tr(lambda show_action=show_action: show_action.setText(
+                QtCore.QCoreApplication.translate("tray-icon", "Show Panel", None)
+            ))
+        """
         self._calls.append(func)
         func()
 
@@ -677,7 +685,6 @@ class ControlWindow(QtWidgets.QWidget):
         lang_code = self.combo_language.itemData(index)
         self.save_settings_state()
         self.translator.change_language(lang_code)
-        logger.debug(self.shared_data.settings)
 
     def set_app_hotkey(self, category: str, key: str):
         dialog = HotkeyDialog(self)
