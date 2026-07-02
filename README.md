@@ -135,11 +135,14 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`desktop/pet.py`**           | **Pet.** The virtual pet itself.                                                                                                                                          |
 | **`desktop/world_objects.py`** | **World Objects.** Manages interactive, physical objects within the pet's environment.                                                                                    |
 | **`desktop/collisions.py`**    | **Collisions and types.** Helper module containing classes and functions for collision detection.                                                                         |
+| **`requirements.txt`**         | **Dependencies list.** Contains external Python packages required by the project.                                                                                         |
+| **`settings.default.json`**    | **Default configuration.** Contains the baseline application settings used to initialize or restore settings.json                                                         |
 
-| Directory      | Description                                                                   |
-|:---------------|:------------------------------------------------------------------------------|
-| **`logs/`**    | Stores application log files.                                                 |
-| **`Assets/`**  | Contains all project assets, including sounds, animations, and object images. |
+| Directory        | Description                                                                             |
+|:-----------------|:----------------------------------------------------------------------------------------|
+| **`logs/`**      | Stores application log files.                                                           |
+| **`Assets/`**    | Contains all project assets, including sounds, animations, and object images.           |
+| **`languages/`** | Contains Compiled Qt translation files (.qm) used for application internationalization. |
 
 ### Performance Optimizations
 
