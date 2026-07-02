@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QRect
+from PySide6.QtCore import QRect
 from enum import IntEnum, auto
 from dataclasses import dataclass
 

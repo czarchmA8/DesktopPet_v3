@@ -1,6 +1,6 @@
 import sys
 import time
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 import logging
 import os
 import win32gui, win32con

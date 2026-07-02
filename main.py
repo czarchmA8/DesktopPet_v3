@@ -4,13 +4,15 @@ import traceback
 from desktop.app import run_app as run_app_desktop
 from dashboard import run_app as run_app_dashboard
 import json
-from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt
 import argparse
 from logger_setup import setup_main_listener, setup_process_logger
 import os
 import shutil
+
+APP_VERSION = "0.0.0.dev"
 
 def except_hook(cls, exception, traceback_obj) -> None:
     '''Global exception hook for uncaught exceptions'''
@@ -86,6 +88,7 @@ def main() -> None:
         shared_data = manager.Namespace()
         shared_data.args = args
         shared_data.settings = settings
+        shared_data.APP_VERSION = APP_VERSION
 
         p1 = Process(target=safe_run, args=(run_app_desktop, "PET", conn1, shared_data, error_queue, log_queue), name="PET")
         p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", conn2, shared_data, error_queue, log_queue), name="DASHBOARD")

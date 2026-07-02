@@ -2,6 +2,7 @@
     "FPS": 60,
     "volume": 50,
     "autostart": false,
+    "language": "en",
     "hotkeys": {
         "app": {
             "show": null,

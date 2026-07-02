@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 import winreg
 import keyboard
 import win32api, win32con, ctypes
@@ -12,9 +12,38 @@ from logger_setup import setup_process_logger
 
 logger: logging.Logger = None
 
+class Translator:
+    '''
+    Manages dynamic language switching within the application, allowing on-the-fly text updates without requiring a restart.
+
+    Translation Workflow (Qt/PySide):
+    1. Extract/Update strings: Run `pyside6-lupdate dashboard.py -ts languages/english.ts` to scan the code for translatable text.
+    2. Translate: Open the `.ts` file in `pyside6-linguist` (or a text editor) and add your translations.
+    3. Compile: Run `pyside6-lrelease languages/english.ts` to generate the compiled `.qm` file used by the application.
+    '''
+    def __init__(self, lang_code: str):
+        self._calls: list = []
+        self._translator = QtCore.QTranslator()
+        self.change_language(lang_code)
+
+    def tr(self, func):
+        self._calls.append(func)
+        func()
+
+    def retranslate_all(self) -> None:
+        for func in self._calls:
+            func()
+
+    def change_language(self, lang_code: str) -> None:
+        app = QtWidgets.QApplication.instance()
+        app.removeTranslator(self._translator)
+        self._translator.load(os.path.join("languages", f"{lang_code}.qm"))
+        app.installTranslator(self._translator)
+        self.retranslate_all()
+
 class StatRow(QtWidgets.QWidget):
     '''Widget displaying a statistic with label, progress bar, and percentage'''
-    def __init__(self, label_text, icon_char, parent=None):
+    def __init__(self, label_text=None, icon_char=None, parent=None):
         super().__init__(parent)
         layout = QtWidgets.QHBoxLayout(self)
         layout.setContentsMargins(0, 2, 0, 2)
@@ -72,7 +101,7 @@ class StatRow(QtWidgets.QWidget):
 
 class CustomKeySequenceEdit(QtWidgets.QLineEdit):
     '''Custom QLineEdit for capturing keyboard hotkey sequences'''
-    keySequenceChanged = QtCore.pyqtSignal(QtGui.QKeySequence)
+    keySequenceChanged = QtCore.Signal(QtGui.QKeySequence)
 
     user32 = ctypes.WinDLL("user32", use_last_error=True)
 
@@ -135,7 +164,7 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._sequence = QtGui.QKeySequence()
-        self.setPlaceholderText("Naciśnij kombinację klawiszy...")
+        self.setPlaceholderText(QtCore.QCoreApplication.translate("KeySequence", "Press key combination...", None))
         self.keys_pressed = {}
         self.clear_keys_pressed = False
 
@@ -209,12 +238,12 @@ class HotkeyDialog(QtWidgets.QDialog):
     '''Dialog for binding keyboard hotkeys to actions'''
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Nagraj skrót klawiszowy")
+        self.setWindowTitle(QtCore.QCoreApplication.translate("HotkeyDialog", "Record keyboard shortcut", None))
         self.setFixedSize(300, 150)
 
         layout = QtWidgets.QVBoxLayout(self)
 
-        self.label = QtWidgets.QLabel("Naciśnij kombinację klawiszy:")
+        self.label = QtWidgets.QLabel(QtCore.QCoreApplication.translate("HotkeyDialog", "Press key combination:", None))
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label.setStyleSheet("font-size: 14px; font-weight: bold; margin: 10px;")
         layout.addWidget(self.label)
@@ -226,10 +255,10 @@ class HotkeyDialog(QtWidgets.QDialog):
 
         # Przyciski
         btns = QtWidgets.QHBoxLayout()
-        self.btn_ok = QtWidgets.QPushButton("OK")
+        self.btn_ok = QtWidgets.QPushButton(QtCore.QCoreApplication.translate("HotkeyDialog", "OK", None))
         self.btn_ok.clicked.connect(self.on_accept)
 
-        btn_cancel = QtWidgets.QPushButton("Anuluj")
+        btn_cancel = QtWidgets.QPushButton(QtCore.QCoreApplication.translate("HotkeyDialog", "Cancel", None))
         btn_cancel.clicked.connect(self.reject)
 
         btns.addWidget(self.btn_ok)
@@ -243,11 +272,14 @@ class HotkeyDialog(QtWidgets.QDialog):
 
 class ControlWindow(QtWidgets.QWidget):
     '''Main control panel window for application'''
-    exit_requested = QtCore.pyqtSignal()
-    def __init__(self, conn, shared_data):
+    exit_requested = QtCore.Signal()
+    translate = QtCore.QCoreApplication.translate
+    def __init__(self, conn, shared_data, translator):
         super().__init__()
         self.conn = conn
         self.shared_data = shared_data
+
+        self.translator = translator
 
         def _add_hotkey(sequence, callback):
             """Registers hotkey if sequence is not None/empty, otherwise returns None."""
@@ -284,7 +316,7 @@ class ControlWindow(QtWidgets.QWidget):
             if os.path.exists(os.path.join("Assets", "Objects", name))
         }
 
-        self.setWindowTitle("Panel Sterowania Zwierzątkiem")
+        self.translator.tr(lambda: self.setWindowTitle(self.translate("ControlWindow", "DesktopPet_v3", "App title")))
         self.resize(500, 600)
         self.setWindowIcon(QtGui.QIcon("icon.ico"))
 
@@ -322,9 +354,12 @@ class ControlWindow(QtWidgets.QWidget):
         self.tab_settings = QtWidgets.QWidget()
         self.tab_objects = QtWidgets.QWidget()
 
-        self.tabs.addTab(self.tab_stats, "Statystyki")
-        self.tabs.addTab(self.tab_settings, "Ustawienia")
-        self.tabs.addTab(self.tab_objects, "Obiekty")
+        self.tabs.addTab(self.tab_stats, "Statistics")
+        self.translator.tr(lambda: self.tabs.setTabText(0, self.translate("ControlWindow", "Statistics", "Tab text")))
+        self.tabs.addTab(self.tab_settings, "Settings")
+        self.translator.tr(lambda: self.tabs.setTabText(1, self.translate("ControlWindow", "Settings", "Tab text")))
+        self.tabs.addTab(self.tab_objects, "Objects")
+        self.translator.tr(lambda: self.tabs.setTabText(2, self.translate("ControlWindow", "Objects", "Tab text")))
 
         self.lbl_app_hotkeys: dict = None
         self.setup_stats_ui()
@@ -338,40 +373,72 @@ class ControlWindow(QtWidgets.QWidget):
 
         self.exit_requested.connect(QtCore.QCoreApplication.quit)
 
-        self.version_label = QtWidgets.QLabel("Version 1.0.0", self)
-        self.version_label.setStyleSheet("color: rgba(255, 255, 255, 0.4); font-size: 11px; background: transparent;")
-        self.version_label.setAttribute(QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.version_label.adjustSize()
-        self.version_label.move(self.width() - self.version_label.width() - 10, self.height() - self.version_label.height() - 5)
+        self.version_label = QtWidgets.QLabel()
+        self.translator.tr(lambda: self.version_label.setText(self.translate("ControlWindow", "Version %x", None).replace("%x", self.shared_data.APP_VERSION)))
+        self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+        self.version_label.setStyleSheet("color: rgba(255, 255, 255, 0.4); font-size: 11px; background: transparent; padding-top: 5px;")
+        main_layout.addWidget(self.version_label)
 
     # ================= STATYSTYKI =================
     def setup_stats_ui(self) -> None:
         '''Sets up the pet statistics display UI tab'''
         layout = QtWidgets.QVBoxLayout(self.tab_stats)
-
-        # Słownik mapujący nazwę pola w klasie Stats na opis i ikonę
         self.stat_widgets = {}
-        stats_map = [
-            ("fitness", "Kondycja", "💪"),
-            ("friendship", "Przyjaźń", "❤️"),
-            ("happiness", "Zadowolenie", "😄"),
-            ("comfort", "Komfort", "🛋️"),
-            ("hunger", "Głód", "🍗"),
-            ("thirst", "Pragnienie", "💧"),
-            ("energy", "Energia", "⚡"),
-            ("cleanliness", "Czystość", "✨"),
-            ("warmth", "Ciepło", "🌡️"),
-            ("attention", "Uwaga", "👀"),
-            ("playfulness", "Zabawa", "⚽"),
-        ]
 
-        for attr, name, icon in stats_map:
-            row = StatRow(name, icon)
-            layout.addWidget(row)
-            self.stat_widgets[attr] = row
+        row = StatRow(icon_char="💪")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Fitness", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["fitness"] = row
+
+        row = StatRow(icon_char="❤️")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Friendship", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["friendship"] = row
+
+        row = StatRow(icon_char="😄")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Happiness", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["happiness"] = row
+
+        row = StatRow(icon_char="🛋️")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Comfort", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["comfort"] = row
+
+        row = StatRow(icon_char="🍗")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Hunger", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["hunger"] = row
+
+        row = StatRow(icon_char="💧")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Thirst", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["thirst"] = row
+
+        row = StatRow(icon_char="⚡")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Energy", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["energy"] = row
+
+        row = StatRow(icon_char="✨")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Cleanliness", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["cleanliness"] = row
+
+        row = StatRow(icon_char="🌡️")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Warmth", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["warmth"] = row
+
+        row = StatRow(icon_char="👀")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Attention", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["attention"] = row
+
+        row = StatRow(icon_char="⚽")
+        self.translator.tr(lambda row=row: row.name_label.setText(self.translate("Statistics", "Playfulness", "statistics")))
+        layout.addWidget(row)
+        self.stat_widgets["playfulness"] = row
 
         layout.addStretch()
 
@@ -399,10 +466,12 @@ class ControlWindow(QtWidgets.QWidget):
         layout.setSpacing(10)
 
         # Głośność
-        vol_group = QtWidgets.QGroupBox("Dźwięk")
+        vol_group = QtWidgets.QGroupBox()
+        self.translator.tr(lambda: vol_group.setTitle(self.translate("Settings", "Sound", "settings")))
         vol_layout = QtWidgets.QVBoxLayout()
 
-        lbl_vol = QtWidgets.QLabel("Głośność:")
+        lbl_vol = QtWidgets.QLabel()
+        self.translator.tr(lambda: lbl_vol.setText(self.translate("Settings", "Volume:", "settings")))
         self.slider_vol = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.slider_vol.setRange(0, 100)
         self.slider_vol.setValue(self.shared_data.settings["volume"])
@@ -423,10 +492,12 @@ class ControlWindow(QtWidgets.QWidget):
         layout.addWidget(vol_group)
 
         # System - Autostart
-        sys_group = QtWidgets.QGroupBox("System")
+        sys_group = QtWidgets.QGroupBox()
+        self.translator.tr(lambda: sys_group.setTitle(self.translate("Settings", "System", "settings")))
         sys_layout = QtWidgets.QVBoxLayout()
 
-        self.check_autostart = QtWidgets.QCheckBox("Uruchamiaj przy starcie systemu")
+        self.check_autostart = QtWidgets.QCheckBox()
+        self.translator.tr(lambda: self.check_autostart.setText(self.translate("Settings", "Run at system startup", "settings")))
         self.check_autostart.setChecked(self.shared_data.settings["autostart"])
         self.check_autostart.toggled.connect(self.toggle_autostart)
 
@@ -440,22 +511,27 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Obiekty - skrót do usunięcia wszystkich
         self.lbl_app_hotkeys = {}
-        obj_group = QtWidgets.QGroupBox("Obiekty")
+        obj_group = QtWidgets.QGroupBox()
+        self.translator.tr(lambda: obj_group.setTitle(self.translate("Settings", "Objects", "settings")))
         obj_layout = QtWidgets.QVBoxLayout()
 
-        obj_layout.addWidget(QtWidgets.QLabel("Skrót klawiszowy do usunięcia wszystkich obiektów:"))
+        label = QtWidgets.QLabel()
+        self.translator.tr(lambda label=label: label.setText(self.translate("Settings", "Keyboard shortcut to delete all objects:", "settings")))
+        obj_layout.addWidget(label)
 
         category = "objects"
         key = "remove_all"
-        h = self.shared_data.settings["hotkeys"]["objects"][key]
-        val_lbl = QtWidgets.QLabel(h if h else "Brak")
+        val_lbl = QtWidgets.QLabel()
+        self.translator.tr(lambda val_lbl=val_lbl, category=category, key=key: val_lbl.setText(h if (h := self.shared_data.settings["hotkeys"][category][key]) else self.translate("Settings", "No keyboard shortcut", None)))
         val_lbl.setStyleSheet("color: #aaa; font-style: italic;")
         self.lbl_app_hotkeys.setdefault(category, {})[key] = val_lbl
 
         obj_hk_btns = QtWidgets.QHBoxLayout()
-        btn_set_clear_hk = QtWidgets.QPushButton("Ustaw skrót")
+        btn_set_clear_hk = QtWidgets.QPushButton()
+        self.translator.tr(lambda: btn_set_clear_hk.setText(self.translate("Settings", "Set Shortcut", None)))
         btn_set_clear_hk.clicked.connect(lambda _, c=category, k=key: self.set_app_hotkey(c, k))
-        btn_rem_clear_hk = QtWidgets.QPushButton("Usuń skrót")
+        btn_rem_clear_hk = QtWidgets.QPushButton()
+        self.translator.tr(lambda: btn_rem_clear_hk.setText(self.translate("Settings", "Remove shortcut", None)))
         btn_rem_clear_hk.clicked.connect(lambda _, c=category, k=key: self.remove_app_hotkey(c, k))
         obj_hk_btns.addWidget(btn_set_clear_hk)
         obj_hk_btns.addWidget(btn_rem_clear_hk)
@@ -465,27 +541,57 @@ class ControlWindow(QtWidgets.QWidget):
         obj_group.setLayout(obj_layout)
         layout.addWidget(obj_group)
 
+        # Język
+        lang_group = QtWidgets.QGroupBox()
+        self.translator.tr(lambda: lang_group.setTitle(self.translate("Settings", "Language", "settings")))
+        lang_layout = QtWidgets.QVBoxLayout()
+
+        self.combo_language = QtWidgets.QComboBox()
+
+        LANG_DIR = "languages"
+        lang_codes = sorted(os.path.splitext(f)[0] for f in os.listdir(LANG_DIR) if f.lower().endswith(".qm")) if os.path.isdir(LANG_DIR) else []
+
+        for lang_code in lang_codes:
+            name = QtCore.QLocale(lang_code).nativeLanguageName().capitalize() or lang_code
+            self.combo_language.addItem(name, lang_code)
+
+        current_lang = self.shared_data.settings["language"]
+        idx = self.combo_language.findData(current_lang)
+        self.combo_language.setCurrentIndex(idx if idx >= 0 else 0)
+        self.combo_language.currentIndexChanged.connect(self.change_language)
+
+        lang_layout.addWidget(self.combo_language)
+        lang_group.setLayout(lang_layout)
+        layout.addWidget(lang_group)
+
         # Aplikacja - skróty show/hide/exit
         app_group = QtWidgets.QGroupBox("Aplikacja")
+        self.translator.tr(lambda: app_group.setTitle(self.translate("Settings", "App", None)))
         app_layout = QtWidgets.QVBoxLayout()
 
         app_hotkeys_cfg = [
-            ("show",  "Pokaż aplikację"),
-            ("hide",  "Ukryj aplikację"),
-            ("exit",  "Zamknij aplikację"),
+            ("show",  "Show application"),
+            ("hide",  "Hide application"),
+            ("exit",  "Close application"),
         ]
+        self.translate("Settings", "Show application", None)
+        self.translate("Settings", "Hide application", None)
+        self.translate("Settings", "Close application", None)
         category = "app"
         for key, label in app_hotkeys_cfg:
-            row_lbl = QtWidgets.QLabel(f"{label}:")
-            current = self.shared_data.settings["hotkeys"]["app"][key]
-            val_lbl = QtWidgets.QLabel(current if current else "Brak")
+            row_lbl = QtWidgets.QLabel()
+            self.translator.tr(lambda row_lbl=row_lbl, label=label: row_lbl.setText(self.translate("Settings", label, None)+":"))
+            val_lbl = QtWidgets.QLabel()
+            self.translator.tr(lambda val_lbl=val_lbl, category=category, key=key: val_lbl.setText(h if (h := self.shared_data.settings["hotkeys"][category][key]) else self.translate("Settings", "No keyboard shortcut", None)))
             val_lbl.setStyleSheet("color: #aaa; font-style: italic;")
             self.lbl_app_hotkeys.setdefault(category, {})[key] = val_lbl
 
             btns_row = QtWidgets.QHBoxLayout()
-            btn_set = QtWidgets.QPushButton("Ustaw")
+            btn_set = QtWidgets.QPushButton()
+            self.translator.tr(lambda: btn_set.setText(self.translate("Settings", "Set", None)))
             btn_set.clicked.connect(lambda _, c=category, k=key: self.set_app_hotkey(c, k))
-            btn_rem = QtWidgets.QPushButton("Usuń")
+            btn_rem = QtWidgets.QPushButton()
+            self.translator.tr(lambda: btn_rem.setText(self.translate("Settings", "Delete", None)))
             btn_rem.clicked.connect(lambda _, c=category, k=key: self.remove_app_hotkey(c, k))
             btns_row.addWidget(btn_set)
             btns_row.addWidget(btn_rem)
@@ -498,26 +604,33 @@ class ControlWindow(QtWidgets.QWidget):
         layout.addWidget(app_group)
 
         # Zwierzątko
-        pet_group = QtWidgets.QGroupBox("Zwierzątko")
+        pet_group = QtWidgets.QGroupBox()
+        self.translator.tr(lambda: pet_group.setTitle(self.translate("Settings", "Pet", None)))
         pet_layout = QtWidgets.QVBoxLayout()
 
         pet_hotkeys_cfg = [
-            ("show", "Pokaż zwierzątko"),
-            ("hide", "Ukryj zwierzątko"),
-            ("teleport", "Teleportuj zwierzątko")
+            ("show", "Show pet"),
+            ("hide", "Hide pet"),
+            ("teleport", "Teleport pet")
         ]
+        self.translate("Settings", "Show pet", None)
+        self.translate("Settings", "Hide pet", None)
+        self.translate("Settings", "Teleport pet", None)
         category = "pet"
         for key, label in pet_hotkeys_cfg:
-            row_lbl = QtWidgets.QLabel(f"{label}:")
-            current = self.shared_data.settings["hotkeys"][category][key]
-            val_lbl = QtWidgets.QLabel(current if current else "Brak")
+            row_lbl = QtWidgets.QLabel()
+            self.translator.tr(lambda row_lbl=row_lbl, label=label: row_lbl.setText(self.translate("Settings", label, None)+":"))
+            val_lbl = QtWidgets.QLabel()
+            self.translator.tr(lambda val_lbl=val_lbl, category=category, key=key: val_lbl.setText(h if (h := self.shared_data.settings["hotkeys"][category][key]) else self.translate("Settings", "No keyboard shortcut", None)))
             val_lbl.setStyleSheet("color: #aaa; font-style: italic;")
             self.lbl_app_hotkeys.setdefault(category, {})[key] = val_lbl
 
             btns_row = QtWidgets.QHBoxLayout()
-            btn_set = QtWidgets.QPushButton("Ustaw")
+            btn_set = QtWidgets.QPushButton()
+            self.translator.tr(lambda: btn_set.setText(self.translate("Settings", "Set", None)))
             btn_set.clicked.connect(lambda _, c=category, k=key: self.set_app_hotkey(c, k))
-            btn_rem = QtWidgets.QPushButton("Usuń")
+            btn_rem = QtWidgets.QPushButton()
+            self.translator.tr(lambda: btn_rem.setText(self.translate("Settings", "Delete", None)))
             btn_rem.clicked.connect(lambda _, c=category, k=key: self.remove_app_hotkey(c, k))
             btns_row.addWidget(btn_set)
             btns_row.addWidget(btn_rem)
@@ -530,20 +643,24 @@ class ControlWindow(QtWidgets.QWidget):
         layout.addWidget(pet_group)
 
         # Zaawansowane
-        advanced_group = QtWidgets.QGroupBox("Zaawansowane")
+        advanced_group = QtWidgets.QGroupBox()
+        self.translator.tr(lambda: advanced_group.setTitle(self.translate("Settings", "Advanced", None)))
         advanced_layout = QtWidgets.QVBoxLayout()
 
-        self.check_debug_mode = QtWidgets.QCheckBox("Tryb debugowania")
+        self.check_debug_mode = QtWidgets.QCheckBox()
+        self.translator.tr(lambda: self.check_debug_mode.setText(self.translate("Settings", "Debug mode", None)))
         self.check_debug_mode.setChecked(self.shared_data.settings["debug"]["active"])
         self.check_debug_mode.toggled.connect(self.update_debug_visibility)
         advanced_layout.addWidget(self.check_debug_mode)
 
-        self.check_hitbox_overlay = QtWidgets.QCheckBox("Wyświetlanie hitbox-ów")
+        self.check_hitbox_overlay = QtWidgets.QCheckBox()
+        self.translator.tr(lambda: self.check_hitbox_overlay.setText(self.translate("Settings", "Displaying hitboxes", None)))
         self.check_hitbox_overlay.setChecked(self.shared_data.settings["debug"]["hitbox_overlay"])
         self.check_hitbox_overlay.toggled.connect(self.update_debug_visibility)
         advanced_layout.addWidget(self.check_hitbox_overlay)
 
-        self.check_debug_window = QtWidgets.QCheckBox("Okno z informacjami")
+        self.check_debug_window = QtWidgets.QCheckBox()
+        self.translator.tr(lambda: self.check_debug_window.setText(self.translate("Settings", "Information window", None)))
         self.check_debug_window.setChecked(self.shared_data.settings["debug"]["debug_window"])
         self.check_debug_window.toggled.connect(self.update_debug_visibility)
         advanced_layout.addWidget(self.check_debug_window)
@@ -555,6 +672,12 @@ class ControlWindow(QtWidgets.QWidget):
         layout.addStretch()
         scroll_area.setWidget(container)
         main_layout.addWidget(scroll_area)
+
+    def change_language(self, index):
+        lang_code = self.combo_language.itemData(index)
+        self.save_settings_state()
+        self.translator.change_language(lang_code)
+        logger.debug(self.shared_data.settings)
 
     def set_app_hotkey(self, category: str, key: str):
         dialog = HotkeyDialog(self)
@@ -573,7 +696,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.hotkeys[category][key] = keyboard.add_hotkey(seq, self.hotkey_callbacks[category][key])
             self.lbl_app_hotkeys[category][key].setText(seq)
             self.save_settings_state()
-            QtWidgets.QMessageBox.information(self, "Sukces", f"Przypisano '{seq}'.")
+            QtWidgets.QMessageBox.information(self, self.translate("HotkeyDialog", "Success", None), self.translate("HotkeyDialog", f"Assigned '%x'.", None).replace("%x", seq))
 
     def remove_app_hotkey(self, category: str, key):
         seq = self.shared_data.settings["hotkeys"][category].get(key)
@@ -582,17 +705,18 @@ class ControlWindow(QtWidgets.QWidget):
             settings = self.shared_data.settings
             settings["hotkeys"][category][key] = None
             self.shared_data.settings = settings
-            self.lbl_app_hotkeys[category][key].setText("Brak")
+            self.translator.tr(lambda: self.lbl_app_hotkeys[category][key].setText(self.translate("HotkeyDialog", "None", None)))
             self.save_settings_state()
-            QtWidgets.QMessageBox.information(self, "Sukces", "Usunięto skrót.")
+            QtWidgets.QMessageBox.information(self, self.translate("HotkeyDialog", "Success", None), self.translate("HotkeyDialog", "Shortcut removed.", None))
         else:
-            QtWidgets.QMessageBox.information(self, "Informacja", "Brak przypisanego skrótu.")
+            QtWidgets.QMessageBox.information(self, self.translate("HotkeyDialog", "Information", None), self.translate("HotkeyDialog", "No shortcut assigned.", None))
 
     def save_settings_state(self) -> None:
         '''Saves current settings to settings.json'''
         settings = self.shared_data.settings
         settings["volume"] = self.slider_vol.value()
         settings["autostart"] = self.check_autostart.isChecked()
+        settings["language"] =  self.combo_language.currentData()
         settings["debug"]["active"] = self.check_debug_mode.isChecked()
         settings["debug"]["hitbox_overlay"] = self.check_hitbox_overlay.isChecked()
         settings["debug"]["debug_window"] = self.check_debug_window.isChecked()
@@ -602,7 +726,7 @@ class ControlWindow(QtWidgets.QWidget):
             with open("settings.json", "w", encoding="utf-8") as f:
                 json.dump(self.shared_data.settings, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            QtWidgets.QMessageBox.warning(self, "Błąd zapisu", f"Nie udało się zapisać ustawień: {e}")
+            QtWidgets.QMessageBox.warning(self, self.translate("Settings", "File saving error", None), self.translate("Settings", "Failed to save settings: %x", None).replace("%x", str(e)))
 
     def toggle_autostart(self, checked) -> None:
         '''Toggles application autostart in Windows registry'''
@@ -615,7 +739,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.check_autostart.blockSignals(True)
             self.check_autostart.setChecked(False)
             self.check_autostart.blockSignals(False)
-            QtWidgets.QMessageBox.information(self, "Autostart niedostępny", "Autostart jest dostępny tylko dla spakowanej aplikacji, a nie dla uruchamianego skryptu.")
+            QtWidgets.QMessageBox.information(self, self.translate("toggle_autostart", "Autostart unavailable", None), self.translate("toggle_autostart", "Autostart is only available for the packaged application, not for the script being run.", None))
             return
 
             # Dodawanie skryptu do autostartu (porzucone)
@@ -638,7 +762,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.check_autostart.blockSignals(True)
             self.check_autostart.setChecked(not checked)
             self.check_autostart.blockSignals(False)
-            QtWidgets.QMessageBox.warning(self, "Błąd rejestru", f"Nie udało się zmienić ustawienia autostartu:\n{e}")
+            QtWidgets.QMessageBox.warning(self, self.translate("toggle_autostart", "Registry error", None), self.translate("toggle_autostart", f"Failed to change autostart setting:\n%x", None).replace("%x", str(e)))
 
         self.save_settings_state()
 
@@ -668,15 +792,18 @@ class ControlWindow(QtWidgets.QWidget):
         # Przyciski
         btn_layout = QtWidgets.QHBoxLayout()
 
-        self.btn_spawn = QtWidgets.QPushButton("Stwórz obiekt (Kursor)")
+        self.btn_spawn = QtWidgets.QPushButton()
+        self.translator.tr(lambda: self.btn_spawn.setText(self.translate("Objects", "Create Object (Cursor)", None)))
         self.btn_spawn.setEnabled(False)
         self.btn_spawn.clicked.connect(self.spawn_selected)
 
-        self.btn_hotkey = QtWidgets.QPushButton("Przypisz skrót klawiszowy")
+        self.btn_hotkey = QtWidgets.QPushButton()
+        self.translator.tr(lambda: self.btn_hotkey.setText(self.translate("Objects", "Assign keyboard shortcut", None)))
         self.btn_hotkey.setEnabled(False)
         self.btn_hotkey.clicked.connect(self.bind_hotkey)
 
-        self.btn_remove_hotkey = QtWidgets.QPushButton("Usuń skrót")
+        self.btn_remove_hotkey = QtWidgets.QPushButton()
+        self.translator.tr(lambda: self.btn_remove_hotkey.setText(self.translate("Objects", "Remove shortcut", None)))
         self.btn_remove_hotkey.setEnabled(False)
         self.btn_remove_hotkey.clicked.connect(self.remove_hotkey)
 
@@ -685,13 +812,15 @@ class ControlWindow(QtWidgets.QWidget):
         btn_layout.addWidget(self.btn_remove_hotkey)
         layout.addLayout(btn_layout)
 
-        btn_clear_all = QtWidgets.QPushButton("🗑 Usuń wszystkie obiekty")
+        btn_clear_all = QtWidgets.QPushButton()
+        self.translator.tr(lambda: btn_clear_all.setText(self.translate("Objects", "🗑 Delete all objects", None)))
         btn_clear_all.setStyleSheet("background-color: #c0392b;")
         btn_clear_all.clicked.connect(self.clear_all_objects)
         layout.addWidget(btn_clear_all)
 
         # Info o aktualnych skrótach
-        self.lbl_hotkey_info = QtWidgets.QLabel("Zaznacz obiekt by zobaczyć skrót.")
+        self.lbl_hotkey_info = QtWidgets.QLabel()
+        self.translator.tr(lambda: self.lbl_hotkey_info.setText(self.translate("Objects", "Select an object to see a shortcut.", None)))
         self.lbl_hotkey_info.setStyleSheet("color: #888; font-style: italic;")
         layout.addWidget(self.lbl_hotkey_info)
 
@@ -701,7 +830,7 @@ class ControlWindow(QtWidgets.QWidget):
         '''Removes hotkey binding from selected object'''
         item = self.list_objects.currentItem()
         if not item:
-            QtWidgets.QMessageBox.information(self, "Brak obiektu", "Zaznacz obiekt z listy.")
+            QtWidgets.QMessageBox.information(self, self.translate("Objects", "No object", None), self.translate("Objects", "Select an object from the list.", None))
             return
 
         filename = item.text()
@@ -713,22 +842,19 @@ class ControlWindow(QtWidgets.QWidget):
             self.shared_data.settings = settings
             self.save_settings_state()
             self.on_object_selected(item)
-            QtWidgets.QMessageBox.information(self, "Sukces", f"Usunięto skrót dla '{filename}'")
+            QtWidgets.QMessageBox.information(self,  self.translate("Objects", "Success", None), self.translate("Objects", "Removed shortcut for '%1'", None).replace("%1", filename))
         else:
-            QtWidgets.QMessageBox.information(self, "Informacja", "Ten obiekt nie ma obecnie przypisanego skrótu.")
+            QtWidgets.QMessageBox.information(self,  self.translate("Objects", "Information", None), self.translate("Objects", "This object currently has no shortcut assigned.", None))
 
     def refresh_objects_list(self) -> None:
         '''Refreshes the list of available objects'''
         self.list_objects.clear()
         ASSETS_DIR = os.path.join("Assets", "Objects")
-        if os.path.exists(ASSETS_DIR):
-            files = [f for f in os.listdir(ASSETS_DIR) if f.lower().endswith(('.png', '.gif', '.jpg'))]
-            for f in files:
-                icon = QtGui.QIcon(os.path.join(ASSETS_DIR, f))
-                item = QtWidgets.QListWidgetItem(icon, f)
-                self.list_objects.addItem(item)
-        else:
-            self.list_objects.addItem("Brak folderu Assets/Objects!")
+        files = [f for f in os.listdir(ASSETS_DIR) if f.lower().endswith(('.png', '.gif', '.jpg'))]
+        for f in files:
+            icon = QtGui.QIcon(os.path.join(ASSETS_DIR, f))
+            item = QtWidgets.QListWidgetItem(icon, f)
+            self.list_objects.addItem(item)
 
     def spawn_selected(self) -> None:
         '''Creates selected object at cursor position'''
@@ -740,7 +866,7 @@ class ControlWindow(QtWidgets.QWidget):
         '''Binds keyboard hotkey to object creation'''
         item = self.list_objects.currentItem()
         if not item:
-            QtWidgets.QMessageBox.information(self, "Brak obiektu", "Zaznacz obiekt z listy.")
+            QtWidgets.QMessageBox.information(self,  self.translate("Objects", "No object", None), self.translate("Objects", "Select an object from the list.", None))
             return
 
         filename = item.text()
@@ -752,26 +878,26 @@ class ControlWindow(QtWidgets.QWidget):
                 return
 
             try:
-                self.hotkeys["create objects"][filename] = keyboard.add_hotkey(seq_str, lambda name=filename: self.conn.send(["spawn_object", name]))
+                self.hotkeys["objects"]["create"][filename] = keyboard.add_hotkey(seq_str, lambda name=filename: self.conn.send(["spawn_object", name]))
                 settings = self.shared_data.settings
                 settings["hotkeys"]["objects"]["create"][filename] = seq_str
                 self.shared_data.settings = settings
                 self.save_settings_state()
                 self.on_object_selected(item)
-                QtWidgets.QMessageBox.information(self, "Sukces", f"Przypisano '{seq_str}' do '{filename}'")
+                QtWidgets.QMessageBox.information(self, self.translate("Objects", "Success", None), self.translate("Objects", "'%1' assigned to '%2'", None).replace("%1", seq_str).replace("%2", filename))
             except Exception as e:
                 logger.error(f"ERROR: {e}")
-                QtWidgets.QMessageBox.information(self, "Błąd", f"Wystąpił problem podczas przypisywania '{seq_str}' do '{filename}'")
+                QtWidgets.QMessageBox.information(self, self.translate("Objects", "Error", None), self.translate("Objects", "There was a problem assigning '%1' to '%2'", None).replace("%1", seq_str).replace("%2", filename))
 
     def on_object_selected(self, item):
         '''Handles object selection in list'''
         filename = item.text()
         hotkey = self.shared_data.settings["hotkeys"]["objects"]["create"].get(filename)
         if hotkey:
-            self.lbl_hotkey_info.setText(f"Skrót: {hotkey}")
+            self.translator.tr(lambda: self.lbl_hotkey_info.setText(self.translate("Objects", "Shortcut:", None)+f" {hotkey}"))
             self.btn_remove_hotkey.setEnabled(True)
         else:
-            self.lbl_hotkey_info.setText("Brak przypisanego skrótu.")
+            self.translator.tr(lambda: self.lbl_hotkey_info.setText(self.translate("Objects", "No shortcut assigned.", None)))
             self.btn_remove_hotkey.setEnabled(False)
         self.btn_hotkey.setEnabled(True)
         self.btn_spawn.setEnabled(True)
@@ -785,10 +911,10 @@ class ControlWindow(QtWidgets.QWidget):
         event.ignore()
         self.hide()
 
-def show_about_dialog(parent=None):
+def show_about_dialog(app_version: str, parent=None):
     msg = QtWidgets.QMessageBox(parent)
-    msg.setWindowTitle("About DesktopPet v3")
-    msg.setText("<b>DesktopPet v3</b><br><br>An interactive desktop pet application featuring physics simulation, control panel, and sophisticated system windows behavior.<br><br>Version: 1.0.0<br>Repository: <a href='https://github.com/czarchmA8/DesktopPet_v3' style='color: #0d6efd;'>czarchmA8/DesktopPet_v3</a>")
+    msg.setWindowTitle(QtCore.QCoreApplication.translate("AboutDialog", "DesktopPet_v3", None))
+    msg.setText(QtCore.QCoreApplication.translate("AboutDialog", "Description DesktopPet_v3", None).replace("%app_version", app_version))
     msg.setIcon(QtWidgets.QMessageBox.Icon.Information)
     msg.setStyleSheet("QWidget { background-color: #2b2b2b; color: #ffffff; } QPushButton { background-color: #0d6efd; color: white; padding: 5px 15px; }")
     msg.exec()
@@ -801,20 +927,26 @@ def run_app(conn, shared_data, log_queue) -> None:
 
     app = QtWidgets.QApplication(sys.argv)
 
-    window = ControlWindow(conn, shared_data)
+    translator = Translator(shared_data.settings["language"])
+
+    window = ControlWindow(conn, shared_data, translator)
     # window.show()
 
     # Tworzenie tray icon
     tray = QtWidgets.QSystemTrayIcon(QtGui.QIcon("icon.ico"), app)
     menu = QtWidgets.QMenu()
-    show_action = menu.addAction("Pokaż Panel")
+    show_action = menu.addAction("Show Panel")
+    translator.tr(lambda: show_action.setText(QtCore.QCoreApplication.translate("tray-icon", "Show Panel", None)))
     show_action.triggered.connect(lambda: (window.show(), window.raise_(), window.activateWindow()))
 
-    about_action = menu.addAction("About/Info")
-    about_action.triggered.connect(lambda: show_about_dialog(window))
+    menu.addSeparator()
+    about_action = menu.addAction("About")
+    translator.tr(lambda: about_action.setText(QtCore.QCoreApplication.translate("tray-icon", "About", None)))
+    about_action.triggered.connect(lambda: show_about_dialog(shared_data.APP_VERSION, window))
 
     menu.addSeparator()
-    quit_action = menu.addAction("Wyjdź")
+    quit_action = menu.addAction("Close")
+    translator.tr(lambda: quit_action.setText(QtCore.QCoreApplication.translate("tray-icon", "Close", None)))
     quit_action.triggered.connect(app.quit)
     tray.setContextMenu(menu)
     tray.show()

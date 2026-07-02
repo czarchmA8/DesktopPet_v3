@@ -1,7 +1,7 @@
 import os
 import random
 import time
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 import win32gui, win32con
 import math
 from dataclasses import dataclass

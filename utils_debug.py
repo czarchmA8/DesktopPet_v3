@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 import re
 from dataclasses import is_dataclass, dataclass, fields, field
 from typing import Optional
