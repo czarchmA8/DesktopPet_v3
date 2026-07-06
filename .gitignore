@@ -4,5 +4,5 @@ __pycache__/
 logs/*
 !logs/.gitkeep
 settings.json
-/languages/*
-!/languages/*.qm
+/translations/*
+!/translations/*.qm
