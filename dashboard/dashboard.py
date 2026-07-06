@@ -1,5 +1,5 @@
 import sys
-import os
+from pathlib import Path
 import json
 from PySide6 import QtWidgets, QtCore, QtGui
 import winreg
@@ -288,7 +288,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.hotkeys["objects"]["create"] = {
             name: _add_hotkey(hotkeys_settings["objects"]["create"][name], lambda name=name: conn.send(["spawn_object", name]))
             for name in hotkeys_settings["objects"].get("create", {})
-            if os.path.exists(os.path.join("Assets", "Objects", name))
+            if Path("Assets", "Objects", name).exists()
         }
 
         self.translator.tr(lambda: self.setWindowTitle(self.translate("ControlWindow", "DesktopPet_v3", "App title")))
@@ -528,8 +528,8 @@ class ControlWindow(QtWidgets.QWidget):
 
         self.combo_language = QtWidgets.QComboBox()
 
-        LANG_DIR = "translations"
-        lang_codes = sorted(os.path.splitext(f)[0] for f in os.listdir(LANG_DIR) if f.lower().endswith(".qm")) if os.path.isdir(LANG_DIR) else []
+        LANG_DIR = Path("translations")
+        lang_codes = sorted(file.stem for file in LANG_DIR.iterdir() if file.suffix == ".qm")
 
         for lang_code in lang_codes:
             name = QtCore.QLocale(lang_code).nativeLanguageName().capitalize() or lang_code
@@ -828,11 +828,11 @@ class ControlWindow(QtWidgets.QWidget):
     def refresh_objects_list(self) -> None:
         '''Refreshes the list of available objects'''
         self.list_objects.clear()
-        ASSETS_DIR = os.path.join("Assets", "Objects")
-        files = [f for f in os.listdir(ASSETS_DIR) if f.lower().endswith(('.png', '.gif', '.jpg'))]
-        for f in files:
-            icon = QtGui.QIcon(os.path.join(ASSETS_DIR, f))
-            item = QtWidgets.QListWidgetItem(icon, f)
+        ASSETS_DIR = Path("Assets", "Objects")
+        files: list[Path] = [file for file in Path(ASSETS_DIR).iterdir() if file.suffix in ('.png', '.gif', '.jpg')]
+        for file in files:
+            icon = QtGui.QIcon(str(file))
+            item = QtWidgets.QListWidgetItem(icon, file.name)
             self.list_objects.addItem(item)
 
     def spawn_selected(self) -> None:
