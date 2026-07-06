@@ -6,10 +6,13 @@ import win32gui, win32con
 import ctypes
 from ctypes import wintypes
 import logging
+from pathlib import Path
+import json
 
 from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
 from logger_setup import setup_process_logger
 from desktop.collisions import XYXY_Rectangle, XYWH_Rectangle, CollisionTypes, CustomHitboxCollisions
+from dashboard.objects_editor import generate_hull_vertices
 
 logger: logging.Logger = None
 
@@ -20,12 +23,13 @@ class WorldObject(QtWidgets.QWidget):
         shared_data,
         world_objects: list['WorldObject'],
         space: pymunk.Space,
-        image_path: str,
+        image_path: Path,
         start_x: int,
         start_y: int,
-        mass: float=10.0,
-        elasticity: float=0.4,
-        friction: float=0.7
+        vertices: list[tuple[float, float] | list[float]]=None,
+        mass: float=None,
+        elasticity: float=None,
+        friction: float=None
     ):
         super().__init__()
         self.shared_data = shared_data
@@ -38,6 +42,28 @@ class WorldObject(QtWidgets.QWidget):
         self.label.setPixmap(self.original_pixmap)
         self.w, self.h = self.original_pixmap.width(), self.original_pixmap.height()
         self.resize(self.w, self.h)
+
+        object_settings_path = image_path.with_suffix(".json")
+        if object_settings_path.exists():
+            with open(object_settings_path, "r", encoding="utf-8") as f:
+                object_settings: dict = json.load(f)
+            vertices: list[tuple[float, float] | list[float]] = vertices if vertices else object_settings["vertices"]
+            mass: float = mass if mass else object_settings["mass"]
+            elasticity: float = elasticity if elasticity else object_settings["elasticity"]
+            friction: float = friction if friction else object_settings["friction"]
+        else:
+            vertices: list[tuple[float, float] | list[float]] = vertices if vertices else generate_hull_vertices(self.original_pixmap)
+            mass: float = mass if mass else 10.0
+            elasticity: float = elasticity if elasticity else 0.7
+            friction: float = friction if friction else 0.3
+            with open(object_settings_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "vertices": vertices,
+                    "mass": mass,
+                    "elasticity": elasticity,
+                    "friction": friction
+                }, f, ensure_ascii=False)
+            logger.debug(f"A new file \"{object_settings_path.name}\" has been created for the object")
 
         self.hwnd_self = int(self.winId())
 
@@ -60,11 +86,10 @@ class WorldObject(QtWidgets.QWidget):
         self.debug_expanded_platform_rect: XYXY_Rectangle = None
 
         # --- Ciało fizyczne ---
-        hull: list[tuple[float, float]] = self.generate_hull_vertices(self.original_pixmap)
-        moment = pymunk.moment_for_poly(mass, hull)
+        moment = pymunk.moment_for_poly(mass, vertices)
         self.body = pymunk.Body(mass, moment)
         self.body.position = (start_x, start_y)
-        self.shape = pymunk.Poly(self.body, hull)
+        self.shape = pymunk.Poly(self.body, vertices)
         self.shape.elasticity = elasticity
         self.shape.friction = friction
         self.shape.collision_type = CollisionTypes.OBJECT
@@ -80,17 +105,6 @@ class WorldObject(QtWidgets.QWidget):
 
         self.pos_x, self.pos_y = start_x, start_y
         self.angle, self.old_angle = 0.0, 0.0
-
-    def generate_hull_vertices(self, pixmap) -> list[pymunk.Vec2d] | list[tuple[float, float]]:
-        '''Generates convex hull vertices from image transparency'''
-        image = pixmap.toImage()
-        width, height = image.width(), image.height()
-        points = []
-        for y in range(0, height, 1):
-            for x in range(0, width, 1):
-                if image.pixelColor(x, y).alpha() > 20:
-                    points.append((x - width / 2, y - height / 2))
-        return pymunk.autogeometry.to_convex_hull(points, 0) if points else [(-10, -10), (10, -10), (10, 10), (-10, 10)]
 
     def tick(self, dt: float, window_XYXY_Rect: tuple[int, int, int, int]):
         '''Updates physics and visuals for world object'''
@@ -220,7 +234,9 @@ class WorldObject(QtWidgets.QWidget):
             self.angle = math.degrees(self.body.angle)
 
 class WorldObjectsManager:
-    def __init__(self, log_queue):
+    def __init__(self, shared_data, log_queue):
+        self.shared_data = shared_data
+
         global logger
         logger = setup_process_logger("world_objects", log_queue)
         logger.info("Creating the WorldObjectsManager...")
@@ -306,3 +322,21 @@ class WorldObjectsManager:
 
         if object_body.velocity.y > 0:
             object_body.velocity = pymunk.Vec2d(object_body.velocity.x, 0)
+
+    def spawn_object(self, path: str):
+        img_path = Path("Assets") / "Objects" / path
+        if not img_path.exists():
+            logger.error("[Obj] File not found:", img_path)
+
+        x, y = win32gui.GetCursorPos()
+        obj = WorldObject(self.shared_data, self.world_objects, self.space, img_path, x, y)
+        self.world_objects.append(obj)
+        obj.show()
+
+    def clear_all_objects(self):
+        for obj in list(self.world_objects):
+            self.space.remove(obj.platform_body, obj.platform_shape)
+            self.space.remove(obj.body, obj.shape)
+            obj.deleteLater()
+            obj.close()
+        self.world_objects.clear()

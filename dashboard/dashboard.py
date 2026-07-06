@@ -8,46 +8,11 @@ import win32api, win32con, ctypes
 from ctypes import wintypes
 import logging
 
+from dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from logger_setup import setup_process_logger
+from dashboard.translator import Translator
 
 logger: logging.Logger = None
-
-class Translator:
-    '''
-    Manages dynamic language switching within the application, allowing on-the-fly text updates without requiring a restart.
-
-    Translation Workflow (Qt/PySide):
-    1. Extract/Update strings: Run `pyside6-lupdate dashboard.py -ts languages/english.ts` to scan the code for translatable text.
-    2. Translate: Open the `.ts` file in `pyside6-linguist` (or a text editor) and add your translations.
-    3. Compile: Run `pyside6-lrelease languages/english.ts` to generate the compiled `.qm` file used by the application.
-    '''
-    def __init__(self, lang_code: str):
-        self._calls: list = []
-        self._translator = QtCore.QTranslator()
-        self.change_language(lang_code)
-
-    def tr(self, func):
-        """
-        Registers and executes a translation callback function.
-
-        Example:
-            translator.tr(lambda show_action=show_action: show_action.setText(
-                QtCore.QCoreApplication.translate("tray-icon", "Show Panel", None)
-            ))
-        """
-        self._calls.append(func)
-        func()
-
-    def retranslate_all(self) -> None:
-        for func in self._calls:
-            func()
-
-    def change_language(self, lang_code: str) -> None:
-        app = QtWidgets.QApplication.instance()
-        app.removeTranslator(self._translator)
-        self._translator.load(os.path.join("languages", f"{lang_code}.qm"))
-        app.installTranslator(self._translator)
-        self.retranslate_all()
 
 class StatRow(QtWidgets.QWidget):
     '''Widget displaying a statistic with label, progress bar, and percentage'''
@@ -288,6 +253,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.shared_data = shared_data
 
         self.translator = translator
+
+        self.editor_window: ObjectsEditorWindow | None = None
 
         def _add_hotkey(sequence, callback):
             """Registers hotkey if sequence is not None/empty, otherwise returns None."""
@@ -544,8 +511,13 @@ class ControlWindow(QtWidgets.QWidget):
         obj_hk_btns.addWidget(btn_set_clear_hk)
         obj_hk_btns.addWidget(btn_rem_clear_hk)
 
+        btn_open_editor = QtWidgets.QPushButton()
+        self.translator.tr(lambda: btn_open_editor.setText(self.translate("Settings", "Open objects editor", None)))
+        btn_open_editor.clicked.connect(self.open_object_editor)
+
         obj_layout.addWidget(val_lbl)
         obj_layout.addLayout(obj_hk_btns)
+        obj_layout.addWidget(btn_open_editor)
         obj_group.setLayout(obj_layout)
         layout.addWidget(obj_group)
 
@@ -556,7 +528,7 @@ class ControlWindow(QtWidgets.QWidget):
 
         self.combo_language = QtWidgets.QComboBox()
 
-        LANG_DIR = "languages"
+        LANG_DIR = "translations"
         lang_codes = sorted(os.path.splitext(f)[0] for f in os.listdir(LANG_DIR) if f.lower().endswith(".qm")) if os.path.isdir(LANG_DIR) else []
 
         for lang_code in lang_codes:
@@ -912,6 +884,23 @@ class ControlWindow(QtWidgets.QWidget):
     def clear_all_objects(self):
         '''Removes all spawned objects from the world'''
         self.conn.send(["clear_all_objects"])
+
+    def open_object_editor(self, image_path=None) -> None:
+        if self.editor_window is not None:
+            self.editor_window.destroy()
+            self.editor_window = None
+            self.translator.delete_calls_from_owner("dashboard.object_editor")
+        if self.editor_window is None:
+            self.editor_window = ObjectsEditorWindow(self.translator, image_path=image_path)
+            self.editor_window.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.editor_window.destroyed.connect(self._on_editor_window_closed)
+            self.editor_window.show()
+            self.editor_window.raise_()
+            self.editor_window.activateWindow()
+
+    def _on_editor_window_closed(self):
+        self.editor_window = None
+        self.translator.delete_calls_from_owner("dashboard.object_editor")
 
     def closeEvent(self, event):
         '''Hides window instead of closing'''
