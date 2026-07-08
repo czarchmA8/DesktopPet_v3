@@ -2,7 +2,7 @@ from multiprocessing import Process, Pipe, Manager, Queue
 import sys
 import traceback
 from desktop.app import run_app as run_app_desktop
-from dashboard import run_app as run_app_dashboard
+from dashboard.dashboard import run_app as run_app_dashboard
 import json
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QIcon

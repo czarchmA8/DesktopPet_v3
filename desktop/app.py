@@ -2,7 +2,6 @@ import sys
 import time
 from PySide6 import QtWidgets, QtCore, QtGui
 import logging
-import os
 import win32gui, win32con
 
 import utils_debug
@@ -21,7 +20,7 @@ class DesktopApp(QtWidgets.QApplication):
         self.shared_data = shared_data
         self.log_queue = log_queue
 
-        self.world_objects_manager = WorldObjectsManager(self.log_queue)
+        self.world_objects_manager = WorldObjectsManager(self.shared_data, self.log_queue)
         self.pet = PetWidget(self.log_queue, shared_data, self.world_objects_manager.world_objects)
         self.pet.show()
 
@@ -135,21 +134,9 @@ class DesktopApp(QtWidgets.QApplication):
             msg = self.conn.recv()
             logger.info(f"[Pet] Received IPC: {msg}")
             if msg[0] == "spawn_object":
-                img_path = os.path.join("Assets", "Objects", msg[1])
-                if not os.path.exists(img_path):
-                    logger.error("[Obj] File not found:", img_path)
-
-                x, y = win32gui.GetCursorPos()
-                obj = WorldObject(self.shared_data, self.world_objects_manager.world_objects, self.world_objects_manager.space, img_path, x, y)
-                self.world_objects_manager.world_objects.append(obj)
-                obj.show()
+                self.world_objects_manager.spawn_object(msg[1])
             elif msg[0] == "clear_all_objects":
-                for obj in list(self.world_objects_manager.world_objects):
-                    self.world_objects_manager.space.remove(obj.platform_body, obj.platform_shape)
-                    self.world_objects_manager.space.remove(obj.body, obj.shape)
-                    obj.deleteLater()
-                    obj.close()
-                self.world_objects_manager.world_objects.clear()
+                self.world_objects_manager.clear_all_objects()
             elif msg[0] == "toggle_debug":
                 self.update_debug_visibility()
             elif msg[0] == "show_pet":
