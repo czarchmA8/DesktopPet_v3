@@ -48,12 +48,22 @@ def generate_hull_vertices(pixmap: QPixmap, alpha_threshold: int = 20, tolerance
     arr = arr.reshape((height, img.bytesPerLine()))[:, : width * 4].reshape((height, width, 4))
     alpha = arr[:, :, 3]
     ys, xs = np.nonzero(alpha > alpha_threshold)
-    points: list[tuple[float, float]] = [(float(x - width / 2), float(y - height / 2)) for x, y in zip(xs.tolist(), ys.tolist())]
 
-    if not points:
+    if xs.size == 0:
         return list(DEFAULT_HULL)
 
+    w2, h2 = width / 2.0, height / 2.0
+    xs = xs.astype(np.float64)
+    ys = ys.astype(np.float64)
+    corner_dx = np.array([0.0, 1.0, 1.0, 0.0])
+    corner_dy = np.array([0.0, 0.0, 1.0, 1.0])
+    px = (xs[:, None] + corner_dx[None, :] - w2).ravel()
+    py = (ys[:, None] + corner_dy[None, :] - h2).ravel()
+    points: list[tuple[float, float]] = list(zip(px.tolist(), py.tolist()))
+
     hull = pymunk.autogeometry.to_convex_hull(points, tolerance)
+    if len(hull) > 1 and hull[0] == hull[-1]:
+        hull = hull[:-1]
     return [(float(p[0]), float(p[1])) for p in hull]
 
 class HitboxCanvas(QWidget):
