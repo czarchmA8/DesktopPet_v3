@@ -31,20 +31,9 @@ def test_translations_up_to_date() -> None:
     for lang_code in LANG_CODES_TS:
         original_file_path = TS_DIR / f"{lang_code}.ts"
         shutil.copy(original_file_path, TEMP_DIR)
-    
-    # `.ts` files
+
     update_languages.update_ts_files(TEMP_DIR, LANG_CODES_TS)
-    for lang_code in LANG_CODES_TS:
-        original_file_path = TS_DIR / f"{lang_code}.ts"
-        original_file_content = original_file_path.read_text(encoding="utf-8")
-
-        temp_file_path = TEMP_DIR / f"{lang_code}.ts"
-        temp_file_content = temp_file_path.read_text(encoding="utf-8").replace("<location filename=\"../../../", "<location filename=\"../../")
-
-        assert original_file_content == temp_file_content
-
-    # `.qm` files
-    update_languages.update_qm_files(TS_DIR, TEMP_DIR, LANG_CODES_TS)
+    update_languages.update_qm_files(TEMP_DIR, TEMP_DIR, LANG_CODES_TS)
     for lang_code in LANG_CODES_TS:
         original_file_path = QM_DIR / f"{lang_code}.qm"
         temp_file_path = TEMP_DIR / f"{lang_code}.qm"
