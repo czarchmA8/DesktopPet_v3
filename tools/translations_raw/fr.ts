@@ -677,12 +677,12 @@ Dépôt : &lt;a href=&apos;https://github.com/czarchmA8/DesktopPet_v3&apos; styl
         <translation>Afficher le panneau</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="940"/>
+        <location filename="../../dashboard/dashboard.py" line="945"/>
         <source>About</source>
         <translation>À propos</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="945"/>
+        <location filename="../../dashboard/dashboard.py" line="950"/>
         <source>Close</source>
         <translation>Fermer</translation>
     </message>

@@ -677,12 +677,12 @@
         <translation>पैनल दिखाएं</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="940"/>
+        <location filename="../../dashboard/dashboard.py" line="945"/>
         <source>About</source>
         <translation>के बारे में (About)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="945"/>
+        <location filename="../../dashboard/dashboard.py" line="950"/>
         <source>Close</source>
         <translation>बंद करें</translation>
     </message>
