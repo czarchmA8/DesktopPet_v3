@@ -7,7 +7,7 @@ import numpy as np
 from PySide6.QtCore import Qt, QPointF, QRectF, QSizeF, Signal, QTimer, QCoreApplication
 from PySide6.QtGui import (
     QAction, QBrush, QColor,
-    QCursor, QGuiApplication, QImage,
+    QCursor, QImage,
     QKeySequence, QPainter, QPen,
     QPixmap, QPolygonF, QIcon
 )

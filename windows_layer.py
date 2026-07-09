@@ -3,6 +3,7 @@ from ctypes import wintypes
 from functools import lru_cache
 import os
 import psutil
+from typing import TypedDict
 import win32con
 import win32gui
 import win32process
@@ -11,9 +12,13 @@ import win32process
 # Configuration
 # ---------------------------------------------------------------------------
 
-List_Classes   = {"BlackList": True,  "List": ["Progman", "Shell_TrayWnd"]}
-List_Titles    = {"BlackList": True,  "List": []}
-List_exe_paths = {"BlackList": True,  "List": []}
+class FilterList(TypedDict):
+    BlackList: bool
+    List: list[str]
+
+List_Classes: FilterList   = {"BlackList": True,  "List": ["Progman", "Shell_TrayWnd"]}
+List_Titles: FilterList    = {"BlackList": True,  "List": []}
+List_exe_paths: FilterList = {"BlackList": True,  "List": []}
 
 # ---------------------------------------------------------------------------
 # Module-level DWM handle – loaded once at import
@@ -103,7 +108,7 @@ def is_real_window(hwnd: int) -> bool:
 
     return True
 
-def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows: bool = True, blacklist_hwnd: list[int] = None) -> tuple[int, int]:
+def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows: bool = True, blacklist_hwnd: list[int] | None = None) -> tuple[int | None, int | None]:
     '''Gets the nearest visible windows above and below a target window'''
     if not win32gui.IsWindow(target_hwnd):
         return None, None
@@ -162,7 +167,7 @@ def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows:
 
         return above, below
 
-def get_windows_above_and_below(target_hwnd: int, only_real_windows: bool, blacklist_hwnd: list[int] = None) -> tuple[list[int], list[int]]:
+def get_windows_above_and_below(target_hwnd: int, only_real_windows: bool, blacklist_hwnd: list[int] | None = None) -> tuple[list[int], list[int]]:
     '''Gets all windows above and below a target window in z-order'''
     blacklist_hwnd = [] if blacklist_hwnd is None else blacklist_hwnd
     above_list = []
@@ -197,13 +202,13 @@ if __name__ == "__main__":
         print("Failed to import module containing legacy functions")
         old_functions_not_exist = True
 
-    hwnd: str = input("Enter window hwnd: ")
-    if hwnd == "":
+    hwnd_input: str = input("Enter window hwnd: ")
+    if hwnd_input == "":
         hwnd: int = win32gui.GetForegroundWindow()
-    elif hwnd.isdigit():
-        hwnd: int = int(hwnd)
+    elif hwnd_input.isdigit():
+        hwnd = int(hwnd_input)
     else:
-        hwnd: int = win32gui.FindWindow(None, hwnd)
+        hwnd = win32gui.FindWindow(None, hwnd_input)
     above, below = get_windows_above_and_below(hwnd, True)
 
     print(f"\nhwnd: {hwnd} ({win32gui.GetWindowText(hwnd)})")
@@ -268,7 +273,7 @@ if __name__ == "__main__":
             [lambda: windows_layer_old.get_window_above_v1(hwnd, only_real_windows), "get_window_above_v1"]
         ])
 
-    benchmark_performance(f"is_real_window()", [
+    benchmark_performance("is_real_window()", [
         [lambda: is_real_window(hwnd), "is_real_window_v3"]
     ] + [] if old_functions_not_exist else [
         [lambda: windows_layer_old.is_real_window_v2(hwnd), "is_real_window_v2"],

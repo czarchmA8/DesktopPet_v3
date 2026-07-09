@@ -2,14 +2,14 @@ import sys
 import time
 from PySide6 import QtWidgets, QtCore, QtGui
 import logging
-import win32gui, win32con
+import win32gui
 
 import utils_debug
 from logger_setup import setup_process_logger
 from desktop.pet import PetWidget
-from desktop.world_objects import WorldObjectsManager, WorldObject
+from desktop.world_objects import WorldObjectsManager
 
-logger: logging.Logger = None
+logger: logging.Logger = logging.getLogger(__name__)
 
 class DesktopApp(QtWidgets.QApplication):
     '''Główny menedżer pętli odświeżania i okien na pulpicie'''

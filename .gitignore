@@ -6,3 +6,5 @@ logs/*
 settings.json
 /translations/*
 !/translations/*.qm
+/tools/output/*
+!tools/output/.gitkeep

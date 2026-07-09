@@ -4,7 +4,7 @@ import json
 from PySide6 import QtWidgets, QtCore, QtGui
 import winreg
 import keyboard
-import win32api, win32con, ctypes
+import ctypes
 from ctypes import wintypes
 import logging
 
@@ -12,7 +12,7 @@ from dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from logger_setup import setup_process_logger
 from dashboard.translator import Translator
 
-logger: logging.Logger = None
+logger: logging.Logger = logging.getLogger(__name__)
 
 class StatRow(QtWidgets.QWidget):
     '''Widget displaying a statistic with label, progress bar, and percentage'''
@@ -88,7 +88,7 @@ class CustomKeySequenceEdit(QtWidgets.QLineEdit):
     user32.GetKeyNameTextW.restype = ctypes.c_int
     user32.GetKeyNameTextW.argtypes = (wintypes.LPARAM, wintypes.LPWSTR, ctypes.c_int)
 
-    def get_key_name(self, vk_code: int = None, scan_code: int = None) -> str | None:
+    def get_key_name(self, vk_code: int | None = None, scan_code: int | None = None) -> str | None:
         '''Gets the display name of a key from virtual key code'''
         if vk_code is None and scan_code is None:
             raise Exception()
@@ -336,7 +336,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.tabs.addTab(self.tab_objects, "Objects")
         self.translator.tr(lambda: self.tabs.setTabText(2, self.translate("ControlWindow", "Objects", "Tab text")))
 
-        self.lbl_app_hotkeys: dict = None
+        self.lbl_app_hotkeys: dict[str, dict] = {}
         self.setup_stats_ui()
         self.setup_settings_ui()
         self.setup_objects_ui()
@@ -675,7 +675,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.hotkeys[category][key] = keyboard.add_hotkey(seq, self.hotkey_callbacks[category][key])
             self.lbl_app_hotkeys[category][key].setText(seq)
             self.save_settings_state()
-            QtWidgets.QMessageBox.information(self, self.translate("HotkeyDialog", "Success", None), self.translate("HotkeyDialog", f"Assigned '%x'.", None).replace("%x", seq))
+            QtWidgets.QMessageBox.information(self, self.translate("HotkeyDialog", "Success", None), self.translate("HotkeyDialog", "Assigned '%x'.", None).replace("%x", seq))
 
     def remove_app_hotkey(self, category: str, key):
         seq = self.shared_data.settings["hotkeys"][category].get(key)
@@ -741,7 +741,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.check_autostart.blockSignals(True)
             self.check_autostart.setChecked(not checked)
             self.check_autostart.blockSignals(False)
-            QtWidgets.QMessageBox.warning(self, self.translate("toggle_autostart", "Registry error", None), self.translate("toggle_autostart", f"Failed to change autostart setting:\n%x", None).replace("%x", str(e)))
+            QtWidgets.QMessageBox.warning(self, self.translate("toggle_autostart", "Registry error", None), self.translate("toggle_autostart", "Failed to change autostart setting:\n%x", None).replace("%x", str(e)))
 
         self.save_settings_state()
 
@@ -751,7 +751,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.check_hitbox_overlay.setEnabled(checked)
         self.check_debug_window.setEnabled(checked)
 
-    def update_debug_visibility(self, checked: bool=None):
+    def update_debug_visibility(self, checked: bool | None=None):
         '''Updates visibility of debug overlays'''
         self._update_debug_check_states()
 
@@ -933,7 +933,12 @@ def run_app(conn, shared_data, log_queue) -> None:
     menu = QtWidgets.QMenu()
     show_action = menu.addAction("Show Panel")
     translator.tr(lambda: show_action.setText(QtCore.QCoreApplication.translate("tray-icon", "Show Panel", None)))
-    show_action.triggered.connect(lambda: (window.show(), window.raise_(), window.activateWindow()))
+    def _show_and_focus_window() -> None:
+        window.show()
+        window.raise_()
+        window.activateWindow()
+
+    show_action.triggered.connect(_show_and_focus_window)
 
     menu.addSeparator()
     about_action = menu.addAction("About")

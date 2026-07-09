@@ -5,13 +5,13 @@ from dataclasses import dataclass
 @dataclass
 class XYXY_Rectangle:
     '''Rectangle defined by (x, y, x2, y2) coordinates'''
-    x: int
-    y: int
-    x2: int
-    y2: int
+    x: int | float
+    y: int | float
+    x2: int | float
+    y2: int | float
 
     @property
-    def as_tuple(self) -> tuple[int, int, int, int]:
+    def as_tuple(self) -> tuple[int | float, int | float, int | float, int | float]:
         """Returns rectangle as a clean tuple (x, y, x2, y2)"""
         return (self.x, self.y, self.x2, self.y2)
 
@@ -24,13 +24,13 @@ class XYXY_Rectangle:
 @dataclass
 class XYWH_Rectangle:
     '''Rectangle defined by (x, y, width, height)'''
-    x: int
-    y: int
-    width: int
-    height: int
+    x: int | float
+    y: int | float
+    width: int | float
+    height: int | float
 
     @property
-    def as_tuple(self) -> tuple[int, int, int, int]:
+    def as_tuple(self) -> tuple[int | float, int | float, int | float, int | float]:
         """Returns rectangle as a clean tuple (x, y, width, height)"""
         return (self.x, self.y, self.width, self.height)
 

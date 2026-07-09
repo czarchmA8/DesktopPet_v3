@@ -125,6 +125,8 @@ Communication between processes occurs via a structured JSON protocol sent throu
 
 ### Project Structure
 
+#### Main structure of the application:
+
 | File                              | Description                                                                                                                                                               |
 |:----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`main.py`**                     | **Starting point.** Launches `dashboard.py` and `desktop/app.py` as separate processes.                                                                                   |
@@ -146,6 +148,17 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`logs/`**         | Stores application log files.                                                           |
 | **`Assets/`**       | Contains all project assets, including sounds, animations, and object images.           |
 | **`translations/`** | Contains Compiled Qt translation files (.qm) used for application internationalization. |
+
+#### Additional files and folders:
+
+| File / Directory                | Description                                                                                                                                               |
+|:--------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`requirements_dev.txt`**      | **Dependencies list.** Contains external Python packages required by additional scripts.                                                                  |
+| **`tools/`**                    | **Helper scripts.** Contains scripts useful only for the developer                                                                                        |
+| **`tools/run_tests.py`**        | **Test runner.** Runs the full code-quality pipeline: Ruff linting, MyPy type checking, dependency verification via `pipreqs`, and the pytest test suite. |
+| **`tools/update_languages.py`** | **Translation updater.** Automates the Qt translation workflow — regenerates `.ts` files from the source code and compiles them into `.qm` files.         |
+| **`.github/`**                  | **GitHub configuration.** Contains issue templates, the pull request template, and CI workflows.                                                          |
+| **`tests/`**                    | **Tests.** Contains the automated tests suite                                                                                                             |
 
 ### Performance Optimizations
 
