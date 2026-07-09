@@ -29,14 +29,14 @@ def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_qu
     sys.excepthook = child_except_hook
     try:
         run_func(conn, shared_data, log_queue)
-    except Exception as e:
+    except Exception:
         error_msg = f"{process_name} PROCESS ERROR:\n{traceback.format_exc()}"
         error_queue.put(error_msg)
         # print(error_msg)
 
 def show_error_msg_box(error_msg) -> None:
     '''Displays an error message dialog box'''
-    app = QApplication(sys.argv)
+    QApplication(sys.argv)
     msg_box = QMessageBox()
     msg_box.setWindowTitle("DesktopPet v3 - Critical Error")
     msg_box.setWindowIcon(QIcon("icon.ico"))
@@ -62,8 +62,8 @@ def main() -> None:
     sys.excepthook = except_hook
     # Połączenie pomiędzy procesami
     conn1, conn2 = Pipe()
-    error_queue = Queue()
-    log_queue = Queue()
+    error_queue: Queue = Queue()
+    log_queue: Queue = Queue()
 
     if not os.path.exists("settings.json"):
         shutil.copy("settings.default.json", "settings.json")
@@ -134,7 +134,7 @@ def main() -> None:
         except KeyboardInterrupt:
             logger.error("[⚠️] User interruption")
         except Exception:
-            logger.exception(f"[❌] Unexpected critical error in main loop")
+            logger.exception("[❌] Unexpected critical error in main loop")
         finally:
             for p in processes:
                 if p.is_alive():

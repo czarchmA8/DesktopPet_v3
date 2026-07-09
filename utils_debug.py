@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 import re
-from dataclasses import is_dataclass, dataclass, fields, field
+from dataclasses import is_dataclass, dataclass, fields
 from typing import Optional
 import time
 
@@ -56,17 +56,17 @@ class Color:
     class StringifyColors:
         '''Color configuration for different value types'''
         def __init__(self,
-                     color_str: 'Color'=None,
-                     color_int: 'Color'=None,
-                     color_float: 'Color'=None,
-                     color_false: 'Color'=None,
-                     color_true: 'Color'=None,
-                     color_none: 'Color'=None,
-                     color_list: 'Color'=None,
-                     color_dict: 'Color'=None,
-                     color_tuple: 'Color'=None,
-                     color_class: 'Color'=None,
-                     color_arg: 'Color'=None
+                     color_str: Optional['Color']=None,
+                     color_int: Optional['Color']=None,
+                     color_float: Optional['Color']=None,
+                     color_false: Optional['Color']=None,
+                     color_true: Optional['Color']=None,
+                     color_none: Optional['Color']=None,
+                     color_list: Optional['Color']=None,
+                     color_dict: Optional['Color']=None,
+                     color_tuple: Optional['Color']=None,
+                     color_class: Optional['Color']=None,
+                     color_arg: Optional['Color']=None
                      ):
             self.color_str = color_str if color_str else Color(0, 200, 0)
             self.color_int = color_int if color_int else Color(0, 200, 0)
@@ -146,7 +146,7 @@ class Color:
 
 class HitboxOverlay(QtWidgets.QWidget):
     '''Widget for displaying hitbox overlays (rectangles, polygons, and masks)'''
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.setWindowTitle("Hitbox overlay")
@@ -165,6 +165,7 @@ class HitboxOverlay(QtWidgets.QWidget):
 
         # Pobranie wirtualnej geometrii (wszystkie monitory)
         app = QtWidgets.QApplication.instance()
+        assert isinstance(app, QtWidgets.QApplication), "QApplication must exist before creating HitboxOverlay"
         virtual_geometry = app.primaryScreen().virtualGeometry()
 
         # Śledzenie offsetu ekranu głównego w systemie wirtualnym
@@ -179,7 +180,7 @@ class HitboxOverlay(QtWidgets.QWidget):
         self.setGeometry(virtual_geometry)
         self.show()
 
-    def update_hitboxes(self, rects: list = None, masks: list = None, polygons: list = None):
+    def update_hitboxes(self, rects: list | None = None, masks: list | None = None, polygons: list | None = None) -> None:
         """
         Updates hitbox overlay with rectangles, polygons and masks
 
@@ -260,22 +261,22 @@ class DebugWindow(QtWidgets.QWidget):
 
     _COLOR_PATTERN = re.compile(r'\x00(WHITE|BLACK|RED|GREEN|BLUE|YELLOW|CYAN|MAGENTA|GRAY|LIGHT_GRAY|RGB:\d+,\d+,\d+)\x00')
 
-    def __init__(self, monitor_index: int = 1, parent=None):
+    def __init__(self, monitor_index: int = 1, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Debug window")
         self.setWindowFlags(QtCore.Qt.WindowType.WindowStaysOnTopHint | QtCore.Qt.WindowType.Tool)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         # Layout
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.setContentsMargins(10, 10, 10, 10)
-        self.layout.setSpacing(5)
+        self._layout = QtWidgets.QVBoxLayout()
+        self._layout.setContentsMargins(10, 10, 10, 10)
+        self._layout.setSpacing(5)
 
         # Przycisk zamknięcia
         btn_close = QtWidgets.QPushButton("Zamknij panel")
         btn_close.clicked.connect(self.hide)
         btn_close.setMaximumHeight(25)
-        self.layout.addWidget(btn_close)
+        self._layout.addWidget(btn_close)
 
         # QTextDocument zarządza treścią — QTextEdit tylko ją wyświetla.
         # Dzięki setDocument() edity przez QTextCursor trafiają wprost do
@@ -287,9 +288,9 @@ class DebugWindow(QtWidgets.QWidget):
         self.text_edit.setReadOnly(True)
         self.text_edit.setDocument(self._doc)
         self.text_edit.setStyleSheet("border: 1px solid #ccc;")
-        self.layout.addWidget(self.text_edit)
+        self._layout.addWidget(self.text_edit)
 
-        self.setLayout(self.layout)
+        self.setLayout(self._layout)
         self.setGeometry(0, 0, 1150, 800)
 
         # Cache formatów kolorów — QTextCharFormat tworzony raz per kolor,
@@ -298,7 +299,9 @@ class DebugWindow(QtWidgets.QWidget):
         self._default_fmt = QtGui.QTextCharFormat()
 
         # Pozycjonowanie okna na żądanym monitorze
-        screens = QtWidgets.QApplication.instance().screens()
+        app = QtWidgets.QApplication.instance()
+        assert isinstance(app, QtWidgets.QApplication), "QApplication must exist before creating DebugWindow"
+        screens = app.screens()
         if monitor_index < len(screens):
             target = screens[monitor_index].availableGeometry()
         else:
@@ -374,13 +377,13 @@ class NamedStopwatch:
             start: float
             end: Optional[float] = None
 
-        def __init__(self):
+        def __init__(self) -> None:
             self.samples: list["NamedStopwatch._Timer._Time"] = []
             self.sum_samples: float = 0.0
             self.average_time: float = 0.0
             self._last_update_time: float = time.perf_counter()
 
-    def __init__(self, /, samples_per_update: int = None, update_rate_sec: float = None):
+    def __init__(self, /, samples_per_update: int | None = None, update_rate_sec: float | None = None) -> None:
         self.samples_per_update = samples_per_update
         self.update_rate_sec = update_rate_sec
         self.timers: dict[str, NamedStopwatch._Timer] = {}

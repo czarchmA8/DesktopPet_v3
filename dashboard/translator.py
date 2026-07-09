@@ -19,7 +19,7 @@ class Translator:
         self._translator = QTranslator()
         self.change_language(lang_code)
 
-    def tr(self, func, owner: str=None):
+    def tr(self, func, owner: str | None=None):
         """
         Registers and executes a translation callback function.
 
@@ -30,9 +30,11 @@ class Translator:
         """
         ramka = inspect.stack()[1]
         modul = inspect.getmodule(ramka.frame)
-
-        owner = owner if owner else modul.__name__
-        self._calls.setdefault(owner, []).append(func)
+        if modul is None:
+            owner_name = owner if owner else "unknown"
+        else:
+            owner_name = owner if owner else modul.__name__
+        self._calls.setdefault(owner_name, []).append(func)
         func()
 
     def retranslate_all(self) -> None:
@@ -50,6 +52,7 @@ class Translator:
 
     def change_language(self, lang_code: str) -> None:
         app = QApplication.instance()
+        assert isinstance(app, QApplication), "QApplication must exist before creating HitboxOverlay"
         app.removeTranslator(self._translator)
         self._translator.load(str(Path(__file__).parent.parent / "translations" / f"{lang_code}.qm"))
         app.installTranslator(self._translator)

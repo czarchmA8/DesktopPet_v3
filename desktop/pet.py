@@ -10,13 +10,13 @@ import logging
 from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
 from windows_layer import is_real_window as is_real_window
 from logger_setup import setup_process_logger
-from desktop.collisions import XYXY_Rectangle, XYWH_Rectangle, CollisionTypes, CustomHitboxCollisions
+from desktop.collisions import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
 
-logger: logging.Logger = None
+logger: logging.Logger = logging.getLogger(__name__)
 
 class PetWidget(QtWidgets.QWidget):
     '''Main pet character widget with physics and animation'''
-    def __init__(self, log_queue, shared_data, world_objects: list):
+    def __init__(self, log_queue, shared_data, world_objects: list) -> None:
         super().__init__()
         global logger
         logger = setup_process_logger("pet", log_queue)
@@ -57,9 +57,9 @@ class PetWidget(QtWidgets.QWidget):
             weights: list[int]
             names: list[str]
 
-        self.tasks = [(4, "Walking"), (2, "Standing"), (2, "Sitting"), (0, "Change window"), (1, "Sleeping")]
-        weights: list[int] = [weight for weight, _ in self.tasks]
-        names: list[str] = [task_name for _, task_name in self.tasks]
+        tasks: list[tuple[int, str]] = [(4, "Walking"), (2, "Standing"), (2, "Sitting"), (0, "Change window"), (1, "Sleeping")]
+        weights: list[int] = [weight for weight, _ in tasks]
+        names: list[str] = [task_name for _, task_name in tasks]
         self.tasks: TaskContainer = TaskContainer(weights, names)
         total_task_weight = sum(self.tasks.weights)
         logger.debug(f"Total task weight: {total_task_weight}")
@@ -68,15 +68,15 @@ class PetWidget(QtWidgets.QWidget):
 
         self.current_task: str = "Falling"
         self.pet_label = QtWidgets.QLabel(self)
-        self.current_animation: str = None
+        self.current_animation: str | None = None
         self.orientation: str = "left"
         self.task_end_time: float = time.perf_counter()
         self.set_animation("left_falling.gif")
 
         # Stan okien / platformy
-        self.on_window_hwnd: int = None
-        self.old_on_window_hwnd: int = None
-        self.old_window_rect: XYXY_Rectangle = None
+        self.on_window_hwnd: int | None = None
+        self.old_on_window_hwnd: int | None = None
+        self.old_window_rect: XYXY_Rectangle | None = None
 
         # Pasek zadań: ziemia ma być NAD paskiem zadań
         self.taskbar_y: int = QtWidgets.QApplication.primaryScreen().availableGeometry().bottom()
@@ -92,7 +92,8 @@ class PetWidget(QtWidgets.QWidget):
         self.restitution = 0.45
 
         self.is_dragging: bool = False
-        self.real_x, self.real_y = self.x(), self.y()
+        self.real_x: float = float(self.x())
+        self.real_y: float = float(self.y())
         self.old_real_x, self.old_real_y = self.real_x, self.real_y
         self.on_ground: bool = False
         self.on_window: bool = False
@@ -120,16 +121,16 @@ class PetWidget(QtWidgets.QWidget):
             }
         }
 
-        self.dt = None
+        self.dt: float | None = None
 
         # zmienne tylko do debugowania
-        self._debug_expanded_platform_rect = None
-        self._debug_pet_foot_rect = None
-        self._debug_window_rect = None
-        self._debug_platform_vx = None
-        self._debug_platform_vy = None
+        self._debug_expanded_platform_rect: XYXY_Rectangle | None = None
+        self._debug_pet_foot_rect: XYWH_Rectangle | None = None
+        self._debug_window_rect: XYXY_Rectangle | None = None
+        self._debug_platform_vx: float | None = None
+        self._debug_platform_vy: float | None = None
 
-    def tick(self, dt):
+    def tick(self, dt: float) -> None:
         self.dt = dt
         if self.on_window_hwnd is None or not is_real_window(self.on_window_hwnd): # Jeżeli okno nie istnieje
             above_rwindow_hwnd, below_rwindow_hwnd = get_immediate_neighbors_above_and_below(self.hwnd_self, True, [obj.hwnd_self for obj in self.world_objects])
@@ -143,9 +144,9 @@ class PetWidget(QtWidgets.QWidget):
                 # logger.debug(f"Changed pet z-index")
 
         # --- Pobieranie pozycji i wymiarów platformy ---
-        window_rect: tuple[int, int, int, int] = win32gui.GetWindowRect(self.on_window_hwnd) # (x, y, x2, y2)
+        window_rect_xyxy: tuple[int, int, int, int] = win32gui.GetWindowRect(self.on_window_hwnd) # (x, y, x2, y2)
         # --- Obliczanie hitboxu platformy ---
-        window_rect: XYXY_Rectangle = XYXY_Rectangle(window_rect[0], window_rect[1], window_rect[2], window_rect[1]) # platforma o wysokości 1 pixela (y = y2)
+        window_rect: XYXY_Rectangle = XYXY_Rectangle(window_rect_xyxy[0], window_rect_xyxy[1], window_rect_xyxy[2], window_rect_xyxy[1]) # platforma o wysokości 1 pixela (y = y2)
         if self.old_window_rect is None or self.old_on_window_hwnd != self.on_window_hwnd:
             self.old_window_rect = window_rect
         expanded_platform_rect: XYXY_Rectangle = XYXY_Rectangle(
@@ -166,7 +167,7 @@ class PetWidget(QtWidgets.QWidget):
         self._debug_platform_vy =  platform_vy
 
         # --- Obliczanie fizyki (tarcia i grawitacji) ---
-        if self.is_dragging == False:
+        if not self.is_dragging:
             self.velocity[1] = self.velocity[1] + self.gravity * dt
             ax_drag = -self.drag_air_k * self.velocity[0] * abs(self.velocity[0]) / self.mass
             ay_drag = -self.drag_air_k * self.velocity[1] * abs(self.velocity[1]) / self.mass
@@ -242,13 +243,13 @@ class PetWidget(QtWidgets.QWidget):
         self.old_on_window_hwnd = self.on_window_hwnd
 
         # --- Aktualizowanie wyświetlanej pozycji zwierzątka ---
-        if self.is_dragging == False:
+        if not self.is_dragging:
             self.real_x += self.velocity[0] * dt
             self.real_y += self.velocity[1] * dt
 
         # self.move(round(self.real_x), round(self.real_y))
 
-        if self.is_dragging == False:
+        if not self.is_dragging:
             # --- Obliczanie hitboxu stóp zwierzątka ---
             pet_foot_rect: XYWH_Rectangle = XYWH_Rectangle(
                 self.real_x + self.foot_x,
@@ -351,11 +352,11 @@ class PetWidget(QtWidgets.QWidget):
 
         return (vx, vy)
 
-    def keyPressEvent(self, event): # Tymczasowa funkcja do debugowania i testowania
+    def keyPressEvent(self, event) -> None: # Tymczasowa funkcja do debugowania i testowania
         '''Temporary function for debugging and testing'''
         if event.key() == QtCore.Qt.Key.Key_Space:
-            self.real_x, self.real_y = 800 , 200
-            self.velocity: list = [400.0, -800.0]
+            self.real_x, self.real_y = 800.0, 200.0
+            self.velocity = [400.0, -800.0]
         elif event.key() == QtCore.Qt.Key.Key_1:
             self.velocity = list(self.compute_launch_velocity(0, self.taskbar_y))
         elif event.key() == QtCore.Qt.Key.Key_Up:
@@ -367,7 +368,7 @@ class PetWidget(QtWidgets.QWidget):
         else:
             super().keyPressEvent(event)
 
-    def set_animation(self, animation):
+    def set_animation(self, animation) -> None:
         '''Sets and starts a new animation'''
         if animation != self.current_animation:
             # Zatrzymanie poprzednich animacji
@@ -386,17 +387,18 @@ class PetWidget(QtWidgets.QWidget):
             self.resize(self.animations[animation].frameRect().size())
             self.current_animation = animation
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         self.is_dragging = True
         self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
         self.velocity = [0, 0]
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         pos = event.globalPosition().toPoint() - self._drag_pos
         self.real_x, self.real_y = pos.x(), pos.y()
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         self.is_dragging = False
+        assert self.dt is not None
         self.velocity = [
             (self.real_x - self.old_real_x) / self.dt,
             (self.real_y - self.old_real_y) / self.dt
