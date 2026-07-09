@@ -677,12 +677,12 @@ Repozytorium: &lt;a href=&apos;https://github.com/czarchmA8/DesktopPet_v3&apos; 
         <translation>Pokaż panel</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="945"/>
+        <location filename="../../dashboard/dashboard.py" line="940"/>
         <source>About</source>
         <translation>O aplikacji</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="950"/>
+        <location filename="../../dashboard/dashboard.py" line="945"/>
         <source>Close</source>
         <translation>Wyjdź</translation>
     </message>
