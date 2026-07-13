@@ -1,8 +1,6 @@
 import json
 import math
 from pathlib import Path
-import pymunk
-import pymunk.autogeometry
 import numpy as np
 from PySide6.QtCore import Qt, QPointF, QRectF, QSizeF, Signal, QTimer, QCoreApplication
 from PySide6.QtGui import (
@@ -31,9 +29,66 @@ GRID_MIN_ZOOM = 6.0          # from what zoom level to draw the pixel grid
 MAX_HISTORY = 100
 
 # Default physics properties assigned to a new object
-DEFAULT_MASS = 1.0
-DEFAULT_FRICTION = 0.5
-DEFAULT_ELASTICITY = 0.3
+DEFAULT_MASS: float = 1.0
+DEFAULT_FRICTION: float = 0.5
+DEFAULT_ELASTICITY: float = 0.3
+
+MAX_HULL_VERTICES: int = 16 # Box2D's b2_maxPolygonVertices limit
+
+def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    '''Computes the convex hull of a set of 2D points'''
+    pts = sorted(set(points))
+    if len(pts) <= 2:
+        return pts
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[tuple[float, float]] = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+
+    upper: list[tuple[float, float]] = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+
+    return lower[:-1] + upper[:-1]
+
+def _simplify_hull_by_tolerance(hull: list[tuple[float, float]], tolerance: float) -> list[tuple[float, float]]:
+    '''Drops hull vertices that lie within `tolerance` distance of the segment formed by their neighbors'''
+    if tolerance <= 0 or len(hull) <= 3:
+        return hull
+
+    def point_segment_distance(p, a, b) -> float:
+        ax, ay = a
+        bx, by = b
+        px, py = p
+        dx, dy = bx - ax, by - ay
+        length_sq = dx * dx + dy * dy
+        if length_sq == 0:
+            return math.hypot(px - ax, py - ay)
+        t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / length_sq))
+        proj_x, proj_y = ax + t * dx, ay + t * dy
+        return math.hypot(px - proj_x, py - proj_y)
+
+    result = list(hull)
+    changed = True
+    while changed and len(result) > 3:
+        changed = False
+        n = len(result)
+        for i in range(n):
+            a = result[i - 1]
+            b = result[i]
+            c = result[(i + 1) % n]
+            if point_segment_distance(b, a, c) <= tolerance:
+                del result[i]
+                changed = True
+                break
+    return result
 
 def generate_hull_vertices(pixmap: QPixmap, alpha_threshold: int = 20, tolerance: float = 0.0) -> list[tuple[float, float]] | list[list[float]]:
     """Generates convex hull vertices based on the image's transparency."""
@@ -61,9 +116,8 @@ def generate_hull_vertices(pixmap: QPixmap, alpha_threshold: int = 20, tolerance
     py = (ys[:, None] + corner_dy[None, :] - h2).ravel()
     points: list[tuple[float, float]] = list(zip(px.tolist(), py.tolist()))
 
-    hull = pymunk.autogeometry.to_convex_hull(points, tolerance)
-    if len(hull) > 1 and hull[0] == hull[-1]:
-        hull = hull[:-1]
+    hull = _convex_hull(points)
+    hull = _simplify_hull_by_tolerance(hull, tolerance)
     return [(float(p[0]), float(p[1])) for p in hull]
 
 class HitboxCanvas(QWidget):
@@ -599,6 +653,7 @@ class MainWindow(QMainWindow):
         self.translator = translator or Translator("en")
 
         self.current_image_path: str | None = None
+        self._dirty: bool = False
         self.translator.tr(lambda: self._update_window_title())
         self.resize(1100, 750)
         self.setWindowIcon(QIcon("icon.ico"))
@@ -781,7 +836,7 @@ class MainWindow(QMainWindow):
         self.status_label.setText(text)
 
     def _on_vertices_changed(self, verts: list[tuple[float, float]]):
-        pass  # miejsce na ewentualną integrację z zewnętrznym podglądem na żywo
+        self._dirty = True
 
     def _on_alpha_changed(self, value: int):
         self.canvas.alpha_threshold = value
@@ -795,12 +850,15 @@ class MainWindow(QMainWindow):
 
     def _on_mass_changed(self, value: float):
         self.canvas.mass = value
+        self._dirty = True
 
     def _on_friction_changed(self, value: float):
         self.canvas.friction = value
+        self._dirty = True
 
     def _on_elasticity_changed(self, value: float):
         self.canvas.elasticity = value
+        self._dirty = True
 
     def _sync_physics_spinboxes(self):
         """Refreshes the mass/friction/elasticity fields after loading values from JSON,
@@ -815,7 +873,29 @@ class MainWindow(QMainWindow):
             spin.blockSignals(False)
 
     # ------------------------------------------------------------------ #
+    def _confirm_discard_unsaved_changes(self) -> bool:
+        """Asks the user to confirm losing unsaved work. Returns True if it's OK to proceed."""
+        if not self._dirty:
+            return True
+        answer = QMessageBox.question(
+            self,
+            self.translate("ObjectsEditor", "Unsaved changes", None),
+            self.translate("ObjectsEditor", "You have unsaved changes. Continue and discard them?", None),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes
+
+    def closeEvent(self, event):
+        if self._confirm_discard_unsaved_changes():
+            event.accept()
+        else:
+            event.ignore()
+
+    # ------------------------------------------------------------------ #
     def _load_image_from_path(self, path: str | None):
+        if not self._confirm_discard_unsaved_changes():
+            return
         if path is None:
             path, _ = QFileDialog.getOpenFileName(self,
                 self.translate("ObjectsEditor", "Open image", None), "Assets\\Objects",
@@ -840,6 +920,8 @@ class MainWindow(QMainWindow):
         if has_companion:
             self._load_hitbox_from_path(str(companion_json), silent=True)
             self.status_label.setText(self.translate("ObjectsEditor", "Loaded image and matching hitbox: %1", None).replace("%1", companion_json.name))
+
+        self._dirty = False  # freshly loaded state, nothing unsaved yet
 
     def _load_hitbox_from_path(self, path: str, silent: bool = True):
         """Loads vertices and physics properties from a JSON file"""
@@ -876,6 +958,28 @@ class MainWindow(QMainWindow):
             return
 
         json_path = Path(self.current_image_path).with_suffix(".json")
+
+        if json_path.is_file():
+            answer = QMessageBox.question(
+                self,
+                self.translate("ObjectsEditor", "Overwrite file?", None),
+                self.translate("ObjectsEditor", "The file %1 already exists. Overwrite it?", None).replace("%1", json_path.name),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+
+        vertex_count = len(self.canvas.vertices)
+        if vertex_count > MAX_HULL_VERTICES:
+            QMessageBox.warning(
+                self,
+                self.translate("ObjectsEditor", "Warning", None),
+                self.translate("ObjectsEditor", "The hitbox has %1 vertices, more than the %2 Box2D allows per polygon.\n"
+                    "It will be simplified automatically when used, which may change its shape. Saving anyway.", None)
+                    .replace("%1", str(vertex_count)).replace("%2", str(MAX_HULL_VERTICES)),
+            )
+
         data = {"vertices": self.canvas.get_vertices(), **self.canvas.get_properties()}
         try:
             json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -883,6 +987,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, self.translate("ObjectsEditor", "Error", None),
                 self.translate("ObjectsEditor", "Failed to save JSON file:\n%1", None).replace("%1", str(exc)))
             return
+        self._dirty = False
         self.status_label.setText(self.translate("ObjectsEditor", "Saved: %1", None).replace("%1", json_path.name))
 
 def main():

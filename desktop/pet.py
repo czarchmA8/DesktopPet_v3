@@ -10,7 +10,7 @@ import logging
 from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
 from windows_layer import is_real_window as is_real_window
 from logger_setup import setup_process_logger
-from desktop.collisions import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
+from desktop.physics_utils import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
 
 logger: logging.Logger = logging.getLogger(__name__)
 

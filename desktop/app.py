@@ -8,6 +8,7 @@ import utils_debug
 from logger_setup import setup_process_logger
 from desktop.pet import PetWidget
 from desktop.world_objects import WorldObjectsManager
+from desktop.physics_utils import m_to_px
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -65,20 +66,20 @@ class DesktopApp(QtWidgets.QApplication):
         self.process_timer.start("show hitboxes")
         # --- Rysowanie hitboxów do debugowania ---
         if self.hitbox_overlay.isVisible():
-            rect_objects: list = list({(obj.debug_expanded_platform_rect.as_tuple, (100, 255, 0, 180)) for obj in self.world_objects_manager.world_objects})
+            platform_rects: list = [(rect, (100, 255, 0, 180)) for rect in self.world_objects_manager.debug_platform_rects.values()]
             polygons_objects: list[tuple[list[tuple[float | int, float | int]], tuple[int, int, int]]] = []
             for obj in self.world_objects_manager.world_objects:
                 local_vertices: list[tuple[float | int, float | int]] = []
-                for vertex in obj.shape.get_vertices():
-                    world_pos = obj.body.local_to_world(vertex)
-                    local_vertices.append((float(world_pos.x), float(world_pos.y)))
+                for vertex in obj.fixture.shape.vertices:
+                    world_pos = obj.body.GetWorldPoint(vertex)
+                    local_vertices.append((m_to_px(world_pos.x), m_to_px(world_pos.y)))
                 polygons_objects.append((local_vertices, (255, 200, 200)))
             if self.hitbox_overlay is not None:
                 self.hitbox_overlay.update_hitboxes(
                     [
                         (self.pet._debug_pet_foot_rect.as_tuple, (0, 255, 0, 180) if self.pet.on_window else (255, 0, 0, 180)),
                         (self.pet._debug_expanded_platform_rect.as_tuple, (0, 255, 0, 180) if self.pet.on_window else (255, 0, 0, 180))
-                    ] + rect_objects,
+                    ] + platform_rects,
                     [
                         # (self.animacje_hitbox[self.obecna_animacja].currentImage(), int(self.real_x), int(self.real_y))
                     ],
