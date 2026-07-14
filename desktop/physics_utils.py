@@ -1,6 +1,7 @@
 from PySide6.QtCore import QRect
 from enum import IntEnum, auto
 from dataclasses import dataclass
+from Box2D import b2Vec2
 
 @dataclass
 class XYXY_Rectangle:
@@ -21,6 +22,9 @@ class XYXY_Rectangle:
         yield self.x2
         yield self.y2
 
+    def __getitem__(self, index):
+        return self.as_tuple[index]
+
 @dataclass
 class XYWH_Rectangle:
     '''Rectangle defined by (x, y, width, height)'''
@@ -39,6 +43,9 @@ class XYWH_Rectangle:
         yield self.y
         yield self.width
         yield self.height
+
+    def __getitem__(self, index):
+        return self.as_tuple[index]
 
 class CustomHitboxCollisions:
     '''Utility class for custom collision detection'''
@@ -109,3 +116,50 @@ class CollisionTypes(IntEnum):
     '''Enumeration of collision types (OBJECT, PLATFORM)'''
     OBJECT = auto()
     PLATFORM = auto()
+
+PPM: float = 100.0 # PPM (pixels-per-meter)
+
+def px_to_m(value: float) -> float:
+    '''Converts a scalar value from pixels to meters'''
+    return value / PPM
+
+def m_to_px(value: float) -> float:
+    '''Converts a scalar value from meters to pixels'''
+    return value * PPM
+
+def px_to_m_vec(x: float, y: float) -> b2Vec2:
+    '''Converts a pixel-space (x, y) pair into a Box2D meter-space vector'''
+    return b2Vec2(x / PPM, y / PPM)
+
+def m_to_px_vec(vec) -> tuple[float, float]:
+    '''Converts a Box2D meter-space vector into a pixel-space (x, y) tuple'''
+    return (vec.x * PPM, vec.y * PPM)
+
+def polygon_area(vertices: list[tuple[float, float]]) -> float:
+    '''Returns the area of a polygon (shoelace formula), used to derive density from a target mass'''
+    area = 0.0
+    n = len(vertices)
+    for i in range(n):
+        x1, y1 = vertices[i]
+        x2, y2 = vertices[(i + 1) % n]
+        area += x1 * y2 - x2 * y1
+    return abs(area) / 2.0
+
+def simplify_convex_polygon(vertices: list[tuple[float, float]], max_vertices: int = 16) -> list[tuple[float, float]]:
+    '''
+    Reduces a convex polygon's vertex count to fit Box2D's b2_maxPolygonVertices limit.
+    Repeatedly drops the vertex whose removal loses the least area (Visvalingam-Whyatt style).
+    Since the remaining points stay in their original cyclic order, the result is still convex
+    (a cyclically-ordered subset of a convex point set is itself convex) - it's just a smaller polygon.
+    '''
+    verts = list(vertices)
+
+    def triangle_area(a, b, c) -> float:
+        return abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) / 2.0
+
+    while len(verts) > max_vertices:
+        n = len(verts)
+        areas = [triangle_area(verts[i - 1], verts[i], verts[(i + 1) % n]) for i in range(n)]
+        idx_min = min(range(n), key=lambda i: areas[i])
+        del verts[idx_min]
+    return verts

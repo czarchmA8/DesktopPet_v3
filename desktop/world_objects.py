@@ -1,6 +1,13 @@
+from dataclasses import dataclass
 from PySide6 import QtWidgets, QtCore, QtGui
-import pymunk
-import pymunk.autogeometry
+from Box2D import (
+    b2Body,
+    b2World,
+    b2EdgeShape,
+    b2PolygonShape,
+    b2FixtureDef,
+    b2ContactListener,
+)
 import math
 import win32gui, win32con
 import ctypes
@@ -11,10 +18,48 @@ import json
 
 from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
 from logger_setup import setup_process_logger
-from desktop.collisions import XYXY_Rectangle, CollisionTypes
+from desktop.physics_utils import XYXY_Rectangle, CollisionTypes, px_to_m, px_to_m_vec, m_to_px_vec, polygon_area, simplify_convex_polygon
 from dashboard.objects_editor import generate_hull_vertices
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+class PlatformContactListener(b2ContactListener):
+    '''
+    Handles collision filtering for one-way platforms and window-specific interactions.
+    It ensures objects can pass through platforms from below
+    and only collide with platforms sharing the same window handle (hwnd)
+    '''
+
+    def PreSolve(self, contact, oldManifold) -> None:
+        fixture_a = contact.fixtureA
+        fixture_b = contact.fixtureB
+        data_a = fixture_a.userData or {}
+        data_b = fixture_b.userData or {}
+
+        if data_a.get("type") == CollisionTypes.OBJECT and data_b.get("type") == CollisionTypes.PLATFORM:
+            object_data, platform_data = data_a, data_b
+            normal_sign = 1
+        elif data_b.get("type") == CollisionTypes.OBJECT and data_a.get("type") == CollisionTypes.PLATFORM:
+            object_data, platform_data = data_b, data_a
+            normal_sign = -1
+        else:
+            return
+
+        # Obiekty mogą przelatywać od dołu do góry przez platformę
+        world_manifold = contact.worldManifold
+        normal_y = world_manifold.normal.y * normal_sign
+        if normal_y < 0:
+            contact.enabled = False
+            return
+
+        # Obiekt koliduje wyłącznie z daną platformą (tym samym oknem)
+        if object_data.get("hwnd") != platform_data.get("hwnd"):
+            contact.enabled = False
+
+@dataclass
+class Platform:
+    body: b2Body
+    fixture: None
 
 class WorldObject(QtWidgets.QWidget):
     '''Interactive physics object'''
@@ -22,7 +67,7 @@ class WorldObject(QtWidgets.QWidget):
         self,
         shared_data,
         world_objects: list['WorldObject'],
-        space: pymunk.Space,
+        space: b2World,
         image_path: Path,
         start_x: int,
         start_y: int,
@@ -70,113 +115,60 @@ class WorldObject(QtWidgets.QWidget):
         self.hwnd_self = int(self.winId())
 
         # --- SPACE fizyki ---
-        self.space: pymunk.Space = space
-
-        # Platforma
+        self.space: b2World = space
         self.on_window_hwnd: int | None = None
-        self.old_on_window_hwnd: int | None = None
-        self.platform_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-        self.platform_body.position = (0, -1000)
-        self.platform_shape = pymunk.Poly.create_box(self.platform_body, (100, 1))
-        self.platform_shape.elasticity = 0.5
-        self.platform_shape.friction = 0.5
-        self.platform_shape.collision_type = CollisionTypes.PLATFORM
-        self.platform_shape.data = self.hwnd_self
-        self.space.add(self.platform_body, self.platform_shape)
-        self.old_window_rect: XYXY_Rectangle | None = None
-
-        self.debug_expanded_platform_rect: XYXY_Rectangle | None = None
 
         # --- Ciało fizyczne ---
-        moment = pymunk.moment_for_poly(mass, vertices_normalized)
-        self.body = pymunk.Body(mass, moment)
-        self.body.position = (start_x, start_y)
-        self.shape = pymunk.Poly(self.body, vertices_normalized)
-        self.shape.elasticity = elasticity
-        self.shape.friction = friction
-        self.shape.collision_type = CollisionTypes.OBJECT
-        self.shape.data = self.hwnd_self
-        self.space.add(self.body, self.shape)
+        vertices_m_full = [(px_to_m(v[0]), px_to_m(v[1])) for v in vertices_normalized]
+        vertices_m = simplify_convex_polygon(vertices_m_full, max_vertices=16)
+        area_m2 = polygon_area(vertices_m)
+        density = mass / area_m2 if area_m2 > 1e-9 else 1.0
+
+        object_fixture_def = b2FixtureDef(
+            shape=b2PolygonShape(vertices=vertices_m),
+            density=density,
+            friction=friction,
+            restitution=elasticity,
+            userData={"type": CollisionTypes.OBJECT, "hwnd": None},
+        )
+        self.body = self.space.CreateDynamicBody(
+            position=px_to_m_vec(start_x, start_y),
+            fixtures=object_fixture_def,
+        )
+        self.fixture = self.body.fixtures[0]
 
         # --- Mouse body + joint (do przeciągania) ---
-        self.mouse_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-        self.space.add(self.mouse_body)
+        self.mouse_body = self.space.CreateKinematicBody(position=(0, 0))
 
-        self.mouse_joint: pymunk.PivotJoint | None = None
+        self.mouse_joint = None
         self.is_dragging: bool = False
 
         self.pos_x: float = float(start_x)
         self.pos_y: float = float(start_y)
         self.angle, self.old_angle = 0.0, 0.0
 
-    def tick(self, dt: float, window_XYXY_Rect: tuple[int, int, int, int]):
+    def tick(self):
         '''Updates physics and visuals for world object'''
-        window_rect: XYXY_Rectangle = XYXY_Rectangle(window_XYXY_Rect[0], window_XYXY_Rect[1], window_XYXY_Rect[2], window_XYXY_Rect[3])
-        if self.old_window_rect is None or self.old_on_window_hwnd != self.on_window_hwnd:
-            self.old_window_rect = window_rect
-        expanded_platform_rect: XYXY_Rectangle = XYXY_Rectangle(
-            min(window_rect.x, self.old_window_rect.x),
-            min(window_rect.y, self.old_window_rect.y),
-            max(window_rect.x2, self.old_window_rect.x2),
-            max(window_rect.y, self.old_window_rect.y),
-        )
-        expanded_platform_rect = XYXY_Rectangle(
-            int(min(expanded_platform_rect.x, expanded_platform_rect.x + int(self.body.velocity.x * dt))),
-            expanded_platform_rect.y, # int(min(expanded_platform_rect.y, expanded_platform_rect.y + int(self.body.velocity.y * dt))) if self.body.position.y > expanded_platform_rect.y else expanded_platform_rect.y,
-            math.ceil(max(expanded_platform_rect.x2, expanded_platform_rect.x2 + int(self.body.velocity.x * dt))),
-            math.ceil(max(expanded_platform_rect.y2, expanded_platform_rect.y2 + int(self.body.velocity.y * 2 * dt))) if self.body.position.y < expanded_platform_rect.y2 else expanded_platform_rect.y2
-        )
-        # expanded_platform_rect = XYXY_Rectangle(
-        #     expanded_platform_rect.x - 5,
-        #     expanded_platform_rect.y - 5,
-        #     expanded_platform_rect.x2 + 5,
-        #     expanded_platform_rect.y2 + 5,
-        # )
-        self.debug_expanded_platform_rect = expanded_platform_rect
-
-        vx = (window_rect.x - self.old_window_rect.x) / dt
-        vy = (window_rect.y - self.old_window_rect.y) / dt
-        self.platform_body.velocity = (vx, vy)
-
-        # Zamiana wartości potrzebne do poprawnego funkcjonowania fizyki
-        width, height = abs(expanded_platform_rect.x2 - expanded_platform_rect.x), abs(expanded_platform_rect.y2 - expanded_platform_rect.y)
-        x, y = expanded_platform_rect.x + width // 2, expanded_platform_rect.y + height // 2
-        # logger.debug(x, y, width, height)
-
-        self.platform_body.position = x, y
-        self.old_window_rect = window_rect
-
-        # Aktualizacja rozmiaru i pozycji platformy (okna)
-        self.space.remove(self.platform_shape)
-        elasticity, friction = self.platform_shape.elasticity, self.platform_shape.friction
-        self.platform_shape = pymunk.Poly.create_box(self.platform_body, (width, height))
-        self.platform_shape.elasticity = elasticity
-        self.platform_shape.friction = friction
-        self.platform_shape.collision_type = CollisionTypes.PLATFORM
-        self.platform_shape.data = self.hwnd_self
-        self.space.add(self.platform_shape)
-
-        # aktualizuj pozycję wizualną z ciała fizycznego
-        self.pos_x, self.pos_y = self.body.position
+        self.pos_x, self.pos_y = m_to_px_vec(self.body.position)
         self.old_angle = self.angle
         self.angle = math.degrees(self.body.angle)
         self.update_visuals()
-        self.old_on_window_hwnd = self.on_window_hwnd
 
         # Usuwanie obiektu jeżeli jest poza ekranami
         screen_geo = QtWidgets.QApplication.primaryScreen().virtualGeometry()
         if self.pos_x < screen_geo.left() - self.w or self.pos_x > screen_geo.right() + self.w or self.pos_y > screen_geo.bottom() + self.h:
             logger.info(f"Removed WorldObject: {self.hwnd_self}")
             self.world_objects.remove(self)
-            self.space.remove(self.platform_body, self.platform_shape)
-            self.space.remove(self.body, self.shape)
+            self.space.DestroyBody(self.body)
             self.close()
             self.deleteLater()
 
     def update_visuals(self) -> None:
         '''Updates visual position and rotation'''
-        if self.pos_x is None or self.pos_y is None: return
-        if math.isnan(self.pos_x) or math.isnan(self.pos_y): return
+        if self.pos_x is None or self.pos_y is None:
+            return
+        if math.isnan(self.pos_x) or math.isnan(self.pos_y):
+            return
 
         if self.angle != self.old_angle:
             transform = QtGui.QTransform().rotate(self.angle)
@@ -190,15 +182,18 @@ class WorldObject(QtWidgets.QWidget):
         '''Handles mouse press for dragging objects'''
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             m_pos = event.globalPosition()
-            new_pos = pymunk.Vec2d(m_pos.x(), m_pos.y())
+            new_pos = px_to_m_vec(m_pos.x(), m_pos.y())
 
             self.mouse_body.position = new_pos
 
-            local_anchor = self.body.world_to_local(new_pos)
-            self.mouse_joint = pymunk.PivotJoint(self.mouse_body, self.body, (0, 0), local_anchor)
-            self.mouse_joint.max_force = 1e6
-            self.mouse_joint.error_bias = (1 - 0.15) ** 60 # przyspiesza stabilizację
-            self.space.add(self.mouse_joint)
+            self.mouse_joint = self.space.CreateMouseJoint(
+                bodyA=self.mouse_body,
+                bodyB=self.body,
+                target=new_pos,
+                maxForce=1000.0 * self.body.mass,
+                frequencyHz=5.0,
+                dampingRatio=0.7,
+            )
 
             self.is_dragging = True
 
@@ -214,7 +209,10 @@ class WorldObject(QtWidgets.QWidget):
             return
 
         m_pos = event.globalPosition()
-        self.mouse_body.position = pymunk.Vec2d(m_pos.x(), m_pos.y())
+        target = px_to_m_vec(m_pos.x(), m_pos.y())
+        self.mouse_body.position = target
+        if self.mouse_joint is not None:
+            self.mouse_joint.target = target
 
     def mouseReleaseEvent(self, event) -> None:
         '''Handles mouse release after drag'''
@@ -223,17 +221,17 @@ class WorldObject(QtWidgets.QWidget):
 
             if self.mouse_joint is not None:
                 try:
-                    self.space.remove(self.mouse_joint)
+                    self.space.DestroyJoint(self.mouse_joint)
                 except Exception:
                     pass
                 self.mouse_joint = None
 
             try:
-                self.body.activate()
+                self.body.awake = True
             except Exception:
                 pass
 
-            self.pos_x, self.pos_y = self.body.position
+            self.pos_x, self.pos_y = m_to_px_vec(self.body.position)
             self.angle = math.degrees(self.body.angle)
 
 class WorldObjectsManager:
@@ -247,15 +245,28 @@ class WorldObjectsManager:
         self.world_objects: list[WorldObject] = []
 
         # Fizyka obiektów
-        self.space = pymunk.Space()
-        self.space.gravity = (0.0, 2000.0)
-        self.space.on_collision(CollisionTypes.OBJECT, CollisionTypes.PLATFORM, pre_solve=self._platform_pre_solve, post_solve=self._platform_post_solve)
+        self.space = b2World(gravity=px_to_m_vec(0.0, 2000.0), doSleep=True)
+        self.contact_listener = PlatformContactListener()
+        self.space.contactListener = self.contact_listener
+
+        # Platformy
+        self.debug_platform_rects: dict[int, XYXY_Rectangle] = {}
+        self.old_window_rects: dict[int, XYXY_Rectangle] = {}
+        self.platforms: dict[int, Platform] = {}
+        self.platform_friction: float = 0.5
+        self.platform_elasticity: float = 0.5
 
         # Podłoga ekranu
         screen_geo = QtWidgets.QApplication.primaryScreen().availableGeometry()
-        self.floor_shape = pymunk.Segment(self.space.static_body, (-10000, screen_geo.bottom()), (10000, screen_geo.bottom()), 5)
-        self.floor_shape.elasticity, self.floor_shape.friction = 0.5, 1.0
-        self.space.add(self.floor_shape)
+        floor_fixture_def = b2FixtureDef(
+            shape=b2EdgeShape(vertices=[
+                px_to_m_vec(-10000, screen_geo.bottom()),
+                px_to_m_vec(10000, screen_geo.bottom()),
+            ]),
+            friction=1.0,
+            restitution=0.5,
+        )
+        self.floor_body = self.space.CreateStaticBody(fixtures=floor_fixture_def)
 
         # Inicjalizacja funkcji API systemu Windows służące do zbiorczej aktualizacji z-index wielu okien w jednej operacji.
         self.user32 = ctypes.windll.user32
@@ -268,6 +279,7 @@ class WorldObjectsManager:
         self.user32.EndDeferWindowPos.restype = wintypes.BOOL
 
     def tick(self, dt, pet_hwnd) -> None:
+        """Updates z-index, physics and visuals for world objects"""
         calculated_above_hwnds: dict[int, int | None] = {}
         ignored_hwnds = [obj.hwnd_self for obj in self.world_objects] + [pet_hwnd]
         hdwp = self.user32.BeginDeferWindowPos(len(self.world_objects))
@@ -276,6 +288,7 @@ class WorldObjectsManager:
             # --- Pobieranie hwnd okna pod obiektem ---
             if object.on_window_hwnd is None or not win32gui.IsWindow(object.on_window_hwnd):
                 object.on_window_hwnd = get_immediate_neighbors_above_and_below(object.hwnd_self, True, ignored_hwnds)[1]
+                object.fixture.userData["hwnd"] = object.on_window_hwnd
                 logger.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
 
             on_window_hwnd = object.on_window_hwnd
@@ -299,39 +312,80 @@ class WorldObjectsManager:
 
         self.user32.EndDeferWindowPos(hdwp)
 
-        window_rects: dict[int, tuple[int, int, int, int]] = {}
+        window_rects: dict[int, XYXY_Rectangle] = {}
+        self.debug_platform_rects.clear()
         for object in self.world_objects:
             # Pobieranie i zapisywanie rozmiarów okna `on_window_hwnd` danego obiektu, aby zmniejszyć liczbę wywołań `GetWindowRect`
             on_window_hwnd = object.on_window_hwnd
             assert on_window_hwnd is not None
+
             if on_window_hwnd not in window_rects:
-                window_rects[on_window_hwnd] = win32gui.GetWindowRect(on_window_hwnd)
-            object.tick(dt, window_rects[on_window_hwnd])
-        self.space.step(dt)
+                window_XYXY_Rect: tuple[int, int, int, int] = win32gui.GetWindowRect(on_window_hwnd)
+                window_rects[on_window_hwnd] = XYXY_Rectangle(
+                    window_XYXY_Rect[0],
+                    window_XYXY_Rect[1],
+                    window_XYXY_Rect[2],
+                    window_XYXY_Rect[3],
+                )
+                window_rect: XYXY_Rectangle = window_rects[on_window_hwnd]
 
-    def _platform_pre_solve(self, arbiter, space, data) -> None: # Obiekty mogą przelatywać od dołu do góry przez platformę
-        '''Collision callback - objects can pass through platform from below'''
-        if arbiter.contact_point_set.normal.y < 0:
-            arbiter.process_collision = False
+                if on_window_hwnd not in self.old_window_rects:
+                    self.old_window_rects[on_window_hwnd] = window_rect
+                old_window_rect: XYXY_Rectangle = self.old_window_rects[on_window_hwnd]
 
-        object_shape, platform_shape = arbiter.shapes
-        if object_shape.data != platform_shape.data:
-            arbiter.process_collision = False
+                expanded_platform_rect: XYXY_Rectangle = XYXY_Rectangle(
+                    min(window_rect.x, old_window_rect.x),
+                    min(window_rect.y, old_window_rect.y),
+                    max(window_rect.x2, old_window_rect.x2),
+                    max(window_rect.y, old_window_rect.y),
+                )
+                self.debug_platform_rects[on_window_hwnd] = expanded_platform_rect
 
-    def _platform_post_solve(self, arbiter, space, data) -> None: # Obiekty po kolizji z platformą są teleportowane nad platformę
-        '''Collision callback - objects teleported above platform after collision'''
-        object_shape, platform_shape = arbiter.shapes
-        object_body = object_shape.body
+                platform = self.platforms.get(on_window_hwnd)
+                if platform is None:
+                    body: b2Body = self.space.CreateKinematicBody(position=px_to_m_vec(0, -1000))
+                    platform = Platform(body=body, fixture=None)
+                    self.platforms[on_window_hwnd] = platform
+                    logger.debug(f"Created a new common platform for window {on_window_hwnd}")
+                platform_body: b2Body = platform.body
 
-        platform_top_y = platform_shape.bb.bottom
-        bottom_offset = object_shape.bb.top - object_body.position.y
+                vx = (window_rect.x - old_window_rect.x) / dt
+                vy = (window_rect.y - old_window_rect.y) / dt
+                platform_body.linearVelocity = px_to_m_vec(vx, vy)
 
-        object_body.position = pymunk.Vec2d(object_body.position.x, platform_top_y - bottom_offset)
+                # Zamiana wartości potrzebne do poprawnego funkcjonowania fizyki
+                width, height = (abs(expanded_platform_rect.x2 - expanded_platform_rect.x), abs(expanded_platform_rect.y2 - expanded_platform_rect.y))
+                x, y = (expanded_platform_rect.x + width // 2, expanded_platform_rect.y + height // 2)
 
-        if object_body.velocity.y > 0:
-            object_body.velocity = pymunk.Vec2d(object_body.velocity.x, 0)
+                platform_body.position = px_to_m_vec(x, y)
+
+                # Aktualizacja rozmiaru i pozycji platformy
+                if platform.fixture is not None:
+                    platform_body.DestroyFixture(platform.fixture)
+                half_width = px_to_m(max(width, 1) / 2)
+                half_height = px_to_m(max(height, 1) / 2)
+                new_platform_fixture_def = b2FixtureDef(
+                    shape=b2PolygonShape(box=(half_width, half_height)),
+                    friction=self.platform_friction,
+                    restitution=self.platform_elasticity,
+                    userData={"type": CollisionTypes.PLATFORM, "hwnd": on_window_hwnd},
+                )
+                platform.fixture = platform_body.CreateFixture(new_platform_fixture_def)
+            object.tick()
+        self.old_window_rects = window_rects
+
+        # Usuwanie platform okien, na których nie stoi już żaden obiekt
+        for hwnd in list(self.platforms.keys()):
+            if hwnd not in window_rects:
+                self.space.DestroyBody(self.platforms[hwnd].body)
+                del self.platforms[hwnd]
+                self.old_window_rects.pop(hwnd, None)
+
+        self.space.Step(dt, 8, 3)
+        self.space.ClearForces()
 
     def spawn_object(self, path: str) -> None:
+        '''Creates an object from an image with the given path'''
         img_path = Path("Assets") / "Objects" / path
         if not img_path.exists():
             logger.error("[Obj] File not found:", img_path)
@@ -342,9 +396,14 @@ class WorldObjectsManager:
         obj.show()
 
     def clear_all_objects(self) -> None:
+        '''Removes all world objects'''
         for obj in list(self.world_objects):
-            self.space.remove(obj.platform_body, obj.platform_shape)
-            self.space.remove(obj.body, obj.shape)
+            self.space.DestroyBody(obj.body)
             obj.deleteLater()
             obj.close()
         self.world_objects.clear()
+
+        for platform in self.platforms.values():
+            self.space.DestroyBody(platform.body)
+        self.platforms.clear()
+        self.old_window_rects.clear()

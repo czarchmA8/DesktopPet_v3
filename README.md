@@ -139,7 +139,7 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`desktop/app.py`**              | **Desktop manager.** Launches and manages the pet and world objects.                                                                                                      |
 | **`desktop/pet.py`**              | **Pet.** The virtual pet itself.                                                                                                                                          |
 | **`desktop/world_objects.py`**    | **World Objects.** Manages interactive, physical objects within the pet's environment.                                                                                    |
-| **`desktop/collisions.py`**       | **Collisions and types.** Helper module containing classes and functions for collision detection.                                                                         |
+| **`desktop/physics_utils.py`**    | **Physics utilities.** Helper module providing custom collision detection, data structures for shapes, Box2D unit conversions, and geometry simplification utilities.     |
 | **`requirements.txt`**            | **Dependencies list.** Contains external Python packages required by the project.                                                                                         |
 | **`settings.default.json`**       | **Default configuration.** Contains the baseline application settings used to initialize or restore settings.json                                                         |
 

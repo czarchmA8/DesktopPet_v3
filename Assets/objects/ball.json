@@ -115,5 +115,5 @@
   ],
   "mass": 1.0,
   "friction": 0.5,
-  "elasticity": 1.0
+  "elasticity": 0.6
 }
