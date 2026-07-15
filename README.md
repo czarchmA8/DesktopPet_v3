@@ -1,21 +1,21 @@
 ![language](https://img.shields.io/badge/language-python-239120)
 ![platform](https://img.shields.io/badge/platform-windows%2011-0078d4)
-![status](https://img.shields.io/badge/status-in%20development-yellow)
 [![GitHub release](https://img.shields.io/github/v/release/czarchmA8/DesktopPet_v3)](#)
+![status](https://img.shields.io/badge/status-in%20development-yellow)
+[![LICENSE](https://img.shields.io/github/license/czarchmA8/DesktopPet_v3)](./LICENSE.txt)
 
-# 🐉 DesktopPet_v3
-
-An advanced, interactive virtual desktop pet featuring physics simulation, control panel, and sophisticated Windows window layering.
-
----
+<img width="1280" height="640" alt="social-preview" src="https://github.com/user-attachments/assets/2b336819-59cc-42f9-924e-b669a19ffa67" />
 
 ## 📄 About the Project
 
 **DesktopPet_v3** is a Python application that allows users to have an intelligent, physically simulated virtual pet on their desktop. The pet autonomously moves around the screen, interacts with system windows, responds to user actions, and maintains its own statistics system.
 
+> [!Caution]
+> development is still in progress, bugs may occur
+
 ---
 
-## 📸 Screenshots
+## 📸 Preview
 <div align="center">
   <img width="800" height="450" alt="2026-06-22 18-40-51" src="https://github.com/user-attachments/assets/74f2b2ec-055e-4af8-a9c6-826a366df9b3" />
   <img width="854" height="480" alt="2026-07-06 18-17-17" src="https://github.com/user-attachments/assets/b9bd72f3-cf8e-4ad1-b0be-20b061a16aea" />
@@ -23,43 +23,27 @@ An advanced, interactive virtual desktop pet featuring physics simulation, contr
 
 ## ✨ Key Features
 
-- 🐉 **Intelligent Pet**
-  - Autonomous behavior system with multiple animation states (walking, sitting, sleeping, falling)
-  - Advanced physics system — gravity, collisions, movement inertia
-  - Responsiveness to mouse actions — catching, dragging, and throwing
-  - Smooth GIF-based animations with fluid refresh rates
-
-- 🎮 **Interactive Objects**
-  - Dynamic objects placed on the desktop (balls, food, items)
-  - Collision physics between pet and objects, and between objects
-  - Window edge handling and platforming on system windows
-
-- 📊 **Statistics and Mood System**
-  - Pet statistics variables: happiness, health, hunger, sleepiness
-  - Dynamic mood changes based on user interactions
-  - Tracking time spent with the pet
-
-- 🎛️ **Control Panel**
-  - Dedicated interface for application configuration
-  - Hotkey support — assign keyboard shortcuts to actions
-  - Pet sound volume control
-  - FPS adjustment and debug level settings
-
-- 📝 **Logging System**
-  - Centralized logging with multi-process support
-  - Colored console output + file logging
-  - Automatic old log cleanup
-
-- 🖥️ **Debug Mode**
-  - Hitbox overlay with collision visualization and pet masks
-  - Debug panel with real-time application state information
-  - Animation paths and FPS statistics
+- Animated GIF-based character with multiple states (walking, sitting, sleeping, falling)
+- Physics-driven movement — gravity, collisions, inertia
+- Mouse interactions — catch, drag, throw
+- Follows the active window around the desktop
+- Windows are treated as platforms for the pet and world objects to stand on
+- Dynamic window layering — the pet decides on its own when to bring itself to the front, not strictly tied to the currently active window
+- Interactive objects (balls, food) with collisions between pet and objects, and object-to-object
+- Stats system — happiness, health, hunger, sleepiness, shifting with interaction
+- Control panel for hotkeys, sound volume, FPS, debug level, and multi-language translations
+- Objects Editor — create and edit object hitboxes and physics properties from the control panel
+- Multi-process logging — colored console output, file logs, automatic cleanup
+- Debug mode with hitbox/collision overlay and live state panel
 
 ---
 
 ## 🚀 Installation
 
-**Requirements:** Requires Python 3.13 and Windows 11.
+> [!NOTE]
+> Works only on Windows (for now). Mac and Linux may come later!
+
+**Requirements:** Python 3.13 and Windows 11.
 
 1. **Clone the repository**
    ```bash
@@ -118,7 +102,7 @@ All application settings are located in the `settings.json` file, with only some
 
 The application runs on two independent processes:
 
-- **PET Process** — pet engine, physics, animations, Windows window layer management
+- **PET Process** — pet engine, physics, animations, window layer (z-order) management
 - **DASHBOARD Process** — control interface, settings handling
 
 Communication between processes occurs via a structured JSON protocol sent through `multiprocessing.Pipe`.
@@ -164,6 +148,10 @@ Communication between processes occurs via a structured JSON protocol sent throu
 
 - **BeginDeferWindowPos / EndDeferWindowPos** — batching z-order updates for all objects
 - **Cached Z-Order Neighbors** — optimized `get_immediate_neighbors_above_and_below()` function for benchmarking
+
+---
+
+Thank you for visiting! If you like this project, consider giving it a star ⭐ — it helps others find it and is much appreciated!
 
 ---
 
