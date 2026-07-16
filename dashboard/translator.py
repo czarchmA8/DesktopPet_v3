@@ -1,3 +1,4 @@
+import sys
 import inspect
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
@@ -54,6 +55,16 @@ class Translator:
         app = QApplication.instance()
         assert isinstance(app, QApplication), "QApplication must exist before creating HitboxOverlay"
         app.removeTranslator(self._translator)
-        self._translator.load(str(Path(__file__).parent.parent / "translations" / f"{lang_code}.qm"))
+        if getattr(sys, "frozen", False):
+            base_dir = Path(sys.executable).parent
+        else:
+            base_dir = Path(__file__).parent.parent
+        qm_path = base_dir / "translations" / f"{lang_code}.qm"
+        if qm_path.is_file():
+            ok = self._translator.load(str(qm_path))
+            if not ok:
+                raise RuntimeError(f'QTranslator failed to load "{qm_path}" (invalid or incompatible .qm file).')
+        else:
+            raise FileNotFoundError(f'File "{qm_path}" does not exist.')
         app.installTranslator(self._translator)
         self.retranslate_all()

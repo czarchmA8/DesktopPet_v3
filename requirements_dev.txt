@@ -2,3 +2,5 @@ pytest==9.1.1
 mypy==2.2.0
 ruff==0.15.20
 pipreqs==0.4.13
+pyinstaller==6.21.0
+pathspec==1.1.1
