@@ -1,3 +1,16 @@
+"""Local/CI code-quality pipeline runner.
+
+Runs the quality-check pipeline used both locally and in CI:
+    1. Ruff - static lint check.
+    2. MyPy - static type checking across the project.
+    3. Pipreqs - regenerates `tools/output/requirements.txt` from actual imports,
+       used as a sanity check that `requirements.txt` stays in sync with the code.
+    4. Pytest - runs the automated test suite in `tests/`.
+
+Any step that fails (non-zero exit code) stops the pipeline immediately and
+exits with status 1, so this script is suitable for use as a CI gate.
+"""
+
 import os
 from pathlib import Path
 import sys
@@ -9,6 +22,7 @@ import ruff # noqa: F401
 import pipreqs # noqa: F401
 
 def run_command(cmd: str, label: str) -> None:
+    """Run a shell command as a labeled pipeline step, aborting on failure."""
     print(f"[#] Starting up \"{label}\": `{cmd}`")
     exit_code = os.system(cmd)
     if exit_code != 0:
@@ -18,6 +32,7 @@ def run_command(cmd: str, label: str) -> None:
         print(f"[X] Step \"{label}\" completed successfully.")
 
 def main():
+    """Runs the quality-check pipeline."""
     MAIN_PATH = Path(__file__).parent.parent
     os.chdir(MAIN_PATH)
 
@@ -25,7 +40,7 @@ def main():
     print(f"pipreqs=={pipreqs.__version__}")
     print(f"mypy=={importlib.metadata.version('mypy')}")
     print(f"ruff=={importlib.metadata.version('ruff')}")
-    
+
     print("[#] Getting the list of ignored folders...")
     ignore_list: list = []
     for ignore_path in (

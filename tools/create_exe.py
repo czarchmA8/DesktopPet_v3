@@ -1,3 +1,5 @@
+"""Builds applications and creates exe file using PyInstaller."""
+
 import shutil
 from pathlib import Path
 
@@ -14,6 +16,7 @@ ITEMS_TO_COPY = [
 PROJECT_ROOT_PATH = Path(__file__).resolve().parent.parent
 
 def build_gitignore_spec(project_root: Path) -> pathspec.PathSpec:
+    """Build a pathspec matcher from the project's `.gitignore` rules."""
     gitignore_patterns = (project_root / ".gitignore").read_text(encoding="utf-8").split("\n")
 
     exclude_path = project_root / ".git" / "info" / "exclude"
@@ -25,6 +28,7 @@ def build_gitignore_spec(project_root: Path) -> pathspec.PathSpec:
     return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, gitignore_patterns)
 
 def copy_files(project_root: Path, app_dist_dir: Path, spec: pathspec.PathSpec) -> None:
+    """Copy runtime resources from the project into the build output directory."""
     global ITEMS_TO_COPY
 
     for item_name in ITEMS_TO_COPY:
@@ -39,6 +43,7 @@ def copy_files(project_root: Path, app_dist_dir: Path, spec: pathspec.PathSpec) 
             print(f'Copying folder "{src}" -> "{dst}"...')
 
             def ignore_gitignored(current_dir: str, names: list[str]) -> list[str]:
+                """`shutil.copytree` ignore-callback that filters out gitignored entries."""
                 current_path = Path(current_dir)
                 ignored = []
                 for name in names:
@@ -59,6 +64,7 @@ def copy_files(project_root: Path, app_dist_dir: Path, spec: pathspec.PathSpec) 
     print("[✅] Application files and folders copied.")
 
 def main() -> None:
+    """Builds the executable and optionally bundle resources."""
     global APP_NAME, PROJECT_ROOT_PATH
 
     print(f"App name: {APP_NAME}")

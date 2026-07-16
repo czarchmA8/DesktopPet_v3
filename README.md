@@ -50,6 +50,7 @@
    git clone https://github.com/czarchmA8/DesktopPet_v3.git
    cd DesktopPet_v3
    ```
+   No Git? [Download ZIP](https://github.com/czarchmA8/DesktopPet_v3/archive/refs/heads/master.zip) and extract it instead.
 
 2. **Create a virtual environment (optional, but recommended)**
    ```bash
@@ -83,7 +84,11 @@ python main.py --debug 0
 ```
 
 ### Creating an .exe file (Windows, optional)
-If you want to create an executable .exe file, you can use the following command:
+If you want to create an executable .exe file, you can use the included build script:
+```bash
+python tools/create_exe.py
+```
+or you can use the following command:
 ```bash
 pyinstaller main.py --onedir --windowed --icon=icon.ico --name=DesktopPet_v3
 ```
@@ -139,6 +144,7 @@ Communication between processes occurs via a structured JSON protocol sent throu
 |:--------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`requirements_dev.txt`**      | **Dependencies list.** Contains external Python packages required by additional scripts.                                                                  |
 | **`tools/`**                    | **Helper scripts.** Contains scripts useful only for the developer                                                                                        |
+| **`tools/create_exe.py`**       | **Executable builder.** Packages the application into a standalone `.exe` using PyInstaller.                                                              |
 | **`tools/run_tests.py`**        | **Test runner.** Runs the full code-quality pipeline: Ruff linting, MyPy type checking, dependency verification via `pipreqs`, and the pytest test suite. |
 | **`tools/update_languages.py`** | **Translation updater.** Automates the Qt translation workflow — regenerates `.ts` files from the source code and compiles them into `.qm` files.         |
 | **`.github/`**                  | **GitHub configuration.** Contains issue templates, the pull request template, and CI workflows.                                                          |

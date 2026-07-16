@@ -1,4 +1,13 @@
-# Automates the translation process for the application.
+"""Translation workflow automation.
+
+Automates the Qt-based translation cycle for the application:
+    1. Regenerate `.ts` raw translation source files from the current source code
+    2. Open Qt Linguist (`pyside6-linguist`) so a translator can review and
+        fill in/update the actual translated strings for each language.
+    3. Compile the updated `.ts` files into binary `.qm` files,
+        which is the format the application loads at runtime.
+"""
+
 import subprocess
 from pathlib import Path
 
@@ -12,6 +21,7 @@ SOURCE_FILES: list[Path] = [
 LANG_CODES: list[str] = sorted(file.stem for file in TS_DIR.iterdir() if file.suffix == ".ts")
 
 def update_ts_files(ts_dir: Path, lang_codes: list[str]) -> None:
+    """Regenerate `.ts` translation source files from the current source code."""
     for lang_code in lang_codes:
         ts_file = ts_dir / f"{lang_code}.ts"
 
@@ -22,11 +32,13 @@ def update_ts_files(ts_dir: Path, lang_codes: list[str]) -> None:
             print(result.stdout)
 
 def open_linguist(ts_dir: Path, lang_codes: list[str]) -> None:
+    """Open Qt Linguist with all language `.ts` files for manual translation."""
     ts_files_args = [str(ts_dir / f"{lang_code}.ts") for lang_code in lang_codes]
     cmd = ["pyside6-linguist", *ts_files_args]
     subprocess.run(cmd, capture_output=False, text=False)
 
 def update_qm_files(ts_dir: Path, qm_dir: Path, lang_codes: list[str]) -> None:
+    """Compile `.ts` translation source files into binary `.qm` files."""
     for lang_code in lang_codes:
         ts_file = ts_dir / f"{lang_code}.ts"
         qm_file = qm_dir / f"{lang_code}.qm"
@@ -37,6 +49,7 @@ def update_qm_files(ts_dir: Path, qm_dir: Path, lang_codes: list[str]) -> None:
             print(result.stdout)
 
 def main() -> None:
+    """Runs the full translation update workflow."""
     print("[#] Updating \".ts\" files...")
     update_ts_files(TS_DIR, LANG_CODES)
 
