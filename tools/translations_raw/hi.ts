@@ -54,37 +54,42 @@
 <context>
     <name>HitboxCanvas</name>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="331"/>
+        <location filename="../../dashboard/objects_editor.py" line="368"/>
         <source>Open an image: Ctrl+O</source>
         <translation>इमेज खोलें: Ctrl+O</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="520"/>
+        <location filename="../../dashboard/objects_editor.py" line="620"/>
         <source>Cannot delete - hitbox requires at least 3 vertices.</source>
         <translation>हटाया नहीं जा सकता - हिटबॉक्स के लिए कम से कम 3 वर्टिसेस (vertices) होना ज़रूरी है।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="629"/>
+        <location filename="../../dashboard/objects_editor.py" line="762"/>
         <source>No image loaded. Ctrl+O to open one.</source>
         <translation>कोई इमेज लोडेड नहीं है। खोलने के लिए Ctrl+O दबाएं।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="631"/>
+        <location filename="../../dashboard/objects_editor.py" line="764"/>
         <source>Zoom:</source>
         <translation>ज़ूम (Zoom):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="632"/>
+        <location filename="../../dashboard/objects_editor.py" line="766"/>
+        <source>Radius:</source>
+        <translation>त्रिज्या:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="772"/>
         <source>Vertices:</source>
         <translation>वर्टिसेस (Vertices):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="639"/>
+        <location filename="../../dashboard/objects_editor.py" line="779"/>
         <source>Image:</source>
         <translation>इमेज:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="644"/>
+        <location filename="../../dashboard/objects_editor.py" line="784"/>
         <source>Pixel:</source>
         <translation>पिक्सेल:</translation>
     </message>
@@ -240,217 +245,247 @@
 <context>
     <name>ObjectsEditor</name>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="676"/>
+        <location filename="../../dashboard/objects_editor.py" line="909"/>
         <source>Objects Editor</source>
         <translation>ऑब्जेक्ट्स एडिटर (Objects Editor)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="686"/>
+        <location filename="../../dashboard/objects_editor.py" line="919"/>
         <source>File</source>
         <translation>फ़ाइल (File)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="689"/>
+        <location filename="../../dashboard/objects_editor.py" line="922"/>
         <source>Open image...</source>
         <translation>इमेज खोलें...</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="695"/>
+        <location filename="../../dashboard/objects_editor.py" line="928"/>
         <source>Save changes</source>
         <translation>बदलाव सुरक्षित करें</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="702"/>
+        <location filename="../../dashboard/objects_editor.py" line="935"/>
         <source>Close</source>
         <translation>बंद करें</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="708"/>
+        <location filename="../../dashboard/objects_editor.py" line="941"/>
         <source>Edit</source>
         <translation>एडिट (Edit)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="711"/>
+        <location filename="../../dashboard/objects_editor.py" line="944"/>
         <source>Undo</source>
         <translation>पूर्ववत करें (Undo)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="717"/>
+        <location filename="../../dashboard/objects_editor.py" line="950"/>
         <source>Redo</source>
         <translation>फिर से करें (Redo)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="725"/>
+        <location filename="../../dashboard/objects_editor.py" line="958"/>
         <source>Generate hitbox from image</source>
         <translation>इमेज से हिटबॉक्स जेनरेट करें</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="731"/>
+        <location filename="../../dashboard/objects_editor.py" line="964"/>
         <source>Set hitbox to full image (bounding box)</source>
         <translation>हिटबॉक्स को पूरी इमेज पर सेट करें (बाउंडिंग बॉक्स)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="737"/>
+        <location filename="../../dashboard/objects_editor.py" line="970"/>
         <source>View</source>
         <translation>व्यू (View)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="740"/>
+        <location filename="../../dashboard/objects_editor.py" line="973"/>
         <source>Fit view</source>
         <translation>फिट व्यू (Fit view)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="747"/>
+        <location filename="../../dashboard/objects_editor.py" line="980"/>
         <source>Tools</source>
         <translation>टूल्स (Tools)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="751"/>
+        <location filename="../../dashboard/objects_editor.py" line="801"/>
         <source>Alpha threshold:</source>
         <translation>अल्फा थ्रेशोल्ड (Alpha threshold):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="760"/>
+        <location filename="../../dashboard/objects_editor.py" line="809"/>
         <source>Tolerance:</source>
         <translation>टॉलेरेंस (Tolerance):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="770"/>
+        <location filename="../../dashboard/objects_editor.py" line="818"/>
         <source>Recompute hull</source>
         <translation>हल (hull) की दोबारा गणना करें</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="777"/>
+        <location filename="../../dashboard/objects_editor.py" line="835"/>
+        <source>Radius:</source>
+        <translation>त्रिज्या:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="997"/>
         <source>Show pixel grid</source>
         <translation>पिक्सेल ग्रिड दिखाएं</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="784"/>
+        <location filename="../../dashboard/objects_editor.py" line="1004"/>
         <source>Fit view (F)</source>
         <translation>फिट व्यू (F)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="790"/>
+        <location filename="../../dashboard/objects_editor.py" line="1012"/>
         <source>Physics properties</source>
         <translation>फ़िज़िक्स प्रॉपर्टीज़</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="795"/>
+        <location filename="../../dashboard/objects_editor.py" line="1017"/>
+        <source>Hitbox shape:</source>
+        <translation>हिटबॉक्स का आकार:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1020"/>
+        <source>Convex polygon</source>
+        <translation>उत्तल बहुभुज</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1021"/>
+        <source>Circle</source>
+        <translation>वृत्त</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1028"/>
         <source>Mass:</source>
         <translation>द्रव्यमान (Mass):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="806"/>
+        <location filename="../../dashboard/objects_editor.py" line="1038"/>
         <source>Friction:</source>
         <translation>घर्षण (Friction):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="817"/>
+        <location filename="../../dashboard/objects_editor.py" line="1048"/>
         <source>Elasticity:</source>
         <translation>लचीलापन (Elasticity):</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="831"/>
+        <location filename="../../dashboard/objects_editor.py" line="1058"/>
+        <source>Angular damping:</source>
+        <translation>कोणीय अवमंदन:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1068"/>
+        <source>Linear damping:</source>
+        <translation>रैखिक अवमंदन:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1081"/>
         <source>No image loaded.</source>
         <translation>कोई इमेज लोड नहीं की गई है।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="882"/>
+        <location filename="../../dashboard/objects_editor.py" line="1130"/>
         <source>Unsaved changes</source>
         <translation>न सहेजे गए परिवर्तन</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="883"/>
+        <location filename="../../dashboard/objects_editor.py" line="1131"/>
         <source>You have unsaved changes. Continue and discard them?</source>
         <translation>आपके पास न सहेजे गए परिवर्तन हैं। जारी रखें और उन्हें छोड़ दें?</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="901"/>
+        <location filename="../../dashboard/objects_editor.py" line="1149"/>
         <source>Open image</source>
         <translation>इमेज खोलें</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="902"/>
+        <location filename="../../dashboard/objects_editor.py" line="1150"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
         <translation>इमेजेस (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="908"/>
-        <location filename="../../dashboard/objects_editor.py" line="937"/>
-        <location filename="../../dashboard/objects_editor.py" line="987"/>
+        <location filename="../../dashboard/objects_editor.py" line="1156"/>
+        <location filename="../../dashboard/objects_editor.py" line="1202"/>
+        <location filename="../../dashboard/objects_editor.py" line="1278"/>
         <source>Error</source>
         <translation>त्रुटि (Error)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="909"/>
+        <location filename="../../dashboard/objects_editor.py" line="1157"/>
         <source>Failed to load image:
 %1</source>
         <translation>इमेज लोड करने में विफल: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="922"/>
+        <location filename="../../dashboard/objects_editor.py" line="1177"/>
         <source>Loaded image and matching hitbox: %1</source>
         <translation>इमेज और मैचिंग हिटबॉक्स लोड हो गया: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="938"/>
+        <location filename="../../dashboard/objects_editor.py" line="1203"/>
         <source>Failed to load JSON file:
 %1</source>
         <translation>JSON फ़ाइल लोड करने में विफल: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="941"/>
-        <location filename="../../dashboard/objects_editor.py" line="952"/>
-        <location filename="../../dashboard/objects_editor.py" line="956"/>
-        <location filename="../../dashboard/objects_editor.py" line="977"/>
+        <location filename="../../dashboard/objects_editor.py" line="1206"/>
+        <location filename="../../dashboard/objects_editor.py" line="1224"/>
+        <location filename="../../dashboard/objects_editor.py" line="1228"/>
+        <location filename="../../dashboard/objects_editor.py" line="1258"/>
         <source>Warning</source>
         <translation>चेतावनी</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="942"/>
+        <location filename="../../dashboard/objects_editor.py" line="1207"/>
         <source>Open an image first to edit its hitbox.</source>
         <translation>इसका हिटबॉक्स एडिट करने के लिए पहले एक इमेज खोलें।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="948"/>
+        <location filename="../../dashboard/objects_editor.py" line="1220"/>
         <source>Loaded hitbox: %1</source>
         <translation>लोडेड हिटबॉक्स: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="953"/>
+        <location filename="../../dashboard/objects_editor.py" line="1225"/>
         <source>Open an image first.</source>
         <translation>पहले एक इमेज खोलें।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="957"/>
+        <location filename="../../dashboard/objects_editor.py" line="1229"/>
         <source>No vertices to save.</source>
         <translation>सुरक्षित करने के लिए कोई वर्टिसेस नहीं हैं।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="965"/>
+        <location filename="../../dashboard/objects_editor.py" line="1237"/>
         <source>Overwrite file?</source>
         <translation>फ़ाइल अधिलेखित करें?</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="966"/>
+        <location filename="../../dashboard/objects_editor.py" line="1238"/>
         <source>The file %1 already exists. Overwrite it?</source>
         <translation>फ़ाइल %1 पहले से मौजूद है। क्या इसे अधिलेखित करें?</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="978"/>
+        <location filename="../../dashboard/objects_editor.py" line="1259"/>
         <source>The hitbox has %1 vertices, more than the %2 Box2D allows per polygon.
 It will be simplified automatically when used, which may change its shape. Saving anyway.</source>
         <translation>हिटबॉक्स में %1 शीर्ष हैं, जो Box2D द्वारा प्रति बहुभुज अनुमत %2 से अधिक हैं।
 उपयोग किए जाने पर इसे स्वचालित रूप से सरल बनाया जाएगा, जिससे इसका आकार बदल सकता है। फिर भी सहेजा जा रहा है।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="988"/>
+        <location filename="../../dashboard/objects_editor.py" line="1279"/>
         <source>Failed to save JSON file:
 %1</source>
         <translation>JSON फ़ाइल सुरक्षित करने में विफल: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="991"/>
+        <location filename="../../dashboard/objects_editor.py" line="1283"/>
         <source>Saved: %1</source>
         <translation>सुरक्षित किया गया: %1</translation>
     </message>

@@ -1,6 +1,7 @@
 import sys
 import time
 from PySide6 import QtWidgets, QtCore, QtGui
+from Box2D import b2CircleShape, b2PolygonShape
 import logging
 import win32gui
 
@@ -68,12 +69,27 @@ class DesktopApp(QtWidgets.QApplication):
         if self.hitbox_overlay.isVisible():
             platform_rects: list = [(rect, (100, 255, 0, 180)) for rect in self.world_objects_manager.debug_platform_rects.values()]
             polygons_objects: list[tuple[list[tuple[float | int, float | int]], tuple[int, int, int]]] = []
+            circles_objects: list[tuple[tuple[float | int, float | int], float, tuple[int, int, int], float]] = []
             for obj in self.world_objects_manager.world_objects:
-                local_vertices: list[tuple[float | int, float | int]] = []
-                for vertex in obj.fixture.shape.vertices:
-                    world_pos = obj.body.GetWorldPoint(vertex)
-                    local_vertices.append((m_to_px(world_pos.x), m_to_px(world_pos.y)))
-                polygons_objects.append((local_vertices, (255, 200, 200)))
+                shape = obj.fixture.shape
+                if isinstance(shape, b2PolygonShape):
+                    local_vertices: list[tuple[float | int, float | int]] = []
+                    for vertex in shape.vertices:
+                        world_pos = obj.body.GetWorldPoint(vertex)
+                        local_vertices.append(
+                            (m_to_px(world_pos.x), m_to_px(world_pos.y))
+                        )
+                    polygons_objects.append((local_vertices, (255, 200, 200)))
+                elif isinstance(shape, b2CircleShape):
+                    world_center = obj.body.GetWorldPoint(shape.pos)
+                    circles_objects.append((
+                        (m_to_px(world_center.x), m_to_px(world_center.y)),
+                        m_to_px(shape.radius),
+                        (255, 200, 200),
+                        obj.body.angle,
+                    ))
+                else:
+                    raise Exception(f'Unknown hitbox shape "{type(shape)}"')
             if self.hitbox_overlay is not None:
                 self.hitbox_overlay.update_hitboxes(
                     [
@@ -83,7 +99,8 @@ class DesktopApp(QtWidgets.QApplication):
                     [
                         # (self.animacje_hitbox[self.obecna_animacja].currentImage(), int(self.real_x), int(self.real_y))
                     ],
-                    polygons_objects
+                    polygons_objects,
+                    circles_objects
                 )
         self.process_timer.stop("show hitboxes")
 

@@ -54,37 +54,42 @@ Repository: &lt;a href=&apos;https://github.com/czarchmA8/DesktopPet_v3&apos; st
 <context>
     <name>HitboxCanvas</name>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="331"/>
+        <location filename="../../dashboard/objects_editor.py" line="368"/>
         <source>Open an image: Ctrl+O</source>
         <translation>Open an image: Ctrl+O</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="520"/>
+        <location filename="../../dashboard/objects_editor.py" line="620"/>
         <source>Cannot delete - hitbox requires at least 3 vertices.</source>
         <translation>Cannot delete - hitbox requires at least 3 vertices.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="629"/>
+        <location filename="../../dashboard/objects_editor.py" line="762"/>
         <source>No image loaded. Ctrl+O to open one.</source>
         <translation>No image loaded. Ctrl+O to open one.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="631"/>
+        <location filename="../../dashboard/objects_editor.py" line="764"/>
         <source>Zoom:</source>
         <translation>Zoom:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="632"/>
+        <location filename="../../dashboard/objects_editor.py" line="766"/>
+        <source>Radius:</source>
+        <translation>Radius:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="772"/>
         <source>Vertices:</source>
         <translation>Vertices:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="639"/>
+        <location filename="../../dashboard/objects_editor.py" line="779"/>
         <source>Image:</source>
         <translation>Image:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="644"/>
+        <location filename="../../dashboard/objects_editor.py" line="784"/>
         <source>Pixel:</source>
         <translation>Pixel:</translation>
     </message>
@@ -240,217 +245,247 @@ Repository: &lt;a href=&apos;https://github.com/czarchmA8/DesktopPet_v3&apos; st
 <context>
     <name>ObjectsEditor</name>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="676"/>
+        <location filename="../../dashboard/objects_editor.py" line="909"/>
         <source>Objects Editor</source>
         <translation>Objects Editor</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="686"/>
+        <location filename="../../dashboard/objects_editor.py" line="919"/>
         <source>File</source>
         <translation>File</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="689"/>
+        <location filename="../../dashboard/objects_editor.py" line="922"/>
         <source>Open image...</source>
         <translation>Open image...</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="695"/>
+        <location filename="../../dashboard/objects_editor.py" line="928"/>
         <source>Save changes</source>
         <translation>Save changes</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="702"/>
+        <location filename="../../dashboard/objects_editor.py" line="935"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="708"/>
+        <location filename="../../dashboard/objects_editor.py" line="941"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="711"/>
+        <location filename="../../dashboard/objects_editor.py" line="944"/>
         <source>Undo</source>
         <translation>Undo</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="717"/>
+        <location filename="../../dashboard/objects_editor.py" line="950"/>
         <source>Redo</source>
         <translation>Redo</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="725"/>
+        <location filename="../../dashboard/objects_editor.py" line="958"/>
         <source>Generate hitbox from image</source>
         <translation>Generate hitbox from image</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="731"/>
+        <location filename="../../dashboard/objects_editor.py" line="964"/>
         <source>Set hitbox to full image (bounding box)</source>
         <translation>Set hitbox to full image (bounding box)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="737"/>
+        <location filename="../../dashboard/objects_editor.py" line="970"/>
         <source>View</source>
         <translation>View</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="740"/>
+        <location filename="../../dashboard/objects_editor.py" line="973"/>
         <source>Fit view</source>
         <translation>Fit view</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="747"/>
+        <location filename="../../dashboard/objects_editor.py" line="980"/>
         <source>Tools</source>
         <translation>Tools</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="751"/>
+        <location filename="../../dashboard/objects_editor.py" line="801"/>
         <source>Alpha threshold:</source>
         <translation>Alpha threshold:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="760"/>
+        <location filename="../../dashboard/objects_editor.py" line="809"/>
         <source>Tolerance:</source>
         <translation>Tolerance:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="770"/>
+        <location filename="../../dashboard/objects_editor.py" line="818"/>
         <source>Recompute hull</source>
         <translation>Recompute hull</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="777"/>
+        <location filename="../../dashboard/objects_editor.py" line="835"/>
+        <source>Radius:</source>
+        <translation>Radius:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="997"/>
         <source>Show pixel grid</source>
         <translation>Show pixel grid</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="784"/>
+        <location filename="../../dashboard/objects_editor.py" line="1004"/>
         <source>Fit view (F)</source>
         <translation>Fit view (F)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="790"/>
+        <location filename="../../dashboard/objects_editor.py" line="1012"/>
         <source>Physics properties</source>
         <translation>Physics properties</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="795"/>
+        <location filename="../../dashboard/objects_editor.py" line="1017"/>
+        <source>Hitbox shape:</source>
+        <translation>Hitbox shape:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1020"/>
+        <source>Convex polygon</source>
+        <translation>Convex polygon</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1021"/>
+        <source>Circle</source>
+        <translation>Circle</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1028"/>
         <source>Mass:</source>
         <translation>Mass:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="806"/>
+        <location filename="../../dashboard/objects_editor.py" line="1038"/>
         <source>Friction:</source>
         <translation>Friction:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="817"/>
+        <location filename="../../dashboard/objects_editor.py" line="1048"/>
         <source>Elasticity:</source>
         <translation>Elasticity:</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="831"/>
+        <location filename="../../dashboard/objects_editor.py" line="1058"/>
+        <source>Angular damping:</source>
+        <translation>Angular damping:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1068"/>
+        <source>Linear damping:</source>
+        <translation>Linear damping:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/objects_editor.py" line="1081"/>
         <source>No image loaded.</source>
         <translation>No image loaded.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="882"/>
+        <location filename="../../dashboard/objects_editor.py" line="1130"/>
         <source>Unsaved changes</source>
         <translation>Unsaved changes</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="883"/>
+        <location filename="../../dashboard/objects_editor.py" line="1131"/>
         <source>You have unsaved changes. Continue and discard them?</source>
         <translation>You have unsaved changes. Continue and discard them?</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="901"/>
+        <location filename="../../dashboard/objects_editor.py" line="1149"/>
         <source>Open image</source>
         <translation>Open image</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="902"/>
+        <location filename="../../dashboard/objects_editor.py" line="1150"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
         <translation>Images (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="908"/>
-        <location filename="../../dashboard/objects_editor.py" line="937"/>
-        <location filename="../../dashboard/objects_editor.py" line="987"/>
+        <location filename="../../dashboard/objects_editor.py" line="1156"/>
+        <location filename="../../dashboard/objects_editor.py" line="1202"/>
+        <location filename="../../dashboard/objects_editor.py" line="1278"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="909"/>
+        <location filename="../../dashboard/objects_editor.py" line="1157"/>
         <source>Failed to load image:
 %1</source>
         <translation>Failed to load image: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="922"/>
+        <location filename="../../dashboard/objects_editor.py" line="1177"/>
         <source>Loaded image and matching hitbox: %1</source>
         <translation>Loaded image and matching hitbox: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="938"/>
+        <location filename="../../dashboard/objects_editor.py" line="1203"/>
         <source>Failed to load JSON file:
 %1</source>
         <translation>Failed to load JSON file: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="941"/>
-        <location filename="../../dashboard/objects_editor.py" line="952"/>
-        <location filename="../../dashboard/objects_editor.py" line="956"/>
-        <location filename="../../dashboard/objects_editor.py" line="977"/>
+        <location filename="../../dashboard/objects_editor.py" line="1206"/>
+        <location filename="../../dashboard/objects_editor.py" line="1224"/>
+        <location filename="../../dashboard/objects_editor.py" line="1228"/>
+        <location filename="../../dashboard/objects_editor.py" line="1258"/>
         <source>Warning</source>
         <translation>Warning</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="942"/>
+        <location filename="../../dashboard/objects_editor.py" line="1207"/>
         <source>Open an image first to edit its hitbox.</source>
         <translation>Open an image first to edit its hitbox.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="948"/>
+        <location filename="../../dashboard/objects_editor.py" line="1220"/>
         <source>Loaded hitbox: %1</source>
         <translation>Loaded hitbox: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="953"/>
+        <location filename="../../dashboard/objects_editor.py" line="1225"/>
         <source>Open an image first.</source>
         <translation>Open an image first.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="957"/>
+        <location filename="../../dashboard/objects_editor.py" line="1229"/>
         <source>No vertices to save.</source>
         <translation>No vertices to save.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="965"/>
+        <location filename="../../dashboard/objects_editor.py" line="1237"/>
         <source>Overwrite file?</source>
         <translation>Overwrite file?</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="966"/>
+        <location filename="../../dashboard/objects_editor.py" line="1238"/>
         <source>The file %1 already exists. Overwrite it?</source>
         <translation>The file %1 already exists. Overwrite it?</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="978"/>
+        <location filename="../../dashboard/objects_editor.py" line="1259"/>
         <source>The hitbox has %1 vertices, more than the %2 Box2D allows per polygon.
 It will be simplified automatically when used, which may change its shape. Saving anyway.</source>
         <translation>The hitbox has %1 vertices, more than the %2 Box2D allows per polygon.
 It will be simplified automatically when used, which may change its shape. Saving anyway.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="988"/>
+        <location filename="../../dashboard/objects_editor.py" line="1279"/>
         <source>Failed to save JSON file:
 %1</source>
         <translation>Failed to save JSON file: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/objects_editor.py" line="991"/>
+        <location filename="../../dashboard/objects_editor.py" line="1283"/>
         <source>Saved: %1</source>
         <translation>Saved: %1</translation>
     </message>

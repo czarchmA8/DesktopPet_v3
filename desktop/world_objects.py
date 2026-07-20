@@ -1,24 +1,32 @@
 from dataclasses import dataclass
+import math
+from pathlib import Path
+import json
+import logging
+
+import win32gui, win32con
+import ctypes
+from ctypes import wintypes
 from PySide6 import QtWidgets, QtCore, QtGui
 from Box2D import (
     b2Body,
     b2World,
     b2EdgeShape,
     b2PolygonShape,
+    b2CircleShape,
     b2FixtureDef,
     b2ContactListener,
 )
-import math
-import win32gui, win32con
-import ctypes
-from ctypes import wintypes
-import logging
-from pathlib import Path
-import json
 
 from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
 from logger_setup import setup_process_logger
-from desktop.physics_utils import XYXY_Rectangle, CollisionTypes, px_to_m, px_to_m_vec, m_to_px_vec, polygon_area, simplify_convex_polygon
+from desktop.physics_utils import (
+    XYXY_Rectangle, CollisionTypes, 
+    px_to_m, px_to_m_vec, m_to_px_vec, 
+    polygon_area, simplify_convex_polygon,
+    DEFAULT_FRICTION, DEFAULT_ELASTICITY, DEFAULT_MASS, DEFAULT_ANGULAR_DAMPING, DEFAULT_LINEAR_DAMPING,
+    HitboxShapes,
+)
 from dashboard.objects_editor import generate_hull_vertices
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -66,15 +74,20 @@ class WorldObject(QtWidgets.QWidget):
     def __init__(
         self,
         shared_data,
-        world_objects: list['WorldObject'],
+        world_objects: list["WorldObject"],
         space: b2World,
         image_path: Path,
         start_x: int,
         start_y: int,
-        vertices: list[tuple[float, float] | list[float]] | None=None,
-        mass: float | None=None,
-        elasticity: float | None=None,
-        friction: float | None=None
+        mass: float | None = None,
+        elasticity: float | None = None,
+        friction: float | None = None,
+        angular_damping: float | None = None,
+        linear_damping: float | None = None,
+        shape: str | None = None,
+        vertices: list[tuple[float, float] | list[float]] | None = None,
+        circle_center: tuple[float, float] | None = None,
+        circle_radius: float | None = None,
     ) -> None:
         super().__init__()
         self.shared_data = shared_data
@@ -89,28 +102,59 @@ class WorldObject(QtWidgets.QWidget):
         self.resize(self.w, self.h)
 
         object_settings_path = image_path.with_suffix(".json")
-        raw_vertices: list[tuple[float, float] | list[float]] | list[tuple[float, float]] | list[list[float]]
+        raw_vertices: list[tuple[float, float] | list[float]] | list[tuple[float, float]] | list[list[float]] = []
         if object_settings_path.exists():
             with open(object_settings_path, "r", encoding="utf-8") as f:
                 object_settings: dict = json.load(f)
-            raw_vertices = vertices if vertices else object_settings["vertices"]
+
+            shape = shape if shape else object_settings["shape"]
             mass = mass if mass else object_settings["mass"]
             elasticity = elasticity if elasticity else object_settings["elasticity"]
             friction = friction if friction else object_settings["friction"]
+            angular_damping = angular_damping if angular_damping else object_settings["angular_damping"]
+            linear_damping = linear_damping if linear_damping else object_settings["linear_damping"]
+
+            if shape == HitboxShapes.POLYGON:
+                raw_vertices = vertices if vertices else object_settings["vertices"]
+            elif shape == HitboxShapes.CIRCLE:
+                circle_center = circle_center if circle_center else object_settings["center"]
+                circle_radius = circle_radius if circle_radius else object_settings["radius"]
+            else:
+                raise Exception(f'Unknown hitbox shape "{shape}"')
         else:
-            raw_vertices = vertices if vertices else generate_hull_vertices(self.original_pixmap)
-            mass = mass if mass else 10.0
-            elasticity = elasticity if elasticity else 0.7
-            friction = friction if friction else 0.3
-            with open(object_settings_path, "w", encoding="utf-8") as f:
-                json.dump({
+            # Each object should have a settings file, but I decided to add default values anyway
+            shape = shape if shape else HitboxShapes.POLYGON
+            mass = mass if mass else DEFAULT_MASS
+            elasticity = elasticity if elasticity else DEFAULT_ELASTICITY
+            friction = friction if friction else DEFAULT_FRICTION
+            angular_damping = angular_damping if angular_damping else DEFAULT_ANGULAR_DAMPING
+            linear_damping = linear_damping if linear_damping else DEFAULT_LINEAR_DAMPING
+            
+            settings_to_save = {
+                "shape": shape,
+                "mass": mass,
+                "elasticity": elasticity,
+                "friction": friction,
+                "angular_damping": angular_damping,
+                "linear_damping": linear_damping,
+            }
+            if shape == HitboxShapes.POLYGON:
+                raw_vertices = vertices if vertices else generate_hull_vertices(self.original_pixmap)
+                settings_to_save = settings_to_save | {
                     "vertices": raw_vertices,
-                    "mass": mass,
-                    "elasticity": elasticity,
-                    "friction": friction
-                }, f, ensure_ascii=False)
+                }
+            elif shape == HitboxShapes.CIRCLE:
+                circle_center = circle_center if circle_center else (0.0, 0.0)
+                circle_radius = circle_radius if circle_radius else self.original_pixmap.width() // 2
+                settings_to_save = settings_to_save | {
+                    "center": list(circle_center),
+                    "radius": circle_radius,
+                }
+            else:
+                raise Exception(f'Unknown hitbox shape "{shape}"')
+            with open(object_settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings_to_save, f, ensure_ascii=False)
             logger.debug(f"A new file \"{object_settings_path.name}\" has been created for the object")
-        vertices_normalized: list[tuple[float, float]] = [(v[0], v[1]) for v in raw_vertices]
 
         self.hwnd_self = int(self.winId())
 
@@ -119,13 +163,26 @@ class WorldObject(QtWidgets.QWidget):
         self.on_window_hwnd: int | None = None
 
         # --- Ciało fizyczne ---
-        vertices_m_full = [(px_to_m(v[0]), px_to_m(v[1])) for v in vertices_normalized]
-        vertices_m = simplify_convex_polygon(vertices_m_full, max_vertices=16)
-        area_m2 = polygon_area(vertices_m)
-        density = mass / area_m2 if area_m2 > 1e-9 else 1.0
+        if shape == HitboxShapes.POLYGON:
+            vertices_normalized: list[tuple[float, float]] = [(v[0], v[1]) for v in raw_vertices]
+            vertices_m_full = [(px_to_m(v[0]), px_to_m(v[1])) for v in vertices_normalized]
+            vertices_m = simplify_convex_polygon(vertices_m_full, max_vertices=16)
+            area_m2 = polygon_area(vertices_m)
+            density = mass / area_m2 if area_m2 > 1e-9 else 1.0
+            fixture_shape = b2PolygonShape(vertices=vertices_m)
+        elif shape == HitboxShapes.CIRCLE:
+            assert circle_radius is not None, "`circle_radius` cannot be equal to None"
+            assert circle_center is not None, "`circle_center` cannot be equal to None"
+            radius_m = px_to_m(circle_radius)
+            center_m = px_to_m_vec(circle_center[0], circle_center[1])
+            area_m2 = math.pi * radius_m ** 2
+            density = mass / area_m2 if area_m2 > 1e-9 else 1.0
+            fixture_shape = b2CircleShape(pos=center_m, radius=radius_m)
+        else:
+            raise Exception(f'Unknown hitbox shape "{shape}"')
 
         object_fixture_def = b2FixtureDef(
-            shape=b2PolygonShape(vertices=vertices_m),
+            shape=fixture_shape,
             density=density,
             friction=friction,
             restitution=elasticity,
@@ -134,6 +191,8 @@ class WorldObject(QtWidgets.QWidget):
         self.body = self.space.CreateDynamicBody(
             position=px_to_m_vec(start_x, start_y),
             fixtures=object_fixture_def,
+            angularDamping=angular_damping,
+            linearDamping=linear_damping,
         )
         self.fixture = self.body.fixtures[0]
 
