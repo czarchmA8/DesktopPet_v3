@@ -1,4 +1,10 @@
 {
+  "shape": "polygon",
+  "mass": 1.0,
+  "friction": 0.5,
+  "elasticity": 0.3,
+  "angular_damping": 0.6,
+  "linear_damping": 0.1,
   "vertices": [
     [
       -11.0,
@@ -36,8 +42,5 @@
       -13.0,
       0.0
     ]
-  ],
-  "mass": 1.0,
-  "friction": 0.5,
-  "elasticity": 0.3
+  ]
 }

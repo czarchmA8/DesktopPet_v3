@@ -1,4 +1,5 @@
 from PySide6 import QtWidgets, QtCore, QtGui
+import math
 import re
 from dataclasses import is_dataclass, dataclass, fields
 from typing import Optional
@@ -161,6 +162,7 @@ class HitboxOverlay(QtWidgets.QWidget):
         # Dane do rysowania
         self.rects: list[tuple[int, int, int, int]] = []
         self.polygons: list[tuple[list[tuple[float, float]], tuple[int, int, int]]] = []
+        self.circles: list[tuple[tuple[float, float], float, tuple[int, int, int], float]] = []
         self.masks: list[tuple] = []  # Lista krotek: (QImage, x, y)
 
         # Pobranie wirtualnej geometrii (wszystkie monitory)
@@ -180,17 +182,19 @@ class HitboxOverlay(QtWidgets.QWidget):
         self.setGeometry(virtual_geometry)
         self.show()
 
-    def update_hitboxes(self, rects: list | None = None, masks: list | None = None, polygons: list | None = None) -> None:
+    def update_hitboxes(self, rects: list | None = None, masks: list | None = None, polygons: list | None = None, circles: list | None = None) -> None:
         """
-        Updates hitbox overlay with rectangles, polygons and masks
+        Updates hitbox overlay with rectangles, polygons, circles and masks
 
         rects: lista krotek (((x, y, w, h), kolor))
         masks: lista krotek (QImage, x, y)
         polygons: lista krotek (([(x1, y1), (x2, y2), ...], kolor))
+        circles: lista krotek (((cx, cy), promień, kolor, kąt_w_radianach))
         """
         self.rects = [] if rects is None else rects
         self.masks = [] if masks is None else masks
         self.polygons = [] if polygons is None else polygons
+        self.circles = [] if circles is None else circles
         self.update()
 
     def paintEvent(self, event):
@@ -246,6 +250,28 @@ class HitboxOverlay(QtWidgets.QWidget):
                 painter.setBrush(QtGui.QBrush(color))
                 for point in qpoints:
                     painter.drawEllipse(point, 3, 3)
+
+        # Rysowanie Kół (dokładne hitboxy kołowe)
+        if self.circles:
+            painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+            for (cx, cy), radius, (r, g, b), angle in self.circles:
+                color = QtGui.QColor(r, g, b)
+                painter.setPen(QtGui.QPen(color, 2, QtCore.Qt.PenStyle.SolidLine))
+
+                center = QtCore.QPointF(cx + self.primary_offset_x, cy + self.primary_offset_y)
+                painter.drawEllipse(center, radius, radius)
+
+                # Linia wskazująca rotację ciała (ułatwia debugowanie obrotu koła)
+                edge_point = QtCore.QPointF(
+                    center.x() + radius * math.cos(angle),
+                    center.y() + radius * math.sin(angle),
+                )
+                painter.drawLine(center, edge_point)
+
+                # Środek koła jako mały punkt
+                painter.setBrush(QtGui.QBrush(color))
+                painter.drawEllipse(center, 3, 3)
+                painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
 
         painter.end()
 

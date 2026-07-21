@@ -18,7 +18,8 @@
 ## 📸 Preview
 <div align="center">
   <img width="800" height="450" alt="2026-06-22 18-40-51" src="https://github.com/user-attachments/assets/74f2b2ec-055e-4af8-a9c6-826a366df9b3" />
-  <img width="854" height="480" alt="2026-07-06 18-17-17" src="https://github.com/user-attachments/assets/b9bd72f3-cf8e-4ad1-b0be-20b061a16aea" />
+  <img width="854" height="480" alt="2026-07-21 13-10-42" src="https://github.com/user-attachments/assets/4c0af889-84c4-46f5-ad65-d47d22764a54" />
+  <video src="https://github.com/user-attachments/assets/6198545f-e84f-4092-84f9-3ae283c6f808" width="1220" controls></video>
 </div>
 
 ## ✨ Key Features

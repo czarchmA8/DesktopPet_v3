@@ -1,7 +1,10 @@
-from PySide6.QtCore import QRect
-from enum import IntEnum, auto
+from enum import IntEnum, StrEnum, auto
 from dataclasses import dataclass
+
+from PySide6.QtCore import QRect
 from Box2D import b2Vec2
+
+# --- Pet ---
 
 @dataclass
 class XYXY_Rectangle:
@@ -112,12 +115,27 @@ class CustomHitboxCollisions:
 
         return False
 
+# --- Objects ---
+
 class CollisionTypes(IntEnum):
     '''Enumeration of collision types (OBJECT, PLATFORM)'''
     OBJECT = auto()
     PLATFORM = auto()
 
 PPM: float = 100.0 # PPM (pixels-per-meter)
+MAX_POLYGON_VERTICES: int = 16 # Box2D's limit
+
+# Default physics properties assigned to a new object
+DEFAULT_MASS: float = 1.0
+DEFAULT_FRICTION: float = 0.5
+DEFAULT_ELASTICITY: float = 0.3
+DEFAULT_ANGULAR_DAMPING: float = 0.6
+DEFAULT_LINEAR_DAMPING: float = 0.1
+
+class HitboxShapes(StrEnum):
+    '''Enumeration of hitbox types'''
+    POLYGON = auto()
+    CIRCLE = auto()
 
 def px_to_m(value: float) -> float:
     '''Converts a scalar value from pixels to meters'''
@@ -145,7 +163,7 @@ def polygon_area(vertices: list[tuple[float, float]]) -> float:
         area += x1 * y2 - x2 * y1
     return abs(area) / 2.0
 
-def simplify_convex_polygon(vertices: list[tuple[float, float]], max_vertices: int = 16) -> list[tuple[float, float]]:
+def simplify_convex_polygon(vertices: list[tuple[float, float]], max_vertices: int = MAX_POLYGON_VERTICES) -> list[tuple[float, float]]:
     '''
     Reduces a convex polygon's vertex count to fit Box2D's b2_maxPolygonVertices limit.
     Repeatedly drops the vertex whose removal loses the least area (Visvalingam-Whyatt style).
