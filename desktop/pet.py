@@ -354,17 +354,20 @@ class PetWidget(QtWidgets.QWidget):
 
     def keyPressEvent(self, event) -> None: # Tymczasowa funkcja do debugowania i testowania
         '''Temporary function for debugging and testing'''
-        if event.key() == QtCore.Qt.Key.Key_Space:
-            self.real_x, self.real_y = 800.0, 200.0
-            self.velocity = [400.0, -800.0]
-        elif event.key() == QtCore.Qt.Key.Key_1:
-            self.velocity = list(self.compute_launch_velocity(0, self.taskbar_y))
-        elif event.key() == QtCore.Qt.Key.Key_Up:
-            self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects])[0]
-            logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
-        elif event.key() == QtCore.Qt.Key.Key_Down:
-            self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects] + [self.on_window_hwnd])[1]
-            logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+        if self.shared_data.args.debug >= 2 or self.shared_data.settings["debug"]["active"]:
+            if event.key() == QtCore.Qt.Key.Key_Space:
+                self.real_x, self.real_y = 800.0, 200.0
+                self.velocity = [400.0, -800.0]
+            elif event.key() == QtCore.Qt.Key.Key_1:
+                self.velocity = list(self.compute_launch_velocity(0, self.taskbar_y))
+            elif event.key() == QtCore.Qt.Key.Key_Up:
+                self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects])[0]
+                logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+            elif event.key() == QtCore.Qt.Key.Key_Down:
+                self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects] + [self.on_window_hwnd])[1]
+                logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+            else:
+                super().keyPressEvent(event)
         else:
             super().keyPressEvent(event)
 
