@@ -3,6 +3,8 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from datetime import datetime
 
+import config
+
 class ColorFormatter(logging.Formatter):
     """Formatter with ANSI colors for console"""
 
@@ -53,8 +55,8 @@ def _clean_old_logs(logs_folder: Path, prefiks: str, logger, max_old_logs: int =
             logger.warning(f"Failed to delete \"{file_to_delete.name}\": {e}")
 
 def setup_main_listener(file_name: str, queue, debug=False, max_old_logs: int=3) -> QueueListener:
-    '''Sets up the main logging listener with queue support'''
-    logs_folder = Path("logs")
+    """Sets up the main logging listener with queue support"""
+    logs_folder = config.APP_DIR / "logs"
     if not logs_folder.exists():
         logs_folder.mkdir()
 
@@ -94,7 +96,7 @@ def setup_main_listener(file_name: str, queue, debug=False, max_old_logs: int=3)
     return listener
 
 def setup_process_logger(logger_name: str, queue) -> logging.Logger:
-    '''Configures a process-specific logger with queue handler'''
+    """Configures a process-specific logger with queue handler"""
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG)
 

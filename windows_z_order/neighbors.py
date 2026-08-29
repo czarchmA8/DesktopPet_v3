@@ -21,7 +21,7 @@ List_Titles: FilterList    = {"BlackList": True,  "List": []}
 List_exe_paths: FilterList = {"BlackList": True,  "List": []}
 
 # ---------------------------------------------------------------------------
-# Module-level DWM handle – loaded once at import
+# Module-level DWM handle
 # ---------------------------------------------------------------------------
 
 _dwmapi = ctypes.WinDLL("dwmapi")
@@ -109,7 +109,7 @@ def is_real_window(hwnd: int) -> bool:
     return True
 
 def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows: bool = True, blacklist_hwnd: list[int] | None = None) -> tuple[int | None, int | None]:
-    '''Gets the nearest visible windows above and below a target window'''
+    """Gets the nearest visible windows above and below a target window."""
     if not win32gui.IsWindow(target_hwnd):
         return None, None
 
@@ -167,8 +167,62 @@ def get_immediate_neighbors_above_and_below(target_hwnd: int, only_real_windows:
 
         return above, below
 
+def get_window_above(hwnd: int, blacklist_hwnd: list[int] | None = None) -> int | None:
+    """Gets the nearest window above the target window, without filter is_real_window."""
+    blacklist_set = set(blacklist_hwnd) if blacklist_hwnd else set()
+    h = win32gui.GetWindow(hwnd, win32con.GW_HWNDPREV)
+    while h:
+        if h not in blacklist_set:
+            return h
+        h = win32gui.GetWindow(h, win32con.GW_HWNDPREV)
+    return None
+
+def get_window_below(hwnd: int, blacklist_hwnd: list[int] | None = None) -> int | None:
+    """Gets the nearest window below the target window, without filter is_real_window."""
+    blacklist_set = set(blacklist_hwnd) if blacklist_hwnd else set()
+    h = win32gui.GetWindow(hwnd, win32con.GW_HWNDNEXT)
+    while h:
+        if h not in blacklist_set:
+            return h
+        h = win32gui.GetWindow(h, win32con.GW_HWNDNEXT)
+    return None
+
+def get_real_window_above(hwnd: int, blacklist_hwnd: list[int] | None = None) -> tuple[int | None, int | None]:
+    """Gets the nearest visible window and the nearest above the target window."""
+    blacklist_set = set(blacklist_hwnd) if blacklist_hwnd else set()
+    nearest: int | None = None
+    h = win32gui.GetWindow(hwnd, win32con.GW_HWNDPREV)
+    while h:
+        if h not in blacklist_set:
+            if nearest is None:
+                nearest = h
+            try:
+                if is_real_window(h):
+                    return h, nearest
+            except Exception:
+                pass
+        h = win32gui.GetWindow(h, win32con.GW_HWNDPREV)
+    return None, nearest
+
+def get_real_window_below(hwnd: int, blacklist_hwnd: list[int] | None = None) -> tuple[int | None, int | None]:
+    """Gets the nearest visible window and the nearest below the target window."""
+    blacklist_set = set(blacklist_hwnd) if blacklist_hwnd else set()
+    nearest: int | None = None
+    h = win32gui.GetWindow(hwnd, win32con.GW_HWNDNEXT)
+    while h:
+        if h not in blacklist_set:
+            if nearest is None:
+                nearest = h
+            try:
+                if is_real_window(h):
+                    return h, nearest
+            except Exception:
+                pass
+        h = win32gui.GetWindow(h, win32con.GW_HWNDNEXT)
+    return None, nearest
+
 def get_windows_above_and_below(target_hwnd: int, only_real_windows: bool, blacklist_hwnd: list[int] | None = None) -> tuple[list[int], list[int]]:
-    '''Gets all windows above and below a target window in z-order'''
+    """Gets all windows above and below a target window in z-order."""
     blacklist_hwnd = [] if blacklist_hwnd is None else blacklist_hwnd
     above_list = []
     below_list = []
@@ -229,7 +283,7 @@ if __name__ == "__main__":
             formatted = formatted.rstrip('0').rstrip('.')
         return formatted
 
-    def benchmark_performance(test_name, functions_list, average_samples: int = 30):
+    def benchmark_performance(test_name, functions_list, average_samples: int = 100):
         results = []
         for function, name in functions_list:
             results.append([timeit.timeit(stmt=function, number=average_samples), name])
@@ -263,43 +317,51 @@ if __name__ == "__main__":
     print("\nTest results can vary drastically depending on active windows and computer speed")
     for only_real_windows in [True, False]:
         benchmark_performance(f"real_windows={only_real_windows}", [
-            [lambda: get_immediate_neighbors_above_and_below(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v4"]
-        ] + [] if old_functions_not_exist else [
+            [lambda: get_immediate_neighbors_above_and_below(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v4"],
+        ] + ([] if old_functions_not_exist else [
             [lambda: windows_layer_old.get_immediate_neighbors_above_and_below_v3(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v3"],
             [lambda: windows_layer_old.get_immediate_neighbors_above_and_below_v2(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v2"],
             [lambda: windows_layer_old.get_immediate_neighbors_above_and_below_v1(hwnd, only_real_windows), "get_immediate_neighbors_above_and_below_v1"],
             [lambda: windows_layer_old.get_windows_above_and_below_v2(hwnd, only_real_windows), "get_windows_above_and_below_v2"],
             [lambda: windows_layer_old.get_windows_above_and_below_v1(hwnd, only_real_windows), "get_windows_above_and_below_v1"],
-            [lambda: windows_layer_old.get_window_above_v1(hwnd, only_real_windows), "get_window_above_v1"]
-        ])
+            [lambda: windows_layer_old.get_window_above_v1(hwnd, only_real_windows), "get_window_above_v1"],
+            [lambda: (get_real_window_above(hwnd), get_real_window_below(hwnd)), "get_real_window_above+below"] if only_real_windows else [lambda: (get_window_above(hwnd), get_window_below(hwnd)), "get_window_above+below"]
+        ]))
 
     benchmark_performance("is_real_window()", [
-        [lambda: is_real_window(hwnd), "is_real_window_v3"]
-    ] + [] if old_functions_not_exist else [
+        [lambda: is_real_window(hwnd), "is_real_window_v3"],
+    ] + ([] if old_functions_not_exist else [
         [lambda: windows_layer_old.is_real_window_v2(hwnd), "is_real_window_v2"],
         [lambda: windows_layer_old.is_real_window_v1(hwnd), "is_real_window_v1"],
-    ])
+    ]))
 
-    # Wyniki tekstów mogą drastycznie się zmienić w zależności od aktywnych okien i prędkości komputera
-    # Wyniki testu "real_windows=True":
-    # 1. 0.000285s       - get_immediate_neighbors_above_and_below_v4,  (najszybszy)
-    # 2. 0.000816s       - get_immediate_neighbors_above_and_below_v3,  różnica: +0.00053s     od najlepszego: +0.00053s (2.86x)
-    # 3. 0.00612s        - get_immediate_neighbors_above_and_below_v2,  różnica: +0.0053s      od najlepszego: +0.00583s (21.45x)
-    # 4. 0.0184s         - get_immediate_neighbors_above_and_below_v1,  różnica: +0.0123s      od najlepszego: +0.0182s (64.75x)
-    # 5. 0.096s          - get_windows_above_and_below_v2,              różnica: +0.0775s      od najlepszego: +0.0957s (336.36x)
-    # 6. 0.0967s         - get_window_above_v1,                         różnica: +0.000707s    od najlepszego: +0.0964s (338.84x)
-    # 7. 0.101s          - get_windows_above_and_below_v1,              różnica: +0.00503s     od najlepszego: +0.101s (356.48x)
+    # Test results can vary drastically depending on active windows and computer speed
+    # Test results "real_windows=True":
+    # 1. 0.000817s       - get_real_window_above+below (C),              (fastest)
+    # 2. 0.00124s        - get_immediate_neighbors_above_and_below (C),  difference: +0.000431s from best: +0.000431s (1.53x)
+    # 3. 0.00149s        - get_real_window_above+below,                  difference: +0.000247s from best: +0.000679s (1.83x)
+    # 4. 0.00181s        - get_immediate_neighbors_above_and_below_v4,   difference: +0.000317s from best: +0.000996s (2.22x)
+    # 5. 0.00338s        - get_immediate_neighbors_above_and_below_v3,   difference: +0.00156s  from best: +0.00256s (4.14x)
+    # 6. 0.0498s         - get_immediate_neighbors_above_and_below_v2,   difference: +0.0464s   from best: +0.049s (60.96x)
+    # 7. 0.099s          - get_immediate_neighbors_above_and_below_v1,   difference: +0.0492s   from best: +0.0982s (121.12x)
+    # 8. 0.342s          - get_windows_above_and_below_v2,               difference: +0.243s    from best: +0.341s (418.33x)
+    # 9. 0.365s          - get_windows_above_and_below_v1,               difference: +0.0237s   from best: +0.365s (447.37x)
+    # 10. 0.378s         - get_window_above_v1,                          difference: +0.0122s   from best: +0.377s (462.35x)
     #
-    # Wyniki testu "real_windows=False":
-    # 1. 0.0000129s      - get_immediate_neighbors_above_and_below_v3,  (najszybszy)
-    # 2. 0.0000131s      - get_immediate_neighbors_above_and_below_v2,  różnica: +0.000000199s od najlepszego: +0.000000199s (1.02x)
-    # 3. 0.0000153s      - get_immediate_neighbors_above_and_below_v4,  różnica: +0.0000021s   od najlepszego: +0.0000023s (1.18x)
-    # 4. 0.000219s       - get_immediate_neighbors_above_and_below_v1,  różnica: +0.000204s    od najlepszego: +0.000206s (16.88x)
-    # 5. 0.00119s        - get_windows_above_and_below_v2,              różnica: +0.00097s     od najlepszego: +0.00117s (91.55x)
-    # 6. 0.00196s        - get_window_above_v1,                         różnica: +0.000778s    od najlepszego: +0.00195s (151.41x)
-    # 7. 0.0988s         - get_windows_above_and_below_v1,              różnica: +0.0969s      od najlepszego: +0.0988s (7607.62x)
+    # Test results "real_windows=False":
+    # 1. 0.0000383s      - get_immediate_neighbors_above_and_below_v3,   (fastest)
+    # 2. 0.0000387s      - get_immediate_neighbors_above_and_below_v2,   difference: +0.000000399s from best: +0.000000399s (1.01x)
+    # 3. 0.0000396s      - get_real_window_above+below,                  difference: +0.0000009s from best: +0.00000129s (1.03x)
+    # 4. 0.0000399s      - get_immediate_neighbors_above_and_below_v4,   difference: +0.0000003s from best: +0.00000159s (1.04x)
+    # 5. 0.000132s       - get_immediate_neighbors_above_and_below (C),  difference: +0.0000923s from best: +0.0000939s (3.45x)
+    # 6. 0.000158s       - get_real_window_above+below (C),              difference: +0.0000258s from best: +0.000119s (4.12x)
+    # 7. 0.000966s       - get_immediate_neighbors_above_and_below_v1,   difference: +0.000808s from best: +0.000928s (25.18x)
+    # 8. 0.00453s        - get_windows_above_and_below_v2,               difference: +0.00356s  from best: +0.00449s (118.07x)
+    # 9. 0.00672s        - get_window_above_v1,                          difference: +0.00219s  from best: +0.00668s (175.18x)
+    # 10. 0.355s         - get_windows_above_and_below_v1,               difference: +0.348s    from best: +0.355s (9248.38x)
     #
-    # Wyniki testu "is_real_window()":
-    # 1. 0.000103s       - is_real_window_v3,  (najszybszy)
-    # 2. 0.000535s       - is_real_window_v2,  różnica: +0.000432s    od najlepszego: +0.000432s (5.19x)
-    # 3. 0.000662s       - is_real_window_v1,  różnica: +0.000127s    od najlepszego: +0.000559s (6.43x)
+    # Test results "is_real_window()":
+    # 1. 0.000212s       - is_real_window (C),  (fastest)
+    # 2. 0.000334s       - is_real_window_v3,   difference: +0.000121s from best: +0.000121s (1.57x)
+    # 3. 0.00113s        - is_real_window_v2,   difference: +0.000795s from best: +0.000917s (5.31x)
+    # 4. 0.00214s        - is_real_window_v1,   difference: +0.00101s  from best: +0.00192s (10.06x)

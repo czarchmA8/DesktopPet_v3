@@ -1,4 +1,3 @@
-import os
 import random
 import time
 from PySide6 import QtWidgets, QtCore, QtGui
@@ -7,15 +6,15 @@ import math
 from dataclasses import dataclass
 import logging
 
-from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
-from windows_layer import is_real_window as is_real_window
+import config
+from windows_z_order.neighbors import get_immediate_neighbors_above_and_below, is_real_window, get_real_window_above, get_real_window_below, get_window_above, get_window_below # noqa: F401
 from logger_setup import setup_process_logger
 from desktop.physics_utils import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 class PetWidget(QtWidgets.QWidget):
-    '''Main pet character widget with physics and animation'''
+    """Main pet character widget with physics and animation"""
     def __init__(self, log_queue, shared_data, world_objects: list) -> None:
         super().__init__()
         global logger
@@ -36,11 +35,12 @@ class PetWidget(QtWidgets.QWidget):
         # Ładowanie animacji i hitboxu
         self.animations: dict = {}
         self.hitbox_animations: dict = {}
-        for filename in os.listdir("Assets\\animations"):
+        for file_path in (config.RESOURCE_DIR / "Assets" / "animations").iterdir():
+            filename = file_path.name
             if filename.endswith("_hitbox.gif"):
                 continue
 
-            self.animations[filename] = QtGui.QMovie(f"Assets\\animations\\{filename}")
+            self.animations[filename] = QtGui.QMovie(str(config.RESOURCE_DIR / "Assets" / "animations" / filename))
             self.animations[filename].setCacheMode(QtGui.QMovie.CacheMode.CacheAll)
 
             # base_name = os.path.splitext(plik)[0]
@@ -48,7 +48,7 @@ class PetWidget(QtWidgets.QWidget):
             # hitbox_file = f"{base_name}_hitbox{ext}"
             hitbox_file = filename
 
-            self.hitbox_animations[filename] = QtGui.QMovie(f"Assets\\animations\\{hitbox_file}")
+            self.hitbox_animations[filename] = QtGui.QMovie(str(config.RESOURCE_DIR / "Assets" / "animations" / hitbox_file))
             self.hitbox_animations[filename].setCacheMode(QtGui.QMovie.CacheMode.CacheAll)
 
         # Ustawianie wagi zadań
@@ -133,14 +133,14 @@ class PetWidget(QtWidgets.QWidget):
     def tick(self, dt: float) -> None:
         self.dt = dt
         if self.on_window_hwnd is None or not is_real_window(self.on_window_hwnd): # Jeżeli okno nie istnieje
-            above_rwindow_hwnd, below_rwindow_hwnd = get_immediate_neighbors_above_and_below(self.hwnd_self, True, [obj.hwnd_self for obj in self.world_objects])
-            logger.debug(f"Set \"on_window_hwnd\" to {below_rwindow_hwnd} ({win32gui.GetWindowText(below_rwindow_hwnd)}) due to detection of non-existent window {self.on_window_hwnd}")
-            self.on_window_hwnd = below_rwindow_hwnd
+            real_window_below, _ = get_real_window_below(self.hwnd_self, [obj.hwnd_self for obj in self.world_objects])
+            logger.debug(f"Set \"on_window_hwnd\" to {real_window_below} ({win32gui.GetWindowText(real_window_below)}) due to detection of non-existent window {self.on_window_hwnd}")
+            self.on_window_hwnd = real_window_below
         else: # Jeżeli okno istnieje, ale na przykład zmieniło z-index
-            above_rwindow_hwnd, below_rwindow_hwnd = get_immediate_neighbors_above_and_below(self.hwnd_self, True, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self])
-            if below_rwindow_hwnd != self.on_window_hwnd: # Zmień z-index zwierzątka tylko wtedy gdy `self.on_window_hwnd` zmieniło z-index
-                above_window_hwnd, below_window_hwnd = get_immediate_neighbors_above_and_below(self.on_window_hwnd, False, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self, self.on_window_hwnd])
-                win32gui.SetWindowPos(self.hwnd_self, above_window_hwnd, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
+            real_window_below, _ = get_real_window_below(self.hwnd_self, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self])
+            if real_window_below != self.on_window_hwnd: # Zmień z-index zwierzątka tylko wtedy gdy `self.on_window_hwnd` zmieniło z-index
+                window_above = get_window_above(self.on_window_hwnd, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self, self.on_window_hwnd])
+                win32gui.SetWindowPos(self.hwnd_self, window_above, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
                 # logger.debug(f"Changed pet z-index")
 
         # --- Pobieranie pozycji i wymiarów platformy ---
@@ -306,7 +306,7 @@ class PetWidget(QtWidgets.QWidget):
         self.move(round(self.real_x), round(self.real_y))
 
     def compute_launch_velocity(self, target_x: int, target_y: int) -> tuple[float, float]:
-        '''Calculates velocity needed to reach target position'''
+        """Calculates velocity needed to reach target position"""
         start_x, start_y = self.real_x, self.real_y
 
         # Przesunięcie do celu
@@ -353,7 +353,7 @@ class PetWidget(QtWidgets.QWidget):
         return (vx, vy)
 
     def keyPressEvent(self, event) -> None: # Tymczasowa funkcja do debugowania i testowania
-        '''Temporary function for debugging and testing'''
+        """Temporary function for debugging and testing"""
         if self.shared_data.args.debug >= 2 or self.shared_data.settings["debug"]["active"]:
             if event.key() == QtCore.Qt.Key.Key_Space:
                 self.real_x, self.real_y = 800.0, 200.0
@@ -361,10 +361,10 @@ class PetWidget(QtWidgets.QWidget):
             elif event.key() == QtCore.Qt.Key.Key_1:
                 self.velocity = list(self.compute_launch_velocity(0, self.taskbar_y))
             elif event.key() == QtCore.Qt.Key.Key_Up:
-                self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects])[0]
+                self.on_window_hwnd, _ = get_real_window_above(self.shared_data.pet["hwnd"], [obj.hwnd_self for obj in self.world_objects])
                 logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
             elif event.key() == QtCore.Qt.Key.Key_Down:
-                self.on_window_hwnd = get_immediate_neighbors_above_and_below(self.shared_data.pet["hwnd"], True, [obj.hwnd_self for obj in self.world_objects] + [self.on_window_hwnd])[1]
+                self.on_window_hwnd, _ = get_real_window_below(self.shared_data.pet["hwnd"], [obj.hwnd_self for obj in self.world_objects] + [self.on_window_hwnd])
                 logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
             else:
                 super().keyPressEvent(event)
@@ -372,7 +372,7 @@ class PetWidget(QtWidgets.QWidget):
             super().keyPressEvent(event)
 
     def set_animation(self, animation) -> None:
-        '''Sets and starts a new animation'''
+        """Sets and starts a new animation"""
         if animation != self.current_animation:
             # Zatrzymanie poprzednich animacji
             if self.current_animation:

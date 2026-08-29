@@ -108,7 +108,7 @@ All application settings are located in the `settings.json` file, with only some
 
 The application runs on two independent processes:
 
-- **PET Process** — pet engine, physics, animations, window layer (z-order) management
+- **DESKTOP Process** — pet engine, mods, physics, animations, window layer (z-order) management
 - **DASHBOARD Process** — control interface, settings handling
 
 Communication between processes occurs via a structured JSON protocol sent through `multiprocessing.Pipe`.
@@ -117,27 +117,29 @@ Communication between processes occurs via a structured JSON protocol sent throu
 
 #### Main structure of the application:
 
-| File                              | Description                                                                                                                                                               |
-|:----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`main.py`**                     | **Starting point.** Launches `dashboard.py` and `desktop/app.py` as separate processes.                                                                                   |
-| **`logger_setup.py`**             | **Log management.** Handles message logging, file saving, and automatic cleanup of old log files.                                                                         |
-| **`utils_debug.py`**              | **Debugging utilities.** Debug info window, hitbox rendering, and general helper functions.                                                                               |
-| **`windows_layer.py`**            | **Window layering (Z-order).** Retrieves windows directly above and below a specified window handle (`hwnd`).                                                             |
-| **`dashboard/dashboard.py`**      | **Control Panel & GUI.** Central hub for application control, displaying statistics, settings, and object creation via interactive buttons, including a system tray icon. |
-| **`dashboard/objects_editor.py`** | **Objects Editor.** A GUI tool for automatically generating object shapes, and manually editing hitbox vertices and physics properties.                                   |
-| **`dashboard/translator.py`**     | **Translation System.** Manages dynamic, on-the-fly language switching within the application using registration callbacks.                                               |
-| **`desktop/app.py`**              | **Desktop manager.** Launches and manages the pet and world objects.                                                                                                      |
-| **`desktop/pet.py`**              | **Pet.** The virtual pet itself.                                                                                                                                          |
-| **`desktop/world_objects.py`**    | **World Objects.** Manages interactive, physical objects within the pet's environment.                                                                                    |
-| **`desktop/physics_utils.py`**    | **Physics utilities.** Helper module providing custom collision detection, data structures for shapes, Box2D unit conversions, and geometry simplification utilities.     |
-| **`requirements.txt`**            | **Dependencies list.** Contains external Python packages required by the project.                                                                                         |
-| **`settings.default.json`**       | **Default configuration.** Contains the baseline application settings used to initialize or restore settings.json                                                         |
+| File                               | Description                                                                                                                                                                             |
+|:-----------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`main.py`**                      | **Starting point.** Launches `dashboard.py` and `desktop/app.py` as separate processes.                                                                                                 |
+| **`logger_setup.py`**              | **Log management.** Handles message logging, file saving, and automatic cleanup of old log files.                                                                                       |
+| **`utils_debug.py`**               | **Debugging utilities.** Debug info window, hitbox rendering, and general helper functions.                                                                                             |
+| **`windows_z_order/neighbors.py`** | **Window layering (Z-order).** Retrieves windows directly above and below a specified window handle (`hwnd`).                                                                           |
+| **`windows_z_order/watcher.py`**   | **Window layering (Z-order).** Listens to window events and then updates the z-order list that can be used                                                                              |
+| **`dashboard/dashboard.py`**       | **Control Panel & GUI.** Central hub for application control, displaying settings, mods, list of entities, and entities creation via interactive buttons, including a system tray icon. |
+| **`dashboard/objects_editor.py`**  | **Objects Editor.** A GUI tool for automatically generating object shapes, and manually editing hitbox vertices and physics properties.                                                 |
+| **`dashboard/translator.py`**      | **Translation System.** Manages dynamic, on-the-fly language switching within the application using registration callbacks.                                                             |
+| **`desktop/app.py`**               | **Desktop manager.** Launches and manages the pet and world objects.                                                                                                                    |
+| **`desktop/pet.py`**               | **Pet.** The virtual pet itself.                                                                                                                                                        |
+| **`desktop/world_objects.py`**     | **World Objects.** Manages interactive, physical objects within the pet's environment.                                                                                                  |
+| **`desktop/physics_utils.py`**     | **Physics utilities.** Helper module providing custom collision detection, data structures for shapes, Box2D unit conversions, and geometry simplification utilities.                   |
+| **`requirements.txt`**             | **Dependencies list.** Contains external Python packages required by the project.                                                                                                       |
+| **`settings.default.json`**        | **Default configuration.** Contains the baseline application settings used to initialize or restore settings.json                                                                       |
 
 | Directory           | Description                                                                             |
 |:--------------------|:----------------------------------------------------------------------------------------|
 | **`logs/`**         | Stores application log files.                                                           |
 | **`Assets/`**       | Contains all project assets, including sounds, animations, and object images.           |
 | **`translations/`** | Contains Compiled Qt translation files (.qm) used for application internationalization. |
+| *`Mods/`*           | Stores all user mods                                                                    |
 
 #### Additional files and folders:
 
@@ -150,11 +152,6 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`tools/update_languages.py`** | **Translation updater.** Automates the Qt translation workflow — regenerates `.ts` files from the source code and compiles them into `.qm` files.         |
 | **`.github/`**                  | **GitHub configuration.** Contains issue templates, the pull request template, and CI workflows.                                                          |
 | **`tests/`**                    | **Tests.** Contains the automated tests suite                                                                                                             |
-
-### Performance Optimizations
-
-- **BeginDeferWindowPos / EndDeferWindowPos** — batching z-order updates for all objects
-- **Cached Z-Order Neighbors** — optimized `get_immediate_neighbors_above_and_below()` function for benchmarking
 
 ---
 

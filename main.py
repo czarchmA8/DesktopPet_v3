@@ -1,25 +1,25 @@
 from multiprocessing import Process, Pipe, Manager, Queue
 import sys
 import traceback
-from desktop.app import run_app as run_app_desktop
-from dashboard.dashboard import run_app as run_app_dashboard
 import json
-from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtGui import QIcon
-from PySide6.QtCore import Qt
 import argparse
-from logger_setup import setup_main_listener, setup_process_logger
-import os
 import shutil
 
-APP_VERSION = "0.0.0.dev"
+from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QIcon, QDesktopServices
+from PySide6.QtCore import Qt, QUrl
+
+import config
+from logger_setup import setup_main_listener, setup_process_logger
+from desktop.app import run_app as run_app_desktop
+from dashboard.dashboard import run_app as run_app_dashboard
 
 def except_hook(cls, exception, traceback_obj) -> None:
-    '''Global exception hook for uncaught exceptions'''
+    """Global exception hook for uncaught exceptions"""
     sys.__excepthook__(cls, exception, traceback_obj)
 
 def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_queue) -> None:
-    '''Safely runs a process function with exception handling'''
+    """Safely runs a process function with exception handling"""
     def child_except_hook(cls, exception, traceback_obj):
         error_msg = f"{process_name} PROCESS ERROR:\n{''.join(traceback.format_exception(cls, exception, traceback_obj))}"
         error_queue.put(error_msg)
@@ -35,18 +35,20 @@ def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_qu
         # print(error_msg)
 
 def show_error_msg_box(error_msg) -> None:
-    '''Displays an error message dialog box'''
+    """Displays an error message dialog box"""
     QApplication(sys.argv)
+
     msg_box = QMessageBox()
-    msg_box.setWindowTitle("DesktopPet v3 - Critical Error")
-    msg_box.setWindowIcon(QIcon("icon.ico"))
+    msg_box.setWindowTitle(f"{config.APP_NAME} - Critical Error")
+    msg_box.setWindowIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")))
     msg_box.setIcon(QMessageBox.Icon.Critical)
     msg_box.setText("An error occurred in the child process!")
     msg_box.setInformativeText("To view the full error log, click 'Show Details...' below.")
     msg_box.setDetailedText(error_msg)
-    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-    # Jednorazowe wyskoczenie nad inne okna (pop-up)
+    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    open_folder_btn = msg_box.addButton("Open crash log folder", QMessageBox.ButtonRole.ActionRole)
+
     msg_box.setWindowFlags(msg_box.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
     msg_box.show()
     msg_box.setWindowFlags(msg_box.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
@@ -57,20 +59,47 @@ def show_error_msg_box(error_msg) -> None:
 
     msg_box.exec()
 
+    if msg_box.clickedButton() == open_folder_btn:
+        log_dir = str(config.APP_DIR / "logs")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(log_dir))
+
+def deep_fill_defaults(settings: dict, default_settings: dict) -> dict:
+    for key, value in default_settings.items():
+        if key not in settings:
+            settings[key] = value
+        elif isinstance(settings[key], dict) and isinstance(value, dict):
+            deep_fill_defaults(settings[key], value)
+    return settings
+
+def load_settings() -> dict:
+    settings_file = config.APP_DIR / "settings.json"
+    default_settings_file = config.RESOURCE_DIR / "settings.default.json"
+    if settings_file.exists():
+        with open(default_settings_file, "r", encoding="utf-8") as f:
+            default_settings = json.load(f)
+
+        with open(settings_file, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+
+        return deep_fill_defaults(settings, default_settings)
+    else:
+        shutil.copy(default_settings_file, settings_file)
+        print("🔄 Created a local \"settings.json\" file from the defaults.")
+
+        with open(settings_file, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+
+        return settings
+
 def main() -> None:
-    '''Main entry point of the application'''
+    """Main entry point of the application"""
     sys.excepthook = except_hook
     # Połączenie pomiędzy procesami
     conn1, conn2 = Pipe()
     error_queue: Queue = Queue()
     log_queue: Queue = Queue()
 
-    if not os.path.exists("settings.json"):
-        shutil.copy("settings.default.json", "settings.json")
-        print("🔄 Created a local settings.json file from the template.")
-
-    with open("settings.json", "r", encoding="utf-8") as f:
-        settings = json.load(f)
+    settings = load_settings()
 
     # Obsługa argumentów przekazywanych z linii komend
     parser = argparse.ArgumentParser(description="DesktopPet_v3")
@@ -88,7 +117,6 @@ def main() -> None:
         shared_data = manager.Namespace()
         shared_data.args = args
         shared_data.settings = settings
-        shared_data.APP_VERSION = APP_VERSION
 
         p1 = Process(target=safe_run, args=(run_app_desktop, "PET", conn1, shared_data, error_queue, log_queue), name="PET")
         p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", conn2, shared_data, error_queue, log_queue), name="DASHBOARD")
@@ -112,12 +140,12 @@ def main() -> None:
                 p2_alive = p2.is_alive()
                 # Jeśli jeden proces się zakończył, drugi powinien się też zamknąć
                 if not p1_alive and p2_alive:
-                    logger.info(f"[⚠️] PET process ended (exit code: {p1.exitcode}), closing DASHBOARD...")
+                    logger.info(f"[⚠️] DESKTOP process ended (exit code: {p1.exitcode}), closing DASHBOARD...")
                     if p1.exitcode != 0:
-                        error_msg = f"PET process exited with error code: {p1.exitcode}"
+                        error_msg = f"DESKTOP process exited with error code: {p1.exitcode}"
                     break
                 if not p2_alive and p1_alive:
-                    logger.info(f"[⚠️] DASHBOARD process ended (exit code: {p2.exitcode}), closing PET...")
+                    logger.info(f"[⚠️] DASHBOARD process ended (exit code: {p2.exitcode}), closing DESKTOP...")
                     if p2.exitcode != 0:
                         error_msg = f"DASHBOARD process exited with error code: {p2.exitcode}"
                     break

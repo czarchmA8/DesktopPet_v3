@@ -33,7 +33,7 @@ POINT_RADIUS: int = 5 # radius of the drawn point on the screen (px)
 POINT_HIT_RADIUS: int = 9 # tolerance for grabbing a point with the mouse (screen px)
 
 def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    '''Computes the convex hull of a set of 2D points'''
+    """Computes the convex hull of a set of 2D points"""
     pts = sorted(set(points))
     if len(pts) <= 2:
         return pts
@@ -56,7 +56,7 @@ def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]
     return lower[:-1] + upper[:-1]
 
 def _simplify_hull_by_tolerance(hull: list[tuple[float, float]], tolerance: float) -> list[tuple[float, float]]:
-    '''Drops hull vertices that lie within `tolerance` distance of the segment formed by their neighbors'''
+    """Drops hull vertices that lie within `tolerance` distance of the segment formed by their neighbors"""
     if tolerance <= 0 or len(hull) <= 3:
         return hull
 
@@ -906,7 +906,7 @@ class MainWindow(QMainWindow):
             self._load_image_from_path(image_path)
 
     def _update_window_title(self) -> None:
-        '''Sets the window title, re-run whenever the language changes or a new image is loaded.'''
+        """Sets the window title, re-run whenever the language changes or a new image is loaded."""
         title = self.translate("ObjectsEditor", "Objects Editor", None)
         if self.current_image_path:
             title = f"{title} - {Path(self.current_image_path).name}"

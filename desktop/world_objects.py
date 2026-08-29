@@ -18,7 +18,8 @@ from Box2D import (
     b2ContactListener,
 )
 
-from windows_layer import get_immediate_neighbors_above_and_below as get_immediate_neighbors_above_and_below
+import config
+from windows_z_order.neighbors import get_immediate_neighbors_above_and_below, get_real_window_above, get_real_window_below, get_window_above, get_window_below # noqa: F401
 from logger_setup import setup_process_logger
 from desktop.physics_utils import (
     XYXY_Rectangle, CollisionTypes, 
@@ -32,11 +33,11 @@ from dashboard.objects_editor import generate_hull_vertices
 logger: logging.Logger = logging.getLogger(__name__)
 
 class PlatformContactListener(b2ContactListener):
-    '''
+    """
     Handles collision filtering for one-way platforms and window-specific interactions.
     It ensures objects can pass through platforms from below
     and only collide with platforms sharing the same window handle (hwnd)
-    '''
+    """
 
     def PreSolve(self, contact, oldManifold) -> None:
         fixture_a = contact.fixtureA
@@ -70,7 +71,7 @@ class Platform:
     fixture: None
 
 class WorldObject(QtWidgets.QWidget):
-    '''Interactive physics object'''
+    """Interactive physics object"""
     def __init__(
         self,
         shared_data,
@@ -207,7 +208,7 @@ class WorldObject(QtWidgets.QWidget):
         self.angle, self.old_angle = 0.0, 0.0
 
     def tick(self):
-        '''Updates physics and visuals for world object'''
+        """Updates physics and visuals for world object"""
         self.pos_x, self.pos_y = m_to_px_vec(self.body.position)
         self.old_angle = self.angle
         self.angle = math.degrees(self.body.angle)
@@ -223,7 +224,7 @@ class WorldObject(QtWidgets.QWidget):
             self.deleteLater()
 
     def update_visuals(self) -> None:
-        '''Updates visual position and rotation'''
+        """Updates visual position and rotation"""
         if self.pos_x is None or self.pos_y is None:
             return
         if math.isnan(self.pos_x) or math.isnan(self.pos_y):
@@ -238,7 +239,7 @@ class WorldObject(QtWidgets.QWidget):
         self.move(int(self.pos_x - self.rotated_pixmap.width() / 2), int(self.pos_y - self.rotated_pixmap.height() / 2))
 
     def mousePressEvent(self, event) -> None:
-        '''Handles mouse press for dragging objects'''
+        """Handles mouse press for dragging objects"""
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             m_pos = event.globalPosition()
             new_pos = px_to_m_vec(m_pos.x(), m_pos.y())
@@ -257,13 +258,13 @@ class WorldObject(QtWidgets.QWidget):
             self.is_dragging = True
 
             # Aktualizacja z-index obiektu
-            above_hwnd, below_hwnd = get_immediate_neighbors_above_and_below(self.hwnd_self, True, [obj.hwnd_self for obj in self.world_objects] + [self.shared_data.pet["hwnd"]])
-            if self.on_window_hwnd is not None and below_hwnd != self.on_window_hwnd:
-                above_hwnd, below_hwnd = get_immediate_neighbors_above_and_below(self.on_window_hwnd, False, [obj.hwnd_self for obj in self.world_objects] + [self.shared_data.pet["hwnd"], self.on_window_hwnd])
+            real_below_hwnd, _ = get_real_window_below(self.hwnd_self, [obj.hwnd_self for obj in self.world_objects] + [self.shared_data.pet["hwnd"]])
+            if self.on_window_hwnd is not None and real_below_hwnd != self.on_window_hwnd:
+                above_hwnd = get_window_above(self.on_window_hwnd, [obj.hwnd_self for obj in self.world_objects] + [self.shared_data.pet["hwnd"], self.on_window_hwnd])
                 win32gui.SetWindowPos(self.hwnd_self, above_hwnd, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
 
     def mouseMoveEvent(self, event) -> None:
-        '''Handles mouse movement during drag'''
+        """Handles mouse movement during drag"""
         if not self.is_dragging:
             return
 
@@ -274,7 +275,7 @@ class WorldObject(QtWidgets.QWidget):
             self.mouse_joint.target = target
 
     def mouseReleaseEvent(self, event) -> None:
-        '''Handles mouse release after drag'''
+        """Handles mouse release after drag"""
         if event.button() == QtCore.Qt.MouseButton.LeftButton and self.is_dragging:
             self.is_dragging = False
 
@@ -346,7 +347,7 @@ class WorldObjectsManager:
         for object in self.world_objects:
             # --- Pobieranie hwnd okna pod obiektem ---
             if object.on_window_hwnd is None or not win32gui.IsWindow(object.on_window_hwnd):
-                object.on_window_hwnd = get_immediate_neighbors_above_and_below(object.hwnd_self, True, ignored_hwnds)[1]
+                object.on_window_hwnd, _ = get_real_window_below(object.hwnd_self, ignored_hwnds)
                 object.fixture.userData["hwnd"] = object.on_window_hwnd
                 logger.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
 
@@ -360,11 +361,11 @@ class WorldObjectsManager:
             else:
                 # --- Ustawianie warstwy okna obiektem ---
                 # logger.debug(f"Sprawdzanie poprawnego z-index obiektu {object.hwnd_self}")
-                above_hwnd, below_hwnd = get_immediate_neighbors_above_and_below(object.hwnd_self, True, ignored_hwnds)
-                if below_hwnd == on_window_hwnd:
+                real_below_hwnd, _ = get_real_window_below(object.hwnd_self, ignored_hwnds)
+                if real_below_hwnd == on_window_hwnd:
                     calculated_above_hwnds[on_window_hwnd] = None
                 else:
-                    above_hwnd, below_hwnd = get_immediate_neighbors_above_and_below(on_window_hwnd, False, ignored_hwnds)
+                    above_hwnd = get_window_above(on_window_hwnd, ignored_hwnds)
                     calculated_above_hwnds[on_window_hwnd] = above_hwnd
                     hdwp = self.user32.DeferWindowPos(hdwp, object.hwnd_self, calculated_above_hwnds[on_window_hwnd], 0, 0, 0, 0, flags)
                     logger.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
@@ -444,8 +445,8 @@ class WorldObjectsManager:
         self.space.ClearForces()
 
     def spawn_object(self, path: str) -> None:
-        '''Creates an object from an image with the given path'''
-        img_path = Path("Assets") / "Objects" / path
+        """Creates an object from an image with the given path"""
+        img_path = config.RESOURCE_DIR / "Assets" / "Objects" / path
         if not img_path.exists():
             logger.error("[Obj] File not found:", img_path)
 
@@ -455,7 +456,7 @@ class WorldObjectsManager:
         obj.show()
 
     def clear_all_objects(self) -> None:
-        '''Removes all world objects'''
+        """Removes all world objects"""
         for obj in list(self.world_objects):
             self.space.DestroyBody(obj.body)
             obj.deleteLater()

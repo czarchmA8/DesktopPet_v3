@@ -2,6 +2,7 @@
     "FPS": 60,
     "volume": 50,
     "autostart": false,
+    "check_for_updates": false,
     "language": "en",
     "hotkeys": {
         "app": {
@@ -9,14 +10,14 @@
             "hide": null,
             "exit": null
         },
-        "pet": {
+        "entities": {
+            "kill all": null,
+            "show all": null,
+            "hide all": null,
+            "kill": null,
             "show": null,
             "hide": null,
             "teleport": null
-        },
-        "objects": {
-            "remove_all": null,
-            "create": {}
         }
     },
     "windows_layers": {
@@ -32,5 +33,6 @@
         "active": false,
         "hitbox_overlay": false,
         "debug_window": true
-    }
+    },
+    "active_mods": []
 }

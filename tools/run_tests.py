@@ -31,7 +31,7 @@ def run_command(cmd: str, label: str) -> None:
     else:
         print(f"[X] Step \"{label}\" completed successfully.")
 
-def main():
+def run_tests():
     """Runs the quality-check pipeline."""
     MAIN_PATH = Path(__file__).parent.parent
     os.chdir(MAIN_PATH)
@@ -89,4 +89,4 @@ def main():
     print("[#] All tests completed successfully")
 
 if __name__ == "__main__":
-    main()
+    run_tests()

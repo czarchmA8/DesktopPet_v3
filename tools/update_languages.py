@@ -1,7 +1,8 @@
 """Translation workflow automation.
 
 Automates the Qt-based translation cycle for the application:
-    1. Regenerate `.ts` raw translation source files from the current source code
+    1. Regenerate `.ts` raw translation source files from the current source code.
+        Note: Translatable strings must be static literals (avoid f-strings; use %1, %2 for variables).
     2. Open Qt Linguist (`pyside6-linguist`) so a translator can review and
         fill in/update the actual translated strings for each language.
     3. Compile the updated `.ts` files into binary `.qm` files,
@@ -15,17 +16,28 @@ PROJECT_ROOT: Path = Path(__file__).parent.parent
 QM_DIR: Path = PROJECT_ROOT / "translations"
 TS_DIR: Path = PROJECT_ROOT / "tools" / "translations_raw"
 SOURCE_FILES: list[Path] = [
+    PROJECT_ROOT / "dashboard" / "ui" / "ui_main_window.py",
+    PROJECT_ROOT / "dashboard" / "widgets" / "category_sep.py",
+    PROJECT_ROOT / "dashboard" / "widgets" / "mod_row.py",
+    PROJECT_ROOT / "dashboard" / "widgets" / "shortcut_edit.py",
+    PROJECT_ROOT / "dashboard" / "widgets" / "update_dialog.py",
     PROJECT_ROOT / "dashboard" / "dashboard.py",
     PROJECT_ROOT / "dashboard" / "objects_editor.py",
 ]
-LANG_CODES: list[str] = sorted(file.stem for file in TS_DIR.iterdir() if file.suffix == ".ts")
+available_codes: set[str] = {file.stem for file in TS_DIR.iterdir() if file.suffix == ".ts"}
+print(f"LANG_CODES: {available_codes}")
+user_order: list[str] = ["en", "pl", "es", "fr", "de", "hi"]
+LANG_CODES: list[str] = [code for code in user_order if code in available_codes]
 
 def update_ts_files(ts_dir: Path, lang_codes: list[str]) -> None:
     """Regenerate `.ts` translation source files from the current source code."""
     for lang_code in lang_codes:
         ts_file = ts_dir / f"{lang_code}.ts"
 
+        no_obsolete = True
         cmd = ["pyside6-lupdate", *map(str, SOURCE_FILES), "-ts", str(ts_file)]
+        if no_obsolete:
+            cmd.insert(1, "-no-obsolete")
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, (f"pyside6-lupdate failed:\n{result.stdout}\n{result.stderr}")
         if result.stdout:

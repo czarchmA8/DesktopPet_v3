@@ -3,15 +3,15 @@ from pathlib import Path
 from types import ModuleType
 import shutil
 
-PROJECT_ROOT = Path(__file__).parent.parent
+from config import APP_DIR
 
 def _load_update_languages_module() -> ModuleType:
-    '''
+    """
     Dynamically loads the language updater utility module.
 
     Returns:
         ModuleType: The imported update_languages module.
-    '''
+    """
     from tools import update_languages
     assert update_languages is not None, "Failed to load the update_languages module."
     return update_languages
@@ -19,7 +19,7 @@ def _load_update_languages_module() -> ModuleType:
 update_languages = _load_update_languages_module()
 TS_DIR: Path = update_languages.TS_DIR
 QM_DIR: Path = update_languages.QM_DIR
-TEMP_DIR: Path = PROJECT_ROOT / "tools" / "output" / "temp_tests"
+TEMP_DIR: Path = APP_DIR / "tools" / "output" / "temp_tests"
 SOURCE_FILES: list[Path] = update_languages.SOURCE_FILES
 LANG_CODES_TS: list[str] = update_languages.LANG_CODES
 
@@ -30,7 +30,7 @@ def test_at_least_one_language_defined() -> None:
 def test_equal_number_of_file_translations() -> None:
     """Ensures that every defined .ts source translation file has a corresponding compiled .qm file."""
     lang_codes_qm: list[str] = sorted(file.stem for file in QM_DIR.iterdir() if file.suffix == ".qm")
-    assert LANG_CODES_TS == lang_codes_qm, (
+    assert set(LANG_CODES_TS) == set(lang_codes_qm), (
         f"Mismatched translation files! Configured .ts languages: {LANG_CODES_TS}, "
         f"but found compiled .qm files: {lang_codes_qm}."
     )
@@ -70,7 +70,7 @@ def test_the_translation_works_correctly() -> None:
     
     translator = Translator("en")
     text = [""]
-    translator.tr(lambda text=text: text.__setitem__(0, QtCore.QCoreApplication.translate("ControlWindow", "Settings", None)))
+    translator.tr(lambda text=text: text.__setitem__(0, QtCore.QCoreApplication.translate("MainWindow", "Settings", None)))
     assert text[0] == "Settings", f"Expected English translation to be 'Settings', but got '{text[0]}'."
     translator.change_language("pl")
     assert text[0] == "Ustawienia", f"Expected Polish translation to be 'Ustawienia', but got '{text[0]}'."

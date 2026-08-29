@@ -8,3 +8,5 @@ settings.json
 !/translations/*.qm
 /tools/output/*
 !tools/output/.gitkeep
+/Mods/*
+!/Mods/.gitkeep

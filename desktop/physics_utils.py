@@ -8,7 +8,7 @@ from Box2D import b2Vec2
 
 @dataclass
 class XYXY_Rectangle:
-    '''Rectangle defined by (x, y, x2, y2) coordinates'''
+    """Rectangle defined by (x, y, x2, y2) coordinates"""
     x: int | float
     y: int | float
     x2: int | float
@@ -30,7 +30,7 @@ class XYXY_Rectangle:
 
 @dataclass
 class XYWH_Rectangle:
-    '''Rectangle defined by (x, y, width, height)'''
+    """Rectangle defined by (x, y, width, height)"""
     x: int | float
     y: int | float
     width: int | float
@@ -51,10 +51,10 @@ class XYWH_Rectangle:
         return self.as_tuple[index]
 
 class CustomHitboxCollisions:
-    '''Utility class for custom collision detection'''
+    """Utility class for custom collision detection"""
     @staticmethod
     def check_rect_hitbox_collision(rect, rect2) -> bool:
-        '''Checks if two rectangles collide'''
+        """Checks if two rectangles collide"""
         x1, y1, x2, y2 = rect
         a1, b1, a2, b2 = rect2
 
@@ -67,7 +67,7 @@ class CustomHitboxCollisions:
 
     @staticmethod
     def check_pixel_solid(hitbox_x, hitbox_y, hitbox, global_x, global_y) -> bool:
-        '''Checks if hitbox collide with pixel at given position'''
+        """Checks if hitbox collide with pixel at given position"""
         # Przeliczanie współrzędnych globalnych na lokalne współrzędne obrazka
         local_x = int(global_x - hitbox_x)
         local_y = int(global_y - hitbox_y)
@@ -118,7 +118,7 @@ class CustomHitboxCollisions:
 # --- Objects ---
 
 class CollisionTypes(IntEnum):
-    '''Enumeration of collision types (OBJECT, PLATFORM)'''
+    """Enumeration of collision types (OBJECT, PLATFORM)"""
     OBJECT = auto()
     PLATFORM = auto()
 
@@ -133,28 +133,28 @@ DEFAULT_ANGULAR_DAMPING: float = 0.6
 DEFAULT_LINEAR_DAMPING: float = 0.1
 
 class HitboxShapes(StrEnum):
-    '''Enumeration of hitbox types'''
+    """Enumeration of hitbox types"""
     POLYGON = auto()
     CIRCLE = auto()
 
 def px_to_m(value: float) -> float:
-    '''Converts a scalar value from pixels to meters'''
+    """Converts a scalar value from pixels to meters"""
     return value / PPM
 
 def m_to_px(value: float) -> float:
-    '''Converts a scalar value from meters to pixels'''
+    """Converts a scalar value from meters to pixels"""
     return value * PPM
 
 def px_to_m_vec(x: float, y: float) -> b2Vec2:
-    '''Converts a pixel-space (x, y) pair into a Box2D meter-space vector'''
+    """Converts a pixel-space (x, y) pair into a Box2D meter-space vector"""
     return b2Vec2(x / PPM, y / PPM)
 
 def m_to_px_vec(vec) -> tuple[float, float]:
-    '''Converts a Box2D meter-space vector into a pixel-space (x, y) tuple'''
+    """Converts a Box2D meter-space vector into a pixel-space (x, y) tuple"""
     return (vec.x * PPM, vec.y * PPM)
 
 def polygon_area(vertices: list[tuple[float, float]]) -> float:
-    '''Returns the area of a polygon (shoelace formula), used to derive density from a target mass'''
+    """Returns the area of a polygon (shoelace formula), used to derive density from a target mass"""
     area = 0.0
     n = len(vertices)
     for i in range(n):
@@ -164,12 +164,12 @@ def polygon_area(vertices: list[tuple[float, float]]) -> float:
     return abs(area) / 2.0
 
 def simplify_convex_polygon(vertices: list[tuple[float, float]], max_vertices: int = MAX_POLYGON_VERTICES) -> list[tuple[float, float]]:
-    '''
+    """
     Reduces a convex polygon's vertex count to fit Box2D's b2_maxPolygonVertices limit.
     Repeatedly drops the vertex whose removal loses the least area (Visvalingam-Whyatt style).
     Since the remaining points stay in their original cyclic order, the result is still convex
     (a cyclically-ordered subset of a convex point set is itself convex) - it's just a smaller polygon.
-    '''
+    """
     verts = list(vertices)
 
     def triangle_area(a, b, c) -> float:

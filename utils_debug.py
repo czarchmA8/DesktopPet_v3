@@ -55,7 +55,7 @@ class Color:
         return self.marker
 
     class StringifyColors:
-        '''Color configuration for different value types'''
+        """Color configuration for different value types"""
         def __init__(self,
                      color_str: Optional['Color']=None,
                      color_int: Optional['Color']=None,
@@ -146,7 +146,7 @@ class Color:
             return f"{self.color_class}{str(val)}"
 
 class HitboxOverlay(QtWidgets.QWidget):
-    '''Widget for displaying hitbox overlays (rectangles, polygons, and masks)'''
+    """Widget for displaying hitbox overlays (rectangles, polygons, and masks)"""
     def __init__(self) -> None:
         super().__init__()
 
@@ -198,7 +198,7 @@ class HitboxOverlay(QtWidgets.QWidget):
         self.update()
 
     def paintEvent(self, event):
-        '''Paints hitboxes, polygons and masks on the overlay'''
+        """Paints hitboxes, polygons and masks on the overlay"""
         painter = QtGui.QPainter(self)
         # painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
@@ -383,7 +383,7 @@ class DebugWindow(QtWidgets.QWidget):
         self.hide()
 
 def show_details(variable, logger) -> None:
-    '''Debug function that displays the contents of a variable'''
+    """Debug function that displays the contents of a variable"""
     from logging import DEBUG as logging_DEBUG
     if not logger.isEnabledFor(logging_DEBUG):
         return
@@ -394,12 +394,12 @@ def show_details(variable, logger) -> None:
     # input("Kliknij Enter: ")
 
 class NamedStopwatch:
-    '''Named timer for performance measurement'''
+    """Named timer for performance measurement"""
     class _Timer:
-        '''Individual timer container'''
+        """Individual timer container"""
         @dataclass
         class _Time:
-            '''Time sample dataclass'''
+            """Time sample dataclass"""
             start: float
             end: Optional[float] = None
 

@@ -14,7 +14,7 @@ from desktop.physics_utils import m_to_px
 logger: logging.Logger = logging.getLogger(__name__)
 
 class DesktopApp(QtWidgets.QApplication):
-    '''Główny menedżer pętli odświeżania i okien na pulpicie'''
+    """The main desktop refresh loop and window manager"""
     def __init__(self, conn, shared_data, log_queue):
         super().__init__(sys.argv)
 
@@ -113,7 +113,7 @@ class DesktopApp(QtWidgets.QApplication):
             c_name = c(200, 200, 200)
             c_int = c(0, 200, 0)
             self.debug_window.update_debug(
-                f'''{c_name}on_window_hwnd: {stringifyColors.stringify(self.pet.on_window_hwnd)}{c_name} ({win32gui.GetWindowText(self.pet.on_window_hwnd)})
+                f"""{c_name}on_window_hwnd: {stringifyColors.stringify(self.pet.on_window_hwnd)}{c_name} ({win32gui.GetWindowText(self.pet.on_window_hwnd)})
 {c_name}real_x: {stringifyColors.stringify(round(self.pet.real_x, 1))}
 {c_name}real_y: {stringifyColors.stringify(round(self.pet.real_y, 1))}
 {c_name}velocity_x: {stringifyColors.stringify(round(self.pet.velocity[0] * self.dt, 1))}
@@ -126,7 +126,7 @@ class DesktopApp(QtWidgets.QApplication):
 {c_name}platform_expand: {stringifyColors.stringify((self.pet._debug_expanded_platform_rect.x2 - self.pet._debug_window_rect.x2, self.pet._debug_expanded_platform_rect.y2 - self.pet._debug_window_rect.y2))}
 {c_name}platform_velocity_x: {stringifyColors.stringify(round(self.pet._debug_platform_vx))}
 {c_name}platform_velocity_y": {stringifyColors.stringify(round(self.pet._debug_platform_vy))}
-{"".join([f"{c_name}{name}: {c_int}{utils_debug.format_number(self.process_timer.get_avg_fps(name), f"{c(0, 150, 0)}'{c_int}")} {c(200, 255, 200)}FPS\n" for name in self.process_timer.get_timers()])}'''
+{"".join([f"{c_name}{name}: {c_int}{utils_debug.format_number(self.process_timer.get_avg_fps(name), f"{c(0, 150, 0)}'{c_int}")} {c(200, 255, 200)}FPS\n" for name in self.process_timer.get_timers()])}"""
             )
         self.process_timer.stop("update debug window")
         self.process_timer.stop("debug tick")
@@ -134,20 +134,20 @@ class DesktopApp(QtWidgets.QApplication):
         self.process_timer.stop("tick")
 
     def update_debug_visibility(self):
-        '''Updates visibility of debug overlays'''
+        """Updates visibility of debug overlays"""
         if self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["hitbox_overlay"]: self.hitbox_overlay.show()
         else: self.hitbox_overlay.hide()
         if self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["debug_window"]: self.debug_window.show()
         else: self.debug_window.hide()
 
     def _send_ipc_command(self, msg):
-        '''Sends message to other processes'''
+        """Sends message to other processes"""
         if msg:
             logger.info(f"Sent IPC: {msg}")
             self.conn.send(msg)
 
     def _handle_ipc_commands(self):
-        '''Checks messages from other processes'''
+        """Checks messages from other processes"""
         if self.conn.poll():
             msg = self.conn.recv()
             logger.info(f"[Pet] Received IPC: {msg}")
