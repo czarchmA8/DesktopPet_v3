@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import math
 from pathlib import Path
 import json
-import logging
 
 import win32gui, win32con
 import ctypes
@@ -20,7 +19,7 @@ from Box2D import (
 
 import config
 from windows_z_order.neighbors import get_immediate_neighbors_above_and_below, get_real_window_above, get_real_window_below, get_window_above, get_window_below # noqa: F401
-from logger_setup import setup_process_logger
+import logger
 from desktop.physics_utils import (
     XYXY_Rectangle, CollisionTypes, 
     px_to_m, px_to_m_vec, m_to_px_vec, 
@@ -30,7 +29,7 @@ from desktop.physics_utils import (
 )
 from dashboard.objects_editor import generate_hull_vertices
 
-logger: logging.Logger = logging.getLogger(__name__)
+log = logger.get_logger("world_objects")
 
 class PlatformContactListener(b2ContactListener):
     """
@@ -155,7 +154,7 @@ class WorldObject(QtWidgets.QWidget):
                 raise Exception(f'Unknown hitbox shape "{shape}"')
             with open(object_settings_path, "w", encoding="utf-8") as f:
                 json.dump(settings_to_save, f, ensure_ascii=False)
-            logger.debug(f"A new file \"{object_settings_path.name}\" has been created for the object")
+            log.debug(f"A new file \"{object_settings_path.name}\" has been created for the object")
 
         self.hwnd_self = int(self.winId())
 
@@ -217,7 +216,7 @@ class WorldObject(QtWidgets.QWidget):
         # Usuwanie obiektu jeżeli jest poza ekranami
         screen_geo = QtWidgets.QApplication.primaryScreen().virtualGeometry()
         if self.pos_x < screen_geo.left() - self.w or self.pos_x > screen_geo.right() + self.w or self.pos_y > screen_geo.bottom() + self.h:
-            logger.info(f"Removed WorldObject: {self.hwnd_self}")
+            log.info(f"Removed WorldObject: {self.hwnd_self}")
             self.world_objects.remove(self)
             self.space.DestroyBody(self.body)
             self.close()
@@ -295,12 +294,10 @@ class WorldObject(QtWidgets.QWidget):
             self.angle = math.degrees(self.body.angle)
 
 class WorldObjectsManager:
-    def __init__(self, shared_data, log_queue) -> None:
+    def __init__(self, shared_data) -> None:
         self.shared_data = shared_data
 
-        global logger
-        logger = setup_process_logger("world_objects", log_queue)
-        logger.info("Creating the WorldObjectsManager...")
+        log.info("Creating the WorldObjectsManager...")
 
         self.world_objects: list[WorldObject] = []
 
@@ -349,7 +346,7 @@ class WorldObjectsManager:
             if object.on_window_hwnd is None or not win32gui.IsWindow(object.on_window_hwnd):
                 object.on_window_hwnd, _ = get_real_window_below(object.hwnd_self, ignored_hwnds)
                 object.fixture.userData["hwnd"] = object.on_window_hwnd
-                logger.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
+                log.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
 
             on_window_hwnd = object.on_window_hwnd
             assert on_window_hwnd is not None
@@ -357,10 +354,10 @@ class WorldObjectsManager:
             if on_window_hwnd in calculated_above_hwnds:
                 if calculated_above_hwnds[on_window_hwnd] is not None:
                     hdwp = self.user32.DeferWindowPos(hdwp, object.hwnd_self, calculated_above_hwnds[on_window_hwnd], 0, 0, 0, 0, flags)
-                    # logger.debug(f"Zmiana warstwy obiektu {object.hwnd_self}")
+                    # log.debug(f"Zmiana warstwy obiektu {object.hwnd_self}")
             else:
                 # --- Ustawianie warstwy okna obiektem ---
-                # logger.debug(f"Sprawdzanie poprawnego z-index obiektu {object.hwnd_self}")
+                # log.debug(f"Sprawdzanie poprawnego z-index obiektu {object.hwnd_self}")
                 real_below_hwnd, _ = get_real_window_below(object.hwnd_self, ignored_hwnds)
                 if real_below_hwnd == on_window_hwnd:
                     calculated_above_hwnds[on_window_hwnd] = None
@@ -368,7 +365,7 @@ class WorldObjectsManager:
                     above_hwnd = get_window_above(on_window_hwnd, ignored_hwnds)
                     calculated_above_hwnds[on_window_hwnd] = above_hwnd
                     hdwp = self.user32.DeferWindowPos(hdwp, object.hwnd_self, calculated_above_hwnds[on_window_hwnd], 0, 0, 0, 0, flags)
-                    logger.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
+                    log.debug(f"Set new \"on_window_hwnd\" to {object.on_window_hwnd} ({win32gui.GetWindowText(object.on_window_hwnd)}) on object {object.hwnd_self}")
 
         self.user32.EndDeferWindowPos(hdwp)
 
@@ -406,7 +403,7 @@ class WorldObjectsManager:
                     body: b2Body = self.space.CreateKinematicBody(position=px_to_m_vec(0, -1000))
                     platform = Platform(body=body, fixture=None)
                     self.platforms[on_window_hwnd] = platform
-                    logger.debug(f"Created a new common platform for window {on_window_hwnd}")
+                    log.debug(f"Created a new common platform for window {on_window_hwnd}")
                 platform_body: b2Body = platform.body
 
                 vx = (window_rect.x - old_window_rect.x) / dt
@@ -448,7 +445,7 @@ class WorldObjectsManager:
         """Creates an object from an image with the given path"""
         img_path = config.RESOURCE_DIR / "Assets" / "Objects" / path
         if not img_path.exists():
-            logger.error("[Obj] File not found:", img_path)
+            log.error("[Obj] File not found:", img_path)
 
         x, y = win32gui.GetCursorPos()
         obj = WorldObject(self.shared_data, self.world_objects, self.space, img_path, x, y)

@@ -71,20 +71,29 @@ def is_real_window(hwnd: int) -> bool:
     """
 
     # Tier 1 ----------------------------------------------------------------
-    if not win32gui.IsWindowVisible(hwnd):          return False
-    if win32gui.IsIconic(hwnd):                      return False
-    if win32gui.GetWindow(hwnd, win32con.GW_OWNER):  return False
+    if not win32gui.IsWindowVisible(hwnd):
+        return False
+    if win32gui.IsIconic(hwnd):
+        return False
+    if win32gui.GetWindow(hwnd, win32con.GW_OWNER):
+        return False
+    ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+    if ex_style & win32con.WS_EX_TRANSPARENT:
+        return False
 
     # Tier 2 ----------------------------------------------------------------
     title = win32gui.GetWindowText(hwnd).strip()
-    if not title:                                    return False
+    if not title:
+        return False
 
     # Tier 3 ----------------------------------------------------------------
-    if _is_cloaked(hwnd):                            return False
+    if _is_cloaked(hwnd):
+        return False
 
     # Tier 4 ----------------------------------------------------------------
     l, t, r, b = win32gui.GetWindowRect(hwnd)
-    if (r - l) <= 1 or (b - t) <= 1:                return False
+    if (r - l) <= 1 or (b - t) <= 1:
+        return False
 
     # Tier 5 ----------------------------------------------------------------
     if List_Classes["List"]:

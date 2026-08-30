@@ -6,7 +6,7 @@ import logging
 import win32gui
 
 import utils_debug
-from logger_setup import setup_process_logger
+from logger import setup_process_logger
 from desktop.pet import PetWidget
 from desktop.world_objects import WorldObjectsManager
 from desktop.physics_utils import m_to_px

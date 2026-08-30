@@ -10,8 +10,8 @@ from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtCore import Qt, QUrl
 
 import config
-from logger_setup import setup_main_listener, setup_process_logger
-from desktop.app import run_app as run_app_desktop
+import logger
+from desktop.entities_manager import run_app as run_app_desktop
 from dashboard.dashboard import run_app as run_app_dashboard
 
 def except_hook(cls, exception, traceback_obj) -> None:
@@ -97,7 +97,6 @@ def main() -> None:
     # Połączenie pomiędzy procesami
     conn1, conn2 = Pipe()
     error_queue: Queue = Queue()
-    log_queue: Queue = Queue()
 
     settings = load_settings()
 
@@ -106,10 +105,8 @@ def main() -> None:
     parser.add_argument("--debug", "-D", type=int, help="Debug level 0-2", required=False, default=0, choices=[0, 1, 2])
     args = parser.parse_args()
 
-    log_queue_listener = setup_main_listener("main", log_queue, debug=False if args.debug == 0 else True, max_old_logs=settings["debug"]["delete_logs_older_than"])
-    log_queue_listener.start()
-
-    logger = setup_process_logger("main", log_queue)
+    logger.init(file_name="main", debug=False if args.debug == 0 else True, max_old_logs=settings["debug"]["delete_logs_older_than"])
+    log = logger.get_logger("main")
 
     error_msg = None
 
@@ -117,7 +114,10 @@ def main() -> None:
         shared_data = manager.Namespace()
         shared_data.args = args
         shared_data.settings = settings
+        shared_data.mods = {}
+        shared_data.entities = {}
 
+        log_queue = logger.get_queue()
         p1 = Process(target=safe_run, args=(run_app_desktop, "PET", conn1, shared_data, error_queue, log_queue), name="PET")
         p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", conn2, shared_data, error_queue, log_queue), name="DASHBOARD")
         processes = [p1, p2]
@@ -125,34 +125,34 @@ def main() -> None:
         try:
             p1.start()
             p2.start()
-            logger.info("[✅] Both processes started")
+            log.info("[✅] Both processes started")
 
             # Monitoruj procesy i błędy
             while True:
                 # Sprawdź czy jest błąd w queue
                 if not error_queue.empty():
                     error_msg = error_queue.get()
-                    logger.critical(f"\n[❌] {error_msg}\n")
-                    logger.critical("[⚠️] Error caught, closing application...")
+                    log.critical(f"\n[❌] {error_msg}\n")
+                    log.critical("[⚠️] Error caught, closing application...")
                     break
 
                 p1_alive = p1.is_alive()
                 p2_alive = p2.is_alive()
                 # Jeśli jeden proces się zakończył, drugi powinien się też zamknąć
                 if not p1_alive and p2_alive:
-                    logger.info(f"[⚠️] DESKTOP process ended (exit code: {p1.exitcode}), closing DASHBOARD...")
+                    log.info(f"[⚠️] DESKTOP process ended (exit code: {p1.exitcode}), closing DASHBOARD...")
                     if p1.exitcode != 0:
                         error_msg = f"DESKTOP process exited with error code: {p1.exitcode}"
                     break
                 if not p2_alive and p1_alive:
-                    logger.info(f"[⚠️] DASHBOARD process ended (exit code: {p2.exitcode}), closing DESKTOP...")
+                    log.info(f"[⚠️] DASHBOARD process ended (exit code: {p2.exitcode}), closing DESKTOP...")
                     if p2.exitcode != 0:
                         error_msg = f"DASHBOARD process exited with error code: {p2.exitcode}"
                     break
 
                 # Jeśli oba się skończyły normalnie
                 if not p1_alive and not p2_alive:
-                    logger.info("[✅] Both processes ended normally")
+                    log.info("[✅] Both processes ended normally")
                     break
 
                 # Czekaj krótko przed następnym sprawdzeniem
@@ -160,25 +160,25 @@ def main() -> None:
                 p2.join(timeout=0.1)
 
         except KeyboardInterrupt:
-            logger.error("[⚠️] User interruption")
+            log.error("[⚠️] User interruption")
         except Exception:
-            logger.exception("[❌] Unexpected critical error in main loop")
+            log.exception("[❌] Unexpected critical error in main loop")
         finally:
             for p in processes:
                 if p.is_alive():
-                    logger.warning(f"[⚠️] Terminating process {p.name}...")
+                    log.warning(f"[⚠️] Terminating process {p.name}...")
                     p.terminate()
                     p.join(timeout=2)
                     if p.is_alive():
-                        logger.error(f"[⚠️]️ Force killing process {p.name}")
+                        log.error(f"[⚠️]️ Force killing process {p.name}")
                         p.kill()
                     p.join()
-            logger.info("[✅] All processes closed")
+            log.info("[✅] All processes closed")
 
             if error_msg is not None:
                 show_error_msg_box(error_msg)
 
-            log_queue_listener.stop()
+            logger.stop()
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

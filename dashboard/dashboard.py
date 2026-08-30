@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import json
 import winreg
-import logging
 from typing import Callable
 import requests
 import time
@@ -12,7 +11,7 @@ from datetime import datetime
 import keyboard
 from PySide6.QtCore import (
     Qt, QCoreApplication, Signal,
-    QLocale, QSize, QEvent
+    QLocale, QSize, QEvent, QTimer
 )
 from PySide6.QtWidgets import (
     QApplication, QListWidgetItem, QMenu,
@@ -22,7 +21,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QIcon, QPixmap, QImageReader
 
 import config
-from logger_setup import setup_process_logger
+import logger
+from desktop.mods_manager import Mod, Entity
 from dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from dashboard.translator import Translator, replace_format
 from dashboard.ui.ui_main_window import Ui_MainWindow
@@ -33,27 +33,7 @@ from dashboard.widgets.category_sep import CategorySeparator
 
 MODS_DIR = config.APP_DIR / "Mods"
 
-logger: logging.Logger = logging.getLogger(__name__)
-
-@dataclass
-class Mod:
-    """A single mod entry."""
-    id: str
-    name: str
-    author: str = "unknown"
-    version: str = "0.0.0"
-    description: str = "No description available."
-    dependencies: dict[str, str] = field(default_factory=dict)
-    preview_path: Path | None = None
-    active: bool = True
-
-@dataclass
-class Entity:
-    id: str
-    name: str
-    mod_id: str
-    preview_path: Path
-    description: str = ""
+log = logger.get_logger("dashboard")
 
 @dataclass
 class HotkeyBinding:
@@ -82,20 +62,20 @@ class MainWindow(QMainWindow):
 
         self.hwnd_self = int(self.winId())
         self.editor_window: ObjectsEditorWindow | None = None
-        self.mods: dict[str, Mod] = {}
-        self.entities: dict[str, Entity] = {}
         self._category_header_items: list[tuple[QListWidgetItem, CategorySeparator]] = []
 
         self._setup_hotkeys()
 
         self.setup_connections()
 
-        self.load_mods()
-        self.load_entities()
-
         self.retranslate_ui()
 
         self.exit_requested.connect(QCoreApplication.quit)
+
+        # Timer
+        self.refresh_timer = QTimer(self)
+        self.refresh_timer.timeout.connect(self.tick)
+        self.refresh_timer.start(1000)
 
     def setup_connections(self) -> None:
         # === Settings ===
@@ -181,7 +161,7 @@ class MainWindow(QMainWindow):
                 try:
                     return keyboard.add_hotkey(sequence, callback)
                 except Exception as e:
-                    logger.error(f"[Hotkey] Failed to register '{sequence}': {e}")
+                    log.error(f"[Hotkey] Failed to register '{sequence}': {e}")
             return None
         
         self.hotkeys_widgets = {
@@ -294,73 +274,57 @@ class MainWindow(QMainWindow):
         event.ignore()
         self.hide()
 
+    def tick(self):
+        self._handle_ipc_commands()
+
+    def _send_ipc_command(self, msg: list[str]):
+        """Sends message to other processes"""
+        log.info(f"Sent IPC: {msg}")
+        self.conn.send(msg)
+
+    def _handle_ipc_commands(self):
+        """Checks messages from other processes"""
+        if self.conn.poll():
+            msg = self.conn.recv()
+            log.info(f"Received IPC: {msg}")
+            if msg[0] == "Update mod list":
+                log.debug(f"Mods: {self.shared_data.mods}")
+                log.debug(f"Entities: {self.shared_data.entities}")
+                self._populate_mods_list()
+                self._populate_add_entities_list()
+            else:
+                log.error(f"Unknown command: {msg}")
+
     # ================= Mods =================
 
-    def load_mods(self) -> None:
-        """Skanuje MODS_DIR i wczytuje moda z każdego podfolderu zawierającego about.json."""
+    def _populate_mods_list(self) -> None:
         self.ui.listWidget_mods.clear()
-        self.mods.clear()
+        for mod in self.shared_data.mods.values():
+            row_widget = Ui_Form_mod_row()
 
-        for folder in sorted(MODS_DIR.iterdir()):
-            if not folder.is_dir():
-                continue
-            mod = self._load_mod_from_folder(folder)
-            logger.debug(f"Mod loaded: {mod}")
-            if mod is not None:
-                self._add_mod_row(mod)
+            row_widget.checkBox.setChecked(mod.id in self.shared_data.settings["active_mods"])
+            row_widget.label.setText(mod.name)
+            row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, checked))
+            row_widget.toolButton.clicked.connect(lambda _=False, m=mod: self._on_mod_menu(m))
+
+            item = QListWidgetItem()
+            item.setSizeHint(row_widget.sizeHint())
+            item.setData(Qt.ItemDataRole.UserRole, mod.id)
+            self.ui.listWidget_mods.addItem(item)
+            self.ui.listWidget_mods.setItemWidget(item, row_widget)
 
         if self.ui.listWidget_mods.count():
             self.ui.listWidget_mods.setCurrentRow(0)
         self._update_mods_group_title()
 
-    def _load_mod_from_folder(self, folder: Path) -> Mod | None:
-        """Buduje Mod z folder/about.json. ID moda = nazwa folderu."""
-        about_path = folder / "about.json"
-        data = json.loads(about_path.read_text(encoding="utf-8"))
-
-        supported_image_formats = {bytes(fmt.data()).decode("utf-8").lower() for fmt in QImageReader.supportedImageFormats()}
-        for extension in supported_image_formats:
-            preview_file = (folder / "preview").with_suffix(f".{extension}")
-            if preview_file.exists():
-                break
-        else:
-            preview_file = None
-
-        return Mod(
-            id=folder.name,
-            name=data.get("name", folder.name),
-            author=data.get("author", "unknown"),
-            version=data.get("version", "0.0.0"),
-            description=data.get("description", "No description available."),
-            dependencies=data.get("dependencies", {}),
-            preview_path=preview_file,
-            active=bool(data.get("active", True))
-        )
-
-    def _add_mod_row(self, mod: Mod) -> None:
-        self.mods[mod.id] = mod
-
-        row_widget = Ui_Form_mod_row()
-
-        row_widget.checkBox.setChecked(mod.active)
-        row_widget.label.setText(mod.name)
-        row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, checked))
-        row_widget.toolButton.clicked.connect(lambda _=False, m=mod: self._on_mod_menu(m))
-
-        item = QListWidgetItem()
-        item.setSizeHint(row_widget.sizeHint())
-        item.setData(Qt.ItemDataRole.UserRole, mod.id)
-        self.ui.listWidget_mods.addItem(item)
-        self.ui.listWidget_mods.setItemWidget(item, row_widget)
-
     def _update_mods_group_title(self) -> None:
-        self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.mods)))
+        self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.shared_data.mods)))
 
     def _mod_for_row(self, row: int) -> Mod | None:
         item = self.ui.listWidget_mods.item(row)
         if item is None:
             return None
-        return self.mods[item.data(Qt.ItemDataRole.UserRole)]
+        return self.shared_data.mods[item.data(Qt.ItemDataRole.UserRole)]
 
     def _on_mod_selected(self, row: int) -> None:
         mod = self._mod_for_row(row)
@@ -379,7 +343,7 @@ class MainWindow(QMainWindow):
 
     def _on_mod_toggled(self, mod: Mod, checked: bool) -> None:
         mod.active = checked
-        logger.debug(f"[mods] {mod.name} -> {'active' if checked else 'inactive'}")
+        log.debug(f"[mods] {mod.name} -> {'active' if checked else 'inactive'}")
 
     def _on_mod_menu(self, mod: Mod) -> None:
         menu = QMenu(self)
@@ -420,7 +384,7 @@ class MainWindow(QMainWindow):
         """
 
         try:
-            with open("settings.json", "w", encoding="utf-8") as f:
+            with open(config.APP_DIR / "settings.json", "w", encoding="utf-8") as f:
                 json.dump(self.shared_data.settings, f, indent=4, ensure_ascii=False)
         except Exception as e:
             QMessageBox.warning(self, self.translate("MainWindow", "File saving error", None), self.translate("MainWindow", "Failed to save settings: %x", None).replace("%x", str(e)))
@@ -430,7 +394,7 @@ class MainWindow(QMainWindow):
         settings = self.shared_data.settings
         settings["language"] = self.ui.comboBox_language.currentData()
         self.shared_data.settings = settings
-        logger.debug((lang_code, self.shared_data.settings["language"]))
+        log.debug((lang_code, self.shared_data.settings["language"]))
         self.save_settings_state()
         self.translator.change_language(lang_code)
 
@@ -572,26 +536,6 @@ class MainWindow(QMainWindow):
 
     # ================= ADD ENTITY =================
 
-    def load_entities(self):
-        sample_entities: list[Entity] = [
-            Entity(
-                id="ball",
-                name="Ball",
-                mod_id="more-balls",
-                preview_path=MODS_DIR / "more-balls" / "entities"/ "ball" / "preview.png",
-                description="A physically simulated ball bouncing off system windows"
-            ),
-            Entity(
-                id="charmander",
-                name="Charmander",
-                mod_id="more-pets",
-                preview_path=MODS_DIR / "more-pets" / "entities"/ "charmander" / "preview.jpg",
-                description="Cute orange lizard"
-            )
-        ]
-
-        self._populate_add_entities_list(sample_entities)
-
     def _make_square_pixmap(self, path: Path, size: int) -> QPixmap:
         """Loads preview.png and crops it to a size x size square (center-crop)."""
         src = QPixmap(str(path))
@@ -610,7 +554,7 @@ class MainWindow(QMainWindow):
         y = (scaled.height() - size) // 2
         return scaled.copy(x, y, size, size)
 
-    def _populate_add_entities_list(self, entities: list[Entity]) -> None:
+    def _populate_add_entities_list(self) -> None:
         list_widget = self.ui.listWidget_add_entities_list
         list_widget.clear()
         list_widget.setUniformItemSizes(False)
@@ -618,12 +562,11 @@ class MainWindow(QMainWindow):
 
         icon_size: int = list_widget.iconSize().width()
 
-        self.entities = {entity.id: entity for entity in entities}
         self._category_header_items.clear()
 
         entities_by_category: dict[str, list[Entity]] = {}
-        for entity in entities:
-            entities_by_category.setdefault(self.mods[entity.mod_id].name, []).append(entity)
+        for entity in self.shared_data.entities.values():
+            entities_by_category.setdefault(self.shared_data.mods[entity.mod_id].name, []).append(entity)
 
         for category, category_entities in entities_by_category.items():
             # category separator
@@ -654,7 +597,7 @@ class MainWindow(QMainWindow):
         self._update_entities_add_group_title()
     
     def _update_entities_add_group_title(self):
-        self.ui.groupBox_add_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.entities)))
+        self.ui.groupBox_add_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.entities)))
 
     def _update_category_header_widths(self) -> None:
         """Stretches category separators in the "Add" entity list to the current viewport width"""
@@ -669,8 +612,8 @@ class MainWindow(QMainWindow):
         if entity_id is None:
             return  # ignore focus on category separator, not an actual entity
 
-        entity = self.entities[entity_id]
-        mod = self.mods[entity.mod_id]
+        entity = self.shared_data.entities[entity_id]
+        mod = self.shared_data.mods[entity.mod_id]
 
         pixmap = QPixmap(str(entity.preview_path))
         self.ui.label_add_entity_preview.setPixmap(pixmap)
@@ -730,7 +673,7 @@ class MainWindow(QMainWindow):
         if self.last_time_checked is None or now > self.last_time_checked + self.update_check_cooldown:
             self.last_time_checked = time.time()
             
-            logger.debug("Checking for updates...")
+            log.debug("Checking for updates...")
             self.ui.label_check_for_updates.setText(self.translate("MainWindow", "Checking for updates...", None))
             
             self.latest_release_info = self.get_latest_release()
@@ -741,10 +684,10 @@ class MainWindow(QMainWindow):
                 self.update_check_cooldown = 60
             
             self.update_label_check_for_updates()
-            logger.debug(self.ui.label_check_for_updates.text())
+            log.debug(self.ui.label_check_for_updates.text())
         else:
             time_elapsed = int((self.last_time_checked + self.update_check_cooldown) - now)
-            logger.debug(f"You can check for updates again in {time_elapsed} seconds")
+            log.debug(f"You can check for updates again in {time_elapsed} seconds")
 
     def on_click_update(self):
         new_version = self.latest_release_info["version"]
@@ -753,7 +696,7 @@ class MainWindow(QMainWindow):
         result = dialog.exec()
         if result == QDialog.Accepted: # TODO: Dodaj automatyczną aktualizacje
             self.ui.pushButton_update_application.setEnabled(False)
-            logger.debug("[UpdateDialog] The user selected 'Yes'. Updating the app...")
+            log.debug("[UpdateDialog] The user selected 'Yes'. Updating the app...")
 
             msg = QMessageBox(self)
             msg.setWindowTitle(QCoreApplication.translate("MainWindow", "DesktopPet_v3", None))
@@ -761,13 +704,12 @@ class MainWindow(QMainWindow):
             msg.setIcon(QMessageBox.Icon.Information)
             msg.exec()
         else:
-            logger.debug("[UpdateDialog] The user selected 'No' or closed the window.")
+            log.debug("[UpdateDialog] The user selected 'No' or closed the window.")
 
 def run_app(conn, shared_data, log_queue) -> None:
     """Entry point for the dashboard process"""
-    global logger
-    logger = setup_process_logger("dashboard", log_queue)
-    logger.info("Starting the DASHBOARD process...")
+    logger.init_child(log_queue)
+    log.info("Starting the DASHBOARD process...")
 
     app = QApplication(sys.argv)
 

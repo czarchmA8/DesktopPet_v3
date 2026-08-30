@@ -4,25 +4,23 @@ from PySide6 import QtWidgets, QtCore, QtGui
 import win32gui, win32con
 import math
 from dataclasses import dataclass
-import logging
 
 import config
 from windows_z_order.neighbors import get_immediate_neighbors_above_and_below, is_real_window, get_real_window_above, get_real_window_below, get_window_above, get_window_below # noqa: F401
-from logger_setup import setup_process_logger
+import logger
 from desktop.physics_utils import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
 
-logger: logging.Logger = logging.getLogger(__name__)
+log = logger.get_logger("pet")
 
 class PetWidget(QtWidgets.QWidget):
     """Main pet character widget with physics and animation"""
-    def __init__(self, log_queue, shared_data, world_objects: list) -> None:
+    def __init__(self, shared_data, world_objects: list) -> None:
         super().__init__()
-        global logger
-        logger = setup_process_logger("pet", log_queue)
-        logger.info("Creating the PetWidget...")
 
         self.shared_data = shared_data
         self.world_objects = world_objects
+
+        log.info("Creating the PetWidget...")
 
         # Ustawianie atrybutów okna (tytuł, flagi itp.)
         self.setWindowTitle("Charmander")
@@ -30,7 +28,7 @@ class PetWidget(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.hwnd_self = int(self.winId())
-        logger.info(f"hwnd: {self.hwnd_self} ({win32gui.GetWindowText(self.hwnd_self)})")
+        log.info(f"hwnd: {self.hwnd_self} ({win32gui.GetWindowText(self.hwnd_self)})")
 
         # Ładowanie animacji i hitboxu
         self.animations: dict = {}
@@ -62,9 +60,9 @@ class PetWidget(QtWidgets.QWidget):
         names: list[str] = [task_name for _, task_name in tasks]
         self.tasks: TaskContainer = TaskContainer(weights, names)
         total_task_weight = sum(self.tasks.weights)
-        logger.debug(f"Total task weight: {total_task_weight}")
+        log.debug(f"Total task weight: {total_task_weight}")
         for weight, task_name in sorted(zip(self.tasks.weights, self.tasks.names)):
-            logger.debug(f"{task_name}: {round(weight / total_task_weight * 100, 1)}%")
+            log.debug(f"{task_name}: {round(weight / total_task_weight * 100, 1)}%")
 
         self.current_task: str = "Falling"
         self.pet_label = QtWidgets.QLabel(self)
@@ -134,14 +132,14 @@ class PetWidget(QtWidgets.QWidget):
         self.dt = dt
         if self.on_window_hwnd is None or not is_real_window(self.on_window_hwnd): # Jeżeli okno nie istnieje
             real_window_below, _ = get_real_window_below(self.hwnd_self, [obj.hwnd_self for obj in self.world_objects])
-            logger.debug(f"Set \"on_window_hwnd\" to {real_window_below} ({win32gui.GetWindowText(real_window_below)}) due to detection of non-existent window {self.on_window_hwnd}")
+            log.debug(f"Set \"on_window_hwnd\" to {real_window_below} ({win32gui.GetWindowText(real_window_below)}) due to detection of non-existent window {self.on_window_hwnd}")
             self.on_window_hwnd = real_window_below
         else: # Jeżeli okno istnieje, ale na przykład zmieniło z-index
             real_window_below, _ = get_real_window_below(self.hwnd_self, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self])
             if real_window_below != self.on_window_hwnd: # Zmień z-index zwierzątka tylko wtedy gdy `self.on_window_hwnd` zmieniło z-index
                 window_above = get_window_above(self.on_window_hwnd, [obj.hwnd_self for obj in self.world_objects] + [self.hwnd_self, self.on_window_hwnd])
                 win32gui.SetWindowPos(self.hwnd_self, window_above, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
-                # logger.debug(f"Changed pet z-index")
+                # log.debug(f"Changed pet z-index")
 
         # --- Pobieranie pozycji i wymiarów platformy ---
         window_rect_xyxy: tuple[int, int, int, int] = win32gui.GetWindowRect(self.on_window_hwnd) # (x, y, x2, y2)
@@ -362,10 +360,10 @@ class PetWidget(QtWidgets.QWidget):
                 self.velocity = list(self.compute_launch_velocity(0, self.taskbar_y))
             elif event.key() == QtCore.Qt.Key.Key_Up:
                 self.on_window_hwnd, _ = get_real_window_above(self.shared_data.pet["hwnd"], [obj.hwnd_self for obj in self.world_objects])
-                logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+                log.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
             elif event.key() == QtCore.Qt.Key.Key_Down:
                 self.on_window_hwnd, _ = get_real_window_below(self.shared_data.pet["hwnd"], [obj.hwnd_self for obj in self.world_objects] + [self.on_window_hwnd])
-                logger.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
+                log.debug(f"Set \"on_window_hwnd\" to {self.on_window_hwnd} ({win32gui.GetWindowText(self.on_window_hwnd)})")
             else:
                 super().keyPressEvent(event)
         else:

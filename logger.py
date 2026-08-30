@@ -2,8 +2,13 @@ import logging
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from datetime import datetime
+import multiprocessing
+import atexit
 
 import config
+
+_log_queue: "multiprocessing.Queue" = multiprocessing.Queue()
+_listener = None
 
 class ColorFormatter(logging.Formatter):
     """Formatter with ANSI colors for console"""
@@ -54,56 +59,62 @@ def _clean_old_logs(logs_folder: Path, prefiks: str, logger, max_old_logs: int =
         except Exception as e:
             logger.warning(f"Failed to delete \"{file_to_delete.name}\": {e}")
 
-def setup_main_listener(file_name: str, queue, debug=False, max_old_logs: int=3) -> QueueListener:
-    """Sets up the main logging listener with queue support"""
+def stop():
+    """Closes the listener and flushes the remaining logs from the queue."""
+    global _listener
+    if _listener is not None:
+        _listener.stop()
+        _listener = None
+
+def init(file_name: str="main", debug=False, max_old_logs: int=3) -> None:
+    global _listener
+    if _listener is not None:
+        return
+
     logs_folder = config.APP_DIR / "logs"
-    if not logs_folder.exists():
-        logs_folder.mkdir()
+    logs_folder.mkdir(exist_ok=True)
 
-    # Tworzenie nazwy pliku z datą i czasem
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename_with_datetime = f"{file_name}_{now}.log"
-    file_path = logs_folder / filename_with_datetime
+    file_path = logs_folder / f"{file_name}_{now}.log"
 
-    # Handler konsoli (z kolorami)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+    console_handler.setFormatter(ColorFormatter(fmt="%(levelname)s [%(name)s]: %(message)s"))
 
-    console_formatter = ColorFormatter(fmt="%(levelname)s [%(name)s]: %(message)s")
-    console_handler.setFormatter(console_formatter)
-
-    # Handler pliku (bez kolorów)
-    file_handler = logging.FileHandler(
-        file_path,
-        mode="w",
-        encoding="utf-8"
-    )
+    file_handler = logging.FileHandler(file_path, mode="w", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
-
-    file_formatter = PlainFormatter(
-        fmt="[%(asctime)s]-[%(levelname)s]-(%(filename)s:%(lineno)d) -> %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+    file_handler.setFormatter(
+        PlainFormatter(
+            fmt="[%(asctime)s]-[%(levelname)s]-(%(filename)s:%(lineno)d) -> %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
     )
-    file_handler.setFormatter(file_formatter)
 
-    listener = QueueListener(queue, console_handler, file_handler, respect_handler_level=True)
+    _listener = QueueListener(_log_queue, console_handler, file_handler, respect_handler_level=True)
+    _listener.start()
+    atexit.register(stop)
 
-    # Czyszczenie starych plików logów
-    logger = setup_process_logger("logger_setup", queue)
-    logger.info("[✅] Started central logging system")
-    _clean_old_logs(logs_folder, file_name, logger, max_old_logs)
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    root.addHandler(QueueHandler(_log_queue))
 
-    return listener
+    sys_logger = get_logger("logger_setup")
+    sys_logger.info("[✅] Started central logging system")
+    _clean_old_logs(logs_folder, file_name, sys_logger, max_old_logs)
 
-def setup_process_logger(logger_name: str, queue) -> logging.Logger:
-    """Configures a process-specific logger with queue handler"""
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.DEBUG)
+def get_queue() -> "multiprocessing.Queue":
+    """Returns the shared multiprocessing queue used for logging."""
+    return _log_queue
 
-    if logger.hasHandlers():
-        logger.handlers.clear()
+def init_child(log_queue: "multiprocessing.Queue") -> None:
+    """Attaches a QueueHandler to the root logger in a child process."""
+    global _log_queue
+    _log_queue = log_queue
 
-    queue_handler = QueueHandler(queue)
-    logger.addHandler(queue_handler)
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    root.addHandler(QueueHandler(_log_queue))
 
-    return logger
+def get_logger(logger_name: str | None) -> logging.Logger:
+    """Returns a logger for the given name."""
+    return logging.getLogger(logger_name if logger_name else __name__)
