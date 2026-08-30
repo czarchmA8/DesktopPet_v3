@@ -1,5 +1,5 @@
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 import json
 import winreg
@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QMainWindow, QSystemTrayIcon,
     QDialog, QLabel, QPushButton
 )
-from PySide6.QtGui import QIcon, QPixmap, QImageReader
+from PySide6.QtGui import QIcon, QPixmap
 
 import config
 import logger
@@ -342,7 +342,13 @@ class MainWindow(QMainWindow):
         self.ui.label_mod_description.setText(mod.description)
 
     def _on_mod_toggled(self, mod: Mod, checked: bool) -> None:
-        mod.active = checked
+        settings = self.shared_data.settings
+        if checked:
+            settings["active_mods"].append(mod.id)
+        else:
+            settings["active_mods"].remove(mod.id)
+        self.shared_data.settings = settings
+        self.save_settings_state()
         log.debug(f"[mods] {mod.name} -> {'active' if checked else 'inactive'}")
 
     def _on_mod_menu(self, mod: Mod) -> None:
@@ -536,7 +542,7 @@ class MainWindow(QMainWindow):
 
     # ================= ADD ENTITY =================
 
-    def _make_square_pixmap(self, path: Path, size: int) -> QPixmap:
+    def _make_square_pixmap(self, path: Path | None, size: int) -> QPixmap:
         """Loads preview.png and crops it to a size x size square (center-crop)."""
         src = QPixmap(str(path))
         if src.isNull():

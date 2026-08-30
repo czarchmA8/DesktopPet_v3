@@ -4,8 +4,8 @@ import ctypes
 from ctypes import wintypes
 
 import win32gui, win32con
-from PySide6 import QtWidgets, QtCore, QtGui
-from Box2D import b2CircleShape, b2PolygonShape
+from PySide6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import Qt, QTimer
 
 import utils_debug
 import logger
@@ -14,12 +14,12 @@ from desktop.mods_manager import ModsManager
 
 log = logger.get_logger("desktop")
 
-class TransparentWindow(QtWidgets.QWidget):
+class TransparentWindow(QWidget):
     def __init__(self, target_hwnd: int):
         super().__init__()
         self.setWindowTitle("TransparentWindow")
-        self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.Tool)
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.target_hwnd: int = target_hwnd
         self.hwnd_self = int(self.winId())
@@ -36,7 +36,7 @@ class TransparentWindow(QtWidgets.QWidget):
     def mouseReleaseEvent(self, event) -> None:
         pass
 
-class EntitiesManager(QtWidgets.QApplication):
+class EntitiesManager(QApplication):
     def __init__(self, conn, shared_data):
         super().__init__(sys.argv)
 
@@ -68,7 +68,7 @@ class EntitiesManager(QtWidgets.QApplication):
         self.process_timer = utils_debug.NamedStopwatch(update_rate_sec=1)
 
         # Timer / dt
-        self.refresh_timer = QtCore.QTimer(self)
+        self.refresh_timer = QTimer(self)
         self.refresh_timer.timeout.connect(self.tick)
         self.refresh_timer.start(1000 // self.shared_data.settings["FPS"])
         self._last_tick_time = time.perf_counter()

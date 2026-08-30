@@ -2,16 +2,15 @@ import sys
 import time
 from PySide6 import QtWidgets, QtCore, QtGui
 from Box2D import b2CircleShape, b2PolygonShape
-import logging
 import win32gui
 
 import utils_debug
-from logger import setup_process_logger
+import logger
 from desktop.pet import PetWidget
 from desktop.world_objects import WorldObjectsManager
 from desktop.physics_utils import m_to_px
 
-logger: logging.Logger = logging.getLogger(__name__)
+log = logger.get_logger("desktop")
 
 class DesktopApp(QtWidgets.QApplication):
     """The main desktop refresh loop and window manager"""
@@ -143,14 +142,14 @@ class DesktopApp(QtWidgets.QApplication):
     def _send_ipc_command(self, msg):
         """Sends message to other processes"""
         if msg:
-            logger.info(f"Sent IPC: {msg}")
+            log.info(f"Sent IPC: {msg}")
             self.conn.send(msg)
 
     def _handle_ipc_commands(self):
         """Checks messages from other processes"""
         if self.conn.poll():
             msg = self.conn.recv()
-            logger.info(f"[Pet] Received IPC: {msg}")
+            log.info(f"[Pet] Received IPC: {msg}")
             if msg[0] == "spawn_object":
                 self.world_objects_manager.spawn_object(msg[1])
             elif msg[0] == "clear_all_objects":
@@ -168,12 +167,11 @@ class DesktopApp(QtWidgets.QApplication):
                 self.pet.real_x, self.pet.real_y = pos.x() - size.width() // 2, pos.y() - size.height() // 2
                 self.pet.is_dragging = False
             else:
-                logger.error(f"Unknown command: {msg}")
+                log.error(f"Unknown command: {msg}")
 
 def run_app(conn, shared_data, log_queue):
-    global logger
-    logger = setup_process_logger("desktop", log_queue)
-    logger.info("Starting the DESKTOP process...")
+    logger.init_child(log_queue)
+    log.info("Starting the DESKTOP process...")
 
     app = DesktopApp(conn, shared_data, log_queue)
     sys.exit(app.exec())
