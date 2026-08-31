@@ -38,6 +38,11 @@ class Entity:
     preview_path: Path | None
     description: str = ""
 
+def filter_attribute_access(obj, attr_name, is_setting):
+    if isinstance(attr_name, str) and not attr_name.startswith("_"):
+        return attr_name
+    raise AttributeError("access denied")
+
 class ModsManager:
     def __init__(self, conn, shared_data):
         self.conn = conn
@@ -111,9 +116,9 @@ class ModsManager:
         entity_id = folder.name
         mod_id = mod_id
 
-        about_path = folder / "about.json"
+        about_path = folder / "about_entity.json"
         if not about_path.exists():
-            log.warning(f"Error loading entity \"{entity_id}\" from mod \"{mod_id}\": File \"about.json\" not found")
+            log.warning(f"Error loading entity \"{entity_id}\" from mod \"{mod_id}\": File \"about_entity.json\" not found")
             return None
         about_data = json.loads(about_path.read_text(encoding="utf-8"))
 
@@ -151,7 +156,13 @@ class ModsManager:
             if mod_python_script_path.exists():
                 pass # TODO: Dodaj obsługę modów napisanych w python
             elif mod_lua_script_path.exists():
-                lua = LuaRuntime(unpack_returned_tuples=True)
+                lua = LuaRuntime(
+                    unpack_returned_tuples=True,
+                    register_eval=False,
+                    register_builtins=False,
+                    attribute_filter=filter_attribute_access,
+                )
+
                 lua.execute("""
                     os = nil
                     io = nil
@@ -161,6 +172,8 @@ class ModsManager:
                     debug = nil
                     require = nil
                     package = nil
+                    load = nil
+                    python = nil
                 """)
 
                 # Sharing the program API in a mod

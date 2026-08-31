@@ -169,7 +169,7 @@ class NeighborsWatcher:
                 return
             self.changes_detected = False
 
-            old = self.neighbor_windows
+            self.old_neighbor_windows = self.neighbor_windows
             new_neighbors: dict[int, WindowNeighbors] = {}
             for window in target_windows:
                 if isinstance(window, int):
@@ -196,7 +196,6 @@ class NeighborsWatcher:
                     window_below=below,
                 )
 
-            self.old_neighbor_windows = old
             self.neighbor_windows = new_neighbors
 
 def main():

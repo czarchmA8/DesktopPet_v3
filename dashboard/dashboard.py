@@ -11,14 +11,15 @@ from datetime import datetime
 import keyboard
 from PySide6.QtCore import (
     Qt, QCoreApplication, Signal,
-    QLocale, QSize, QEvent, QTimer
+    QLocale, QSize, QEvent,
+    QTimer, QUrl
 )
 from PySide6.QtWidgets import (
     QApplication, QListWidgetItem, QMenu,
     QMessageBox, QMainWindow, QSystemTrayIcon,
-    QDialog, QLabel, QPushButton
+    QDialog, QLabel, QPushButton, QAbstractItemView
 )
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 
 import config
 import logger
@@ -27,7 +28,7 @@ from dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from dashboard.translator import Translator, replace_format
 from dashboard.ui.ui_main_window import Ui_MainWindow
 from dashboard.widgets.shortcut_edit import HotkeyDialog
-from dashboard.widgets.mod_row import Ui_Form_mod_row
+from dashboard.widgets.mod_row import Mod_row
 from dashboard.widgets.update_dialog import UpdateDialog
 from dashboard.widgets.category_sep import CategorySeparator
 
@@ -135,7 +136,11 @@ class MainWindow(QMainWindow):
         self.update_debug_check_states()
         
         # === Mods ===
+        self.ui.listWidget_mods.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.ui.listWidget_mods.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.ui.listWidget_mods.model().rowsMoved.connect(lambda *_: QTimer.singleShot(0, self._on_mods_reordered))
         self.ui.listWidget_mods.currentRowChanged.connect(self._on_mod_selected)
+
         self.ui.pushButton_mod_settings.clicked.connect(self._on_mod_settings)
         self.ui.pushButton_load_mod_list.clicked.connect(self._on_load_mod_list)
         self.ui.pushButton_save_mod_list.clicked.connect(self._on_save_mod_list)
@@ -190,7 +195,7 @@ class MainWindow(QMainWindow):
                     label_shortcut = self.ui.label_kill_all_entities_shortcut_value,
                     button_set = self.ui.pushButton_kill_all_entities_shortcut_set,
                     button_remove = self.ui.pushButton_kill_all_entities_shortcut_remove,
-                    callback = lambda: (self.clear_all_objects(), print("TODO: kill all entities")),
+                    callback = lambda: (self.clear_all_entities(), print("TODO: kill all entities")),
                 ),
                 "show all": HotkeyBinding(
                     label_shortcut = self.ui.label_show_all_entities_shortcut_value,
@@ -263,7 +268,7 @@ class MainWindow(QMainWindow):
         self.show()
         self.raise_()
         self.activateWindow()
-    
+
     def changeEvent(self, event):
         if event.type() == QEvent.Type.LanguageChange:
             self.retranslate_ui()
@@ -279,14 +284,14 @@ class MainWindow(QMainWindow):
 
     def _send_ipc_command(self, msg: list[str]):
         """Sends message to other processes"""
-        log.info(f"Sent IPC: {msg}")
+        log.debug(f"Sent IPC: {msg}")
         self.conn.send(msg)
 
     def _handle_ipc_commands(self):
         """Checks messages from other processes"""
         if self.conn.poll():
             msg = self.conn.recv()
-            log.info(f"Received IPC: {msg}")
+            log.debug(f"Received IPC: {msg}")
             if msg[0] == "Update mod list":
                 log.debug(f"Mods: {self.shared_data.mods}")
                 log.debug(f"Entities: {self.shared_data.entities}")
@@ -299,10 +304,19 @@ class MainWindow(QMainWindow):
 
     def _populate_mods_list(self) -> None:
         self.ui.listWidget_mods.clear()
-        for mod in self.shared_data.mods.values():
-            row_widget = Ui_Form_mod_row()
 
-            row_widget.checkBox.setChecked(mod.id in self.shared_data.settings["active_mods"])
+        active_ids = [mid for mid in self.shared_data.settings["active_mods"] if mid in self.shared_data.mods]
+        active_set = set(active_ids)
+        inactive_mods = sorted(
+            (mod for mod in self.shared_data.mods.values() if mod.id not in active_set),
+            key=lambda m: m.name.lower(),
+        )
+        ordered_mods = [self.shared_data.mods[mid] for mid in active_ids] + inactive_mods
+
+        for mod in ordered_mods:
+            row_widget = Mod_row()
+
+            row_widget.checkBox.setChecked(mod.id in active_set)
             row_widget.label.setText(mod.name)
             row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, checked))
             row_widget.toolButton.clicked.connect(lambda _=False, m=mod: self._on_mod_menu(m))
@@ -310,6 +324,11 @@ class MainWindow(QMainWindow):
             item = QListWidgetItem()
             item.setSizeHint(row_widget.sizeHint())
             item.setData(Qt.ItemDataRole.UserRole, mod.id)
+            if mod.id in active_set:
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsDragEnabled)
+            else:
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDragEnabled)
+
             self.ui.listWidget_mods.addItem(item)
             self.ui.listWidget_mods.setItemWidget(item, row_widget)
 
@@ -320,6 +339,7 @@ class MainWindow(QMainWindow):
     def _update_mods_group_title(self) -> None:
         self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.shared_data.mods)))
 
+    # Selected mod
     def _mod_for_row(self, row: int) -> Mod | None:
         item = self.ui.listWidget_mods.item(row)
         if item is None:
@@ -349,12 +369,30 @@ class MainWindow(QMainWindow):
             settings["active_mods"].remove(mod.id)
         self.shared_data.settings = settings
         self.save_settings_state()
-        log.debug(f"[mods] {mod.name} -> {'active' if checked else 'inactive'}")
+        log.info(f"[mods] {mod.id} -> {'active' if checked else 'inactive'}")
+        self._populate_mods_list()
+
+    def _on_mods_reordered(self) -> None:
+        new_active_order = [
+            self.ui.listWidget_mods.item(row).data(Qt.ItemDataRole.UserRole)
+            for row in range(self.ui.listWidget_mods.count())
+            if self.ui.listWidget_mods.item(row).data(Qt.ItemDataRole.UserRole)
+            in self.shared_data.settings["active_mods"]
+        ]
+
+        settings = self.shared_data.settings
+        settings["active_mods"] = new_active_order
+        self.shared_data.settings = settings
+        self.save_settings_state()
+        log.info(f"[mods] New active mod order: {new_active_order}")
+
+        self._populate_mods_list()
 
     def _on_mod_menu(self, mod: Mod) -> None:
         menu = QMenu(self)
-        menu.addAction(self.translate("MainWindow", "Open folder", None), lambda: print(f"[mods] open folder: {mod.name}"))
-        menu.addAction(self.translate("MainWindow", "Remove", None), lambda: print(f"[mods] remove: {mod.name}"))
+        folder_mod_path_url = QUrl.fromLocalFile(str(MODS_DIR / mod.id))
+        menu.addAction(self.translate("MainWindow", "Open folder", None), lambda url=folder_mod_path_url: QDesktopServices.openUrl(url))
+        menu.addAction(self.translate("MainWindow", "Remove", None), lambda: print(f"[mods] remove: {mod.name}")) # TODO: Dodaj funkcjonalność przenoszenia folderu moda do kosza i dialog z pytaniem "Czy na pewno chcesz usunąć moda \"%1\""
         menu.exec(self.cursor().pos())
 
     def _on_mod_settings(self) -> None:
@@ -362,19 +400,21 @@ class MainWindow(QMainWindow):
         if mod is None:
             QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "Select a mod first.", None))
             return
+        # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
         QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", mod.name))
 
+    # Loading and saving mod list changes
     def _on_load_mod_list(self) -> None:
-        print("[mods] TODO: load mod list from disk")
+        print("[mods] TODO: load mod list from disk") # TODO: Dodaj okno z możliwością wczytania zapisanych listy modów z pliku albo ustawień
 
     def _on_save_mod_list(self) -> None:
-        print("[mods] TODO: save mod list to disk")
+        print("[mods] TODO: save mod list to disk") # TODO: Dodaj okno z możliwością zapisania listy modów z nazwą do pliku albo ustawień
 
     def _on_discard_changes(self) -> None:
-        print("[mods] TODO: discard changes")
+        print("[mods] TODO: discard changes") # TODO: Dodaj funkcjonalność cofania zmian listy modów
 
     def _on_save_changes(self) -> None:
-        print("[mods] TODO: save changes")
+        print("[mods] TODO: save changes") # TODO: Dodaj funkcjonalność zapisywania aktywnych modów i uruchamianie ponownie aplikacji
 
     # ================= Settings =================
     def save_settings_state(self) -> None:
@@ -395,6 +435,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, self.translate("MainWindow", "File saving error", None), self.translate("MainWindow", "Failed to save settings: %x", None).replace("%x", str(e)))
 
+    # Language
     def _on_combobox_language_change(self, index):
         lang_code = self.ui.comboBox_language.itemData(index)
         settings = self.shared_data.settings
@@ -404,6 +445,7 @@ class MainWindow(QMainWindow):
         self.save_settings_state()
         self.translator.change_language(lang_code)
 
+    # Sound
     def _on_slider_volume_changes(self, value):
         self.ui.label_volume_percent.setText(f"{value}%")
 
@@ -413,6 +455,7 @@ class MainWindow(QMainWindow):
         self.shared_data.settings = settings
         self.save_settings_state()
 
+    # Shortcuts
     def _set_hotkey(self, category: str, key: str):
         dialog = HotkeyDialog(self)
         dialog.setWindowModality(Qt.WindowModality.WindowModal)
@@ -451,6 +494,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.information(self, self.translate("MainWindow", "Information", None), self.translate("MainWindow", "No shortcut assigned.", None))
 
+    # System
     def _on_check_for_updates_toggle(self, checked) -> None:
         settings = self.shared_data.settings
         settings["check_for_updates"] = self.ui.checkBox_check_for_updates.isChecked()
@@ -497,6 +541,7 @@ class MainWindow(QMainWindow):
         self.shared_data.settings = settings
         self.save_settings_state()
 
+    # Advanced
     def update_debug_check_states(self):
         """Updates enabled/disabled state of debug checkboxes"""
         checked = self.ui.checkBox_debug_mode.isChecked()
@@ -516,11 +561,7 @@ class MainWindow(QMainWindow):
 
         self.conn.send(["toggle_debug"])
 
-    # ================= OBJECTS =================
-
-    def clear_all_objects(self):
-        """Removes all spawned objects from the world"""
-        self.conn.send(["clear_all_objects"])
+    # ================= OBJECTS EDITOR =================
 
     def open_object_editor(self, image_path=None) -> None:
         if self.editor_window is not None:
@@ -540,6 +581,12 @@ class MainWindow(QMainWindow):
         self.editor_window = None
         self.translator.delete_calls_from_owner("dashboard.object_editor")
 
+    # ================= ENTITIES =================
+    
+    def clear_all_entities(self):
+        """Removes all spawned entities from the world"""
+        self.conn.send(["clear_all_entities"])
+    
     # ================= ADD ENTITY =================
 
     def _make_square_pixmap(self, path: Path | None, size: int) -> QPixmap:

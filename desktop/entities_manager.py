@@ -97,7 +97,6 @@ class EntitiesManager(QApplication):
             log.debug(f"Due to empty list, added window {hwnd} ({title}) to watch")
 
         if self.watcher.changes_detected:
-            log.debug("Changes detected in window z-order")
             # Remove windows that have removed or are no longer visible from watchlist
             for hwnd in list(self.watch_windows_hwnd):
                 if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowVisible(hwnd):
@@ -115,6 +114,8 @@ class EntitiesManager(QApplication):
 
             # Getting neighbors of watched windows
             self.watcher.update_neighbor_windows(self.watch_windows_hwnd)
+            if self.watcher.old_neighbor_windows != self.watcher.neighbor_windows:
+                log.debug("Changes detected in window z-order")
 
             # Creating and updating z-order `TransparentWindow`
             hdwp = self.user32.BeginDeferWindowPos(len(self.watcher.neighbor_windows))
@@ -141,14 +142,14 @@ class EntitiesManager(QApplication):
 
     def _send_ipc_command(self, msg: list[str]):
         """Sends message to other processes"""
-        log.info(f"Sent IPC: {msg}")
+        log.debug(f"Sent IPC: {msg}")
         self.conn.send(msg)
 
     def _handle_ipc_commands(self):
         """Checks messages from other processes"""
         if self.conn.poll():
             msg = self.conn.recv()
-            log.info(f"Received IPC: {msg}")
+            log.debug(f"Received IPC: {msg}")
             if msg[0] == "":
                 log.debug(f"Unknown command: {msg}")
             else:

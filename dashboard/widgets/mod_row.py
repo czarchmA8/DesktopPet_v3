@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QSizePolicy, QToolButton, QWidget
 
-class Ui_Form_mod_row(QWidget):
+class Mod_row(QWidget):
     def __init__(self):
         super().__init__()
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
