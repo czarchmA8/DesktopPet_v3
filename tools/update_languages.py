@@ -17,8 +17,10 @@ QM_DIR: Path = PROJECT_ROOT / "translations"
 TS_DIR: Path = PROJECT_ROOT / "tools" / "translations_raw"
 SOURCE_FILES: list[Path] = [
     PROJECT_ROOT / "dashboard" / "ui" / "ui_main_window.py",
+    PROJECT_ROOT / "dashboard" / "widgets" / "aspect_ratio_label.py",
     PROJECT_ROOT / "dashboard" / "widgets" / "category_sep.py",
     PROJECT_ROOT / "dashboard" / "widgets" / "mod_row.py",
+    PROJECT_ROOT / "dashboard" / "widgets" / "saved_mods_dialog.py",
     PROJECT_ROOT / "dashboard" / "widgets" / "shortcut_edit.py",
     PROJECT_ROOT / "dashboard" / "widgets" / "update_dialog.py",
     PROJECT_ROOT / "dashboard" / "dashboard.py",

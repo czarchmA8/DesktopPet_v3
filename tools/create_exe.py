@@ -14,6 +14,7 @@ RESOURCES_TO_INCLUDE = [
     "translations",
     "icon.ico",
     "settings.default.json",
+    "version.json",
 ]
 # Resources next to the .exe file that the user has access to (for saving logs/database/settings)
 USER_RESOURCES_TO_COPY = [

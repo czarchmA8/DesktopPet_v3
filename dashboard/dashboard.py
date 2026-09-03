@@ -17,7 +17,8 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QApplication, QListWidgetItem, QMenu,
     QMessageBox, QMainWindow, QSystemTrayIcon,
-    QDialog, QLabel, QPushButton, QAbstractItemView
+    QDialog, QLabel, QPushButton, 
+    QAbstractItemView, QInputDialog
 )
 from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 
@@ -31,6 +32,7 @@ from dashboard.widgets.shortcut_edit import HotkeyDialog
 from dashboard.widgets.mod_row import Mod_row
 from dashboard.widgets.update_dialog import UpdateDialog
 from dashboard.widgets.category_sep import CategorySeparator
+from dashboard.widgets.saved_mods_dialog import SavedModsListDialog
 
 MODS_DIR = config.APP_DIR / "Mods"
 
@@ -47,7 +49,7 @@ class HotkeyBinding:
 class MainWindow(QMainWindow):
     """Main control panel window for application"""
 
-    exit_requested = Signal()
+    exit_requested = Signal() # Used only for keyboard shortcuts, so I don't get the "Terminating process DASHBOARD..." message
     translate = QCoreApplication.translate
 
     def __init__(self, conn, shared_data, translator):
@@ -63,6 +65,8 @@ class MainWindow(QMainWindow):
 
         self.hwnd_self = int(self.winId())
         self.editor_window: ObjectsEditorWindow | None = None
+        self._active_mods_baseline: list[str] = []
+        self._pending_active_mods: list[str] = []
         self._category_header_items: list[tuple[QListWidgetItem, CategorySeparator]] = []
 
         self._setup_hotkeys()
@@ -71,7 +75,7 @@ class MainWindow(QMainWindow):
 
         self.retranslate_ui()
 
-        self.exit_requested.connect(QCoreApplication.quit)
+        self.exit_requested.connect(self.close_app)
 
         # Timer
         self.refresh_timer = QTimer(self)
@@ -219,19 +223,19 @@ class MainWindow(QMainWindow):
                     label_shortcut = self.ui.label_show_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_show_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_show_selected_entity_shortcut_remove,
-                    callback = lambda: (self.conn.send(["show_pet"]), print("TODO: show entity")),
+                    callback = lambda: (self.send_ipc_command(["show_pet"]), print("TODO: show entity")),
                 ),
                 "hide": HotkeyBinding(
                     label_shortcut = self.ui.label_hide_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_hide_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_hide_selected_entity_shortcut_remove,
-                    callback = lambda: (self.conn.send(["hide_pet"]), print("TODO: hide entity")),
+                    callback = lambda: (self.send_ipc_command(["hide_pet"]), print("TODO: hide entity")),
                 ),
                 "teleport": HotkeyBinding(
                     label_shortcut = self.ui.label_teleport_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_teleport_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_teleport_selected_entity_shortcut_remove,
-                    callback = lambda: (self.conn.send(["teleport_pet"]), print("TODO: teleport entity")),
+                    callback = lambda: (self.send_ipc_command(["teleport_pet"]), print("TODO: teleport entity")),
                 ),
             },
         }
@@ -282,7 +286,7 @@ class MainWindow(QMainWindow):
     def tick(self):
         self._handle_ipc_commands()
 
-    def _send_ipc_command(self, msg: list[str]):
+    def send_ipc_command(self, msg: list[str]):
         """Sends message to other processes"""
         log.debug(f"Sent IPC: {msg}")
         self.conn.send(msg)
@@ -295,17 +299,30 @@ class MainWindow(QMainWindow):
             if msg[0] == "Update mod list":
                 log.debug(f"Mods: {self.shared_data.mods}")
                 log.debug(f"Entities: {self.shared_data.entities}")
+                self._active_mods_baseline = list(self.shared_data.settings["active_mods"])
+                self._pending_active_mods = list(self._active_mods_baseline)
                 self._populate_mods_list()
                 self._populate_add_entities_list()
             else:
                 log.error(f"Unknown command: {msg}")
+    
+    def close_app(self, restart=False):
+        """Sends a command to close the second process and closes the current one"""
+        if restart:
+            self.shared_data.restart_requested = True
+        self.send_ipc_command(["close_app"])
+        QCoreApplication.quit()
+    
+    def restart_app(self):
+        """Sends a command to close the second process and closes the current one, then restarts the application"""
+        self.close_app(restart=True)
 
     # ================= Mods =================
 
     def _populate_mods_list(self) -> None:
         self.ui.listWidget_mods.clear()
 
-        active_ids = [mid for mid in self.shared_data.settings["active_mods"] if mid in self.shared_data.mods]
+        active_ids = [mid for mid in self._pending_active_mods if mid in self.shared_data.mods]
         active_set = set(active_ids)
         inactive_mods = sorted(
             (mod for mod in self.shared_data.mods.values() if mod.id not in active_set),
@@ -315,7 +332,6 @@ class MainWindow(QMainWindow):
 
         for mod in ordered_mods:
             row_widget = Mod_row()
-
             row_widget.checkBox.setChecked(mod.id in active_set)
             row_widget.label.setText(mod.name)
             row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, checked))
@@ -362,31 +378,29 @@ class MainWindow(QMainWindow):
         self.ui.label_mod_description.setText(mod.description)
 
     def _on_mod_toggled(self, mod: Mod, checked: bool) -> None:
-        settings = self.shared_data.settings
         if checked:
-            settings["active_mods"].append(mod.id)
+            self._pending_active_mods.append(mod.id)
         else:
-            settings["active_mods"].remove(mod.id)
-        self.shared_data.settings = settings
-        self.save_settings_state()
-        log.info(f"[mods] {mod.id} -> {'active' if checked else 'inactive'}")
+            self._pending_active_mods.remove(mod.id)
+        log.debug(f"[mods] pending: {mod.id} -> {'active' if checked else 'inactive'}")
         self._populate_mods_list()
+        self._update_mod_changes_ui()
 
     def _on_mods_reordered(self) -> None:
-        new_active_order = [
+        self._pending_active_mods = [
             self.ui.listWidget_mods.item(row).data(Qt.ItemDataRole.UserRole)
             for row in range(self.ui.listWidget_mods.count())
             if self.ui.listWidget_mods.item(row).data(Qt.ItemDataRole.UserRole)
-            in self.shared_data.settings["active_mods"]
+            in self._pending_active_mods
         ]
-
-        settings = self.shared_data.settings
-        settings["active_mods"] = new_active_order
-        self.shared_data.settings = settings
-        self.save_settings_state()
-        log.info(f"[mods] New active mod order: {new_active_order}")
-
+        log.debug(f"[mods] pending order: {self._pending_active_mods}")
         self._populate_mods_list()
+        self._update_mod_changes_ui()
+
+    def _update_mod_changes_ui(self) -> None:
+        has_changes = self._pending_active_mods != self._active_mods_baseline
+        self.ui.pushButton_discard_mod_changes.setEnabled(has_changes)
+        self.ui.pushButton_save_mod_changes.setEnabled(has_changes)
 
     def _on_mod_menu(self, mod: Mod) -> None:
         menu = QMenu(self)
@@ -405,16 +419,84 @@ class MainWindow(QMainWindow):
 
     # Loading and saving mod list changes
     def _on_load_mod_list(self) -> None:
-        print("[mods] TODO: load mod list from disk") # TODO: Dodaj okno z możliwością wczytania zapisanych listy modów z pliku albo ustawień
+        saved_lists = self.shared_data.settings["saved_mods_list"]
+        if not saved_lists:
+            QMessageBox.information(self,
+                self.translate("MainWindow", "Load mod list", None),
+                self.translate("MainWindow", "No saved mod lists yet.", None),
+            )
+            return
+
+        dialog = SavedModsListDialog(saved_lists, parent=self)
+        result = dialog.exec()
+
+        if dialog.modified:
+            settings = self.shared_data.settings
+            settings["saved_mods_list"] = dialog.saved_lists
+            self.shared_data.settings = settings
+            self.save_settings_state()
+
+        if result == QDialog.DialogCode.Accepted and dialog.selected_name:
+            loaded_ids = saved_lists.get(dialog.selected_name, [])
+            missing = [mid for mid in loaded_ids if mid not in self.shared_data.mods]
+            if missing:
+                log.warning(f'[mods] Saved list "{dialog.selected_name}" references missing mods: {missing}')
+
+            self._pending_active_mods = [mid for mid in loaded_ids if mid in self.shared_data.mods]
+            log.debug(f'[mods] Loaded mod list "{dialog.selected_name}": {self._pending_active_mods}')
+            self._populate_mods_list()
+            self._update_mod_changes_ui()
 
     def _on_save_mod_list(self) -> None:
-        print("[mods] TODO: save mod list to disk") # TODO: Dodaj okno z możliwością zapisania listy modów z nazwą do pliku albo ustawień
+        name, ok = QInputDialog.getText(self,
+            self.translate("MainWindow", "Save mod list", None),
+            self.translate("MainWindow", "List name:", None),
+        )
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+
+        settings = self.shared_data.settings
+
+        if name in settings["saved_mods_list"]:
+            confirm = QMessageBox.question(self,
+                self.translate("MainWindow", "Overwrite mod list", None),
+                replace_format(self.translate("MainWindow",'A saved list named "%1" already exists. Overwrite it?',None), name))
+            if confirm != QMessageBox.StandardButton.Yes:
+                return
+
+        settings["saved_mods_list"][name] = list(self._pending_active_mods)
+        self.shared_data.settings = settings
+        self.save_settings_state()
+        log.debug(f'[mods] Saved mod list "{name}": {settings["saved_mods_list"][name]}')
 
     def _on_discard_changes(self) -> None:
-        print("[mods] TODO: discard changes") # TODO: Dodaj funkcjonalność cofania zmian listy modów
+        self._pending_active_mods = list(self._active_mods_baseline)
+        log.debug("[mods] Changes discarded")
+        self._populate_mods_list()
+        self._update_mod_changes_ui()
 
     def _on_save_changes(self) -> None:
-        print("[mods] TODO: save changes") # TODO: Dodaj funkcjonalność zapisywania aktywnych modów i uruchamianie ponownie aplikacji
+        settings = self.shared_data.settings
+        settings["active_mods"] = list(self._pending_active_mods)
+        self.shared_data.settings = settings
+        self.save_settings_state()
+
+        self._active_mods_baseline = list(self._pending_active_mods)
+        log.debug("[mods] Changes saved")
+        self._update_mod_changes_ui()
+        self._prompt_restart_required()
+
+    def _prompt_restart_required(self) -> None:
+        msg = QMessageBox(self)
+        msg.setWindowTitle(self.translate("MainWindow", "Restart required", None))
+        msg.setText(self.translate("MainWindow","Mod changes require an application restart to take effect.",None))
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
+
+        log.info("Restarting application after mod changes...")
+        self.restart_app()
 
     # ================= Settings =================
     def save_settings_state(self) -> None:
@@ -559,7 +641,7 @@ class MainWindow(QMainWindow):
         self.shared_data.settings = settings
         self.save_settings_state()
 
-        self.conn.send(["toggle_debug"])
+        self.send_ipc_command(["toggle_debug"])
 
     # ================= OBJECTS EDITOR =================
 
@@ -585,7 +667,7 @@ class MainWindow(QMainWindow):
     
     def clear_all_entities(self):
         """Removes all spawned entities from the world"""
-        self.conn.send(["clear_all_entities"])
+        self.send_ipc_command(["clear_all_entities"])
     
     # ================= ADD ENTITY =================
 
@@ -634,7 +716,7 @@ class MainWindow(QMainWindow):
             for entity in category_entities:
                 pixmap = self._make_square_pixmap(entity.preview_path, icon_size)
                 item = QListWidgetItem(QIcon(pixmap), entity.name)
-                item.setData(Qt.ItemDataRole.UserRole, entity.id)
+                item.setData(Qt.ItemDataRole.UserRole, f"{entity.mod_id}:{entity.id}")
                 item.setTextAlignment(Qt.AlignmentFlag.AlignHCenter)
                 item.setSizeHint(QSize(88, 96))
                 list_widget.addItem(item)
@@ -661,11 +743,11 @@ class MainWindow(QMainWindow):
     def _on_add_entity_selected(self, current: QListWidgetItem | None, previous: QListWidgetItem | None) -> None:
         if current is None:
             return
-        entity_id = current.data(Qt.ItemDataRole.UserRole)
-        if entity_id is None:
+        mod_and_entity_id = current.data(Qt.ItemDataRole.UserRole)
+        if mod_and_entity_id is None:
             return  # ignore focus on category separator, not an actual entity
 
-        entity = self.shared_data.entities[entity_id]
+        entity = self.shared_data.entities[mod_and_entity_id]
         mod = self.shared_data.mods[entity.mod_id]
 
         pixmap = QPixmap(str(entity.preview_path))
@@ -769,7 +851,8 @@ def run_app(conn, shared_data, log_queue) -> None:
     translator = Translator(shared_data.settings["language"])
 
     window = MainWindow(conn, shared_data, translator)
-    # window.show() # By default we want to hide the window
+    if shared_data.restarted:
+        window.show()
 
     # Creating a tray icon
     tray = QSystemTrayIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")), app)
@@ -790,7 +873,7 @@ def run_app(conn, shared_data, log_queue) -> None:
     menu.addSeparator()
     quit_action = menu.addAction("Close")
     translator.tr(lambda: quit_action.setText(QCoreApplication.translate("tray-icon", "Close", None)))
-    quit_action.triggered.connect(app.quit)
+    quit_action.triggered.connect(window.close_app)
     tray.setContextMenu(menu)
     tray.show()
 

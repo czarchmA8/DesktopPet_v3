@@ -113,8 +113,8 @@
         <location filename="../../dashboard/ui/ui_main_window.py" line="1516"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1523"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1530"/>
-        <location filename="../../dashboard/dashboard.py" line="132"/>
-        <location filename="../../dashboard/dashboard.py" line="477"/>
+        <location filename="../../dashboard/dashboard.py" line="117"/>
+        <location filename="../../dashboard/dashboard.py" line="572"/>
         <source>No keyboard shortcut</source>
         <translation>Brak skrótu klawiszowego</translation>
     </message>
@@ -300,6 +300,7 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1561"/>
+        <location filename="../../dashboard/dashboard.py" line="425"/>
         <source>Load mod list</source>
         <translation>Załaduj listę modów</translation>
     </message>
@@ -326,7 +327,7 @@
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1566"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1599"/>
-        <location filename="../../dashboard/dashboard.py" line="654"/>
+        <location filename="../../dashboard/dashboard.py" line="735"/>
         <source>Entities (%1)</source>
         <translation>Byty (%1)</translation>
     </message>
@@ -425,7 +426,7 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1613"/>
-        <location filename="../../dashboard/dashboard.py" line="277"/>
+        <location filename="../../dashboard/dashboard.py" line="266"/>
         <source>version: %1  •  %2</source>
         <translation>wersja: %1  •  %2</translation>
     </message>
@@ -441,7 +442,7 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1617"/>
-        <location filename="../../dashboard/dashboard.py" line="721"/>
+        <location filename="../../dashboard/dashboard.py" line="802"/>
         <source>The version has not been checked yet</source>
         <translation>Wersja nie została jeszcze sprawdzona</translation>
     </message>
@@ -457,29 +458,29 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1621"/>
-        <location filename="../../dashboard/dashboard.py" line="280"/>
+        <location filename="../../dashboard/dashboard.py" line="269"/>
         <source>Version: %1</source>
         <translation>Wersja: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="142"/>
-        <location filename="../../dashboard/dashboard.py" line="497"/>
+        <location filename="../../dashboard/dashboard.py" line="127"/>
+        <location filename="../../dashboard/dashboard.py" line="596"/>
         <source>Autostart is only available for the packaged application, not for the script being run.</source>
         <translation>Autostart jest dostępny tylko dla spakowanej aplikacji, a nie dla uruchamianego skryptu.</translation>
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1551"/>
-        <location filename="../../dashboard/dashboard.py" line="357"/>
+        <location filename="../../dashboard/dashboard.py" line="356"/>
         <source>Mods (%1)</source>
         <translation>Mody (%1)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="386"/>
+        <location filename="../../dashboard/dashboard.py" line="408"/>
         <source>Open folder</source>
         <translation>Otwórz folder</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="387"/>
+        <location filename="../../dashboard/dashboard.py" line="409"/>
         <source>Remove</source>
         <translation>Usuń</translation>
     </message>
@@ -487,101 +488,136 @@
         <location filename="../../dashboard/ui/ui_main_window.py" line="1555"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1571"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1604"/>
-        <location filename="../../dashboard/dashboard.py" line="393"/>
-        <location filename="../../dashboard/dashboard.py" line="395"/>
+        <location filename="../../dashboard/dashboard.py" line="415"/>
+        <location filename="../../dashboard/dashboard.py" line="418"/>
         <source>Mod settings</source>
         <translation>Ustawienia moda</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="393"/>
+        <location filename="../../dashboard/dashboard.py" line="415"/>
         <source>Select a mod first.</source>
         <translation>Narpiew zaznacz moda.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="395"/>
+        <location filename="../../dashboard/dashboard.py" line="418"/>
         <source>TODO: settings for %1</source>
         <translation>TODO: ustawienia dla %1</translation>
     </message>
     <message>
         <location filename="../../dashboard/dashboard.py" line="426"/>
+        <source>No saved mod lists yet.</source>
+        <translation>Brak zapisanych listy modów.</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="452"/>
+        <source>Save mod list</source>
+        <translation>Zapisz listę modów</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="453"/>
+        <source>List name:</source>
+        <translation>Nazwa listy:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="463"/>
+        <source>Overwrite mod list</source>
+        <translation>Nadpisz listę modów</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="464"/>
+        <source>A saved list named &quot;%1&quot; already exists. Overwrite it?</source>
+        <translation>Zapisana lista modów o nazwie &quot;%1&quot; już istnieje. Nadpisać?</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="492"/>
+        <source>Restart required</source>
+        <translation>Wymagany restart</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="493"/>
+        <source>Mod changes require an application restart to take effect.</source>
+        <translation>Zmiany w modach wymagają restartu aplikacji aby zadziałały.</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="518"/>
         <source>File saving error</source>
         <translation>Błąd zapisu pliku</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="426"/>
+        <location filename="../../dashboard/dashboard.py" line="518"/>
         <source>Failed to save settings: %x</source>
         <translation>Nie udało się zapisać ustawień: %x</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="464"/>
-        <location filename="../../dashboard/dashboard.py" line="480"/>
+        <location filename="../../dashboard/dashboard.py" line="559"/>
+        <location filename="../../dashboard/dashboard.py" line="575"/>
         <source>Success</source>
         <translation>Sukces</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="464"/>
+        <location filename="../../dashboard/dashboard.py" line="559"/>
         <source>Assigned &apos;%x&apos;.</source>
         <translation>Przypisano `%x`</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="480"/>
+        <location filename="../../dashboard/dashboard.py" line="575"/>
         <source>Shortcut removed.</source>
         <translation>Skrót klawiszowy usunięty</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="482"/>
+        <location filename="../../dashboard/dashboard.py" line="577"/>
         <source>Information</source>
         <translation>Informacja</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="482"/>
+        <location filename="../../dashboard/dashboard.py" line="577"/>
         <source>No shortcut assigned.</source>
         <translation>Brak przypisanego skrótu.</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="497"/>
+        <location filename="../../dashboard/dashboard.py" line="596"/>
         <source>Autostart unavailable</source>
         <translation>Autostart niedostępny</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="520"/>
+        <location filename="../../dashboard/dashboard.py" line="619"/>
         <source>Registry error</source>
         <translation>Błąd rejestru</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="520"/>
+        <location filename="../../dashboard/dashboard.py" line="619"/>
         <source>Failed to change autostart setting:
 %x</source>
         <translation>Nie udało się zmienić ustawienia autostartu:\n%x</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="711"/>
+        <location filename="../../dashboard/dashboard.py" line="792"/>
         <source>New update &quot;%1&quot; from %2 available!</source>
         <translation>Nowa aktualizacja &quot;%1&quot; z %2 jest dostępna!</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="714"/>
+        <location filename="../../dashboard/dashboard.py" line="795"/>
         <source>The application version is up to date</source>
         <translation>Wersja aplikacji jest aktualna</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="717"/>
+        <location filename="../../dashboard/dashboard.py" line="798"/>
         <source>Repository not found or no versions published.</source>
         <translation>Rezpozytorium nie znalezione lub brak opublikowanych wersji</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="719"/>
+        <location filename="../../dashboard/dashboard.py" line="800"/>
         <source>Error: %1</source>
         <translation>Błąd %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="731"/>
+        <location filename="../../dashboard/dashboard.py" line="812"/>
         <source>Checking for updates...</source>
         <translation>Sprawdzanie aktualizacji...</translation>
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1460"/>
-        <location filename="../../dashboard/dashboard.py" line="756"/>
+        <location filename="../../dashboard/dashboard.py" line="837"/>
         <source>DesktopPet_v3</source>
         <translation>DesktopPet_v3</translation>
     </message>
@@ -835,6 +871,39 @@ Zostanie automatycznie uproszczony podczas użycia, co może zmienić jego kszta
     </message>
 </context>
 <context>
+    <name>SavedModsListDialog</name>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="9"/>
+        <source>Load mod list</source>
+        <translation>Załaduj listę modów</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="24"/>
+        <source>Load</source>
+        <translation>Załaduj</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="25"/>
+        <source>Delete</source>
+        <translation>Usuń</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="26"/>
+        <source>Cancel</source>
+        <translation>Anuluj</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="60"/>
+        <source>Delete mod list</source>
+        <translation>Usuń listę modów</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="61"/>
+        <source>Delete saved list &quot;%1&quot;?</source>
+        <translation>Usunąć zapisaną listę &quot;%1&quot;?</translation>
+    </message>
+</context>
+<context>
     <name>UpdateDialog</name>
     <message>
         <location filename="../../dashboard/widgets/update_dialog.py" line="15"/>
@@ -857,7 +926,7 @@ Zostanie automatycznie uproszczony podczas użycia, co może zmienić jego kszta
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ostatnie wydanie: &lt;a href=&quot;%1&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#9cebff;&quot;&gt;%1&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="757"/>
+        <location filename="../../dashboard/dashboard.py" line="838"/>
         <source>Automatic update has not been implemented yet</source>
         <translation>Automatyczne aktualizacje nie zostały jeszcze zaimplementowane</translation>
     </message>
@@ -865,17 +934,17 @@ Zostanie automatycznie uproszczony podczas użycia, co może zmienić jego kszta
 <context>
     <name>tray-icon</name>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="780"/>
+        <location filename="../../dashboard/dashboard.py" line="861"/>
         <source>Show Panel</source>
         <translation>Pokaż panel</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="789"/>
+        <location filename="../../dashboard/dashboard.py" line="870"/>
         <source>About</source>
         <translation>O aplikacji</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="794"/>
+        <location filename="../../dashboard/dashboard.py" line="875"/>
         <source>Close</source>
         <translation>Wyjdź</translation>
     </message>

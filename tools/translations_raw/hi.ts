@@ -113,8 +113,8 @@
         <location filename="../../dashboard/ui/ui_main_window.py" line="1516"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1523"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1530"/>
-        <location filename="../../dashboard/dashboard.py" line="132"/>
-        <location filename="../../dashboard/dashboard.py" line="477"/>
+        <location filename="../../dashboard/dashboard.py" line="117"/>
+        <location filename="../../dashboard/dashboard.py" line="572"/>
         <source>No keyboard shortcut</source>
         <translation>कोई कीबोर्ड शॉर्टकट नहीं है</translation>
     </message>
@@ -300,6 +300,7 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1561"/>
+        <location filename="../../dashboard/dashboard.py" line="425"/>
         <source>Load mod list</source>
         <translation>मॉड सूची लोड करें</translation>
     </message>
@@ -326,7 +327,7 @@
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1566"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1599"/>
-        <location filename="../../dashboard/dashboard.py" line="654"/>
+        <location filename="../../dashboard/dashboard.py" line="735"/>
         <source>Entities (%1)</source>
         <translation>इकाइयाँ (%1)</translation>
     </message>
@@ -425,7 +426,7 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1613"/>
-        <location filename="../../dashboard/dashboard.py" line="277"/>
+        <location filename="../../dashboard/dashboard.py" line="266"/>
         <source>version: %1  •  %2</source>
         <translation>संस्करण: %1  •  %2</translation>
     </message>
@@ -441,7 +442,7 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1617"/>
-        <location filename="../../dashboard/dashboard.py" line="721"/>
+        <location filename="../../dashboard/dashboard.py" line="802"/>
         <source>The version has not been checked yet</source>
         <translation>संस्करण की अभी तक जाँच नहीं की गई है</translation>
     </message>
@@ -457,29 +458,29 @@
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1621"/>
-        <location filename="../../dashboard/dashboard.py" line="280"/>
+        <location filename="../../dashboard/dashboard.py" line="269"/>
         <source>Version: %1</source>
         <translation>संस्करण: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="142"/>
-        <location filename="../../dashboard/dashboard.py" line="497"/>
+        <location filename="../../dashboard/dashboard.py" line="127"/>
+        <location filename="../../dashboard/dashboard.py" line="596"/>
         <source>Autostart is only available for the packaged application, not for the script being run.</source>
         <translation>ऑटो-स्टार्ट केवल पैकेज्ड एप्लिकेशन के लिए उपलब्ध है, न कि चलाए जा रहे स्क्रिप्ट के लिए।</translation>
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1551"/>
-        <location filename="../../dashboard/dashboard.py" line="357"/>
+        <location filename="../../dashboard/dashboard.py" line="356"/>
         <source>Mods (%1)</source>
         <translation>मॉड्स (%1)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="386"/>
+        <location filename="../../dashboard/dashboard.py" line="408"/>
         <source>Open folder</source>
         <translation>फ़ोल्डर खोलें</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="387"/>
+        <location filename="../../dashboard/dashboard.py" line="409"/>
         <source>Remove</source>
         <translation>हटाएँ</translation>
     </message>
@@ -487,101 +488,136 @@
         <location filename="../../dashboard/ui/ui_main_window.py" line="1555"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1571"/>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1604"/>
-        <location filename="../../dashboard/dashboard.py" line="393"/>
-        <location filename="../../dashboard/dashboard.py" line="395"/>
+        <location filename="../../dashboard/dashboard.py" line="415"/>
+        <location filename="../../dashboard/dashboard.py" line="418"/>
         <source>Mod settings</source>
         <translation>मॉड सेटिंग्स</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="393"/>
+        <location filename="../../dashboard/dashboard.py" line="415"/>
         <source>Select a mod first.</source>
         <translation>पहले एक मॉड चुनें।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="395"/>
+        <location filename="../../dashboard/dashboard.py" line="418"/>
         <source>TODO: settings for %1</source>
         <translation>TODO: %1 के लिए सेटिंग्स</translation>
     </message>
     <message>
         <location filename="../../dashboard/dashboard.py" line="426"/>
+        <source>No saved mod lists yet.</source>
+        <translation>अभी तक कोई सहेजी गई मॉड सूची नहीं है।</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="452"/>
+        <source>Save mod list</source>
+        <translation>मॉड सूची सहेजें</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="453"/>
+        <source>List name:</source>
+        <translation>सूची का नाम:</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="463"/>
+        <source>Overwrite mod list</source>
+        <translation>मॉड सूची अधिलेखित करें</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="464"/>
+        <source>A saved list named &quot;%1&quot; already exists. Overwrite it?</source>
+        <translation>&quot;%1&quot; नाम की सहेजी गई सूची पहले से मौजूद है। इसे अधिलेखित करें?</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="492"/>
+        <source>Restart required</source>
+        <translation>पुनः आरंभ आवश्यक</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="493"/>
+        <source>Mod changes require an application restart to take effect.</source>
+        <translation>मॉड परिवर्तनों को प्रभावी होने के लिए एप्लिकेशन को पुनः आरंभ करना आवश्यक है।</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/dashboard.py" line="518"/>
         <source>File saving error</source>
         <translation>फ़ाइल सुरक्षित करने में त्रुटि</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="426"/>
+        <location filename="../../dashboard/dashboard.py" line="518"/>
         <source>Failed to save settings: %x</source>
         <translation>सेटिंग्स सुरक्षित करने में विफल: %x</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="464"/>
-        <location filename="../../dashboard/dashboard.py" line="480"/>
+        <location filename="../../dashboard/dashboard.py" line="559"/>
+        <location filename="../../dashboard/dashboard.py" line="575"/>
         <source>Success</source>
         <translation>सफलता</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="464"/>
+        <location filename="../../dashboard/dashboard.py" line="559"/>
         <source>Assigned &apos;%x&apos;.</source>
         <translation>&apos;%x&apos; असाइन कर दिया गया है।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="480"/>
+        <location filename="../../dashboard/dashboard.py" line="575"/>
         <source>Shortcut removed.</source>
         <translation>शॉर्टकट हटा दिया गया।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="482"/>
+        <location filename="../../dashboard/dashboard.py" line="577"/>
         <source>Information</source>
         <translation>जानकारी</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="482"/>
+        <location filename="../../dashboard/dashboard.py" line="577"/>
         <source>No shortcut assigned.</source>
         <translation>कोई शॉर्टकट असाइन नहीं किया गया है।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="497"/>
+        <location filename="../../dashboard/dashboard.py" line="596"/>
         <source>Autostart unavailable</source>
         <translation>ऑटो-स्टार्ट अनुपलब्ध है</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="520"/>
+        <location filename="../../dashboard/dashboard.py" line="619"/>
         <source>Registry error</source>
         <translation>रजिस्ट्री त्रुटि (Registry error)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="520"/>
+        <location filename="../../dashboard/dashboard.py" line="619"/>
         <source>Failed to change autostart setting:
 %x</source>
         <translation>ऑटो-स्टार्ट सेटिंग बदलने में विफल: %x</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="711"/>
+        <location filename="../../dashboard/dashboard.py" line="792"/>
         <source>New update &quot;%1&quot; from %2 available!</source>
         <translation>%2 से नया अपडेट &quot;%1&quot; उपलब्ध है!</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="714"/>
+        <location filename="../../dashboard/dashboard.py" line="795"/>
         <source>The application version is up to date</source>
         <translation>एप्लिकेशन संस्करण अद्यतित है</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="717"/>
+        <location filename="../../dashboard/dashboard.py" line="798"/>
         <source>Repository not found or no versions published.</source>
         <translation>रिपॉज़िटरी नहीं मिली या कोई संस्करण प्रकाशित नहीं हुआ।</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="719"/>
+        <location filename="../../dashboard/dashboard.py" line="800"/>
         <source>Error: %1</source>
         <translation>त्रुटि: %1</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="731"/>
+        <location filename="../../dashboard/dashboard.py" line="812"/>
         <source>Checking for updates...</source>
         <translation>अपडेट खोजे जा रहे हैं...</translation>
     </message>
     <message>
         <location filename="../../dashboard/ui/ui_main_window.py" line="1460"/>
-        <location filename="../../dashboard/dashboard.py" line="756"/>
+        <location filename="../../dashboard/dashboard.py" line="837"/>
         <source>DesktopPet_v3</source>
         <translation>DesktopPet_v3</translation>
     </message>
@@ -835,6 +871,39 @@ It will be simplified automatically when used, which may change its shape. Savin
     </message>
 </context>
 <context>
+    <name>SavedModsListDialog</name>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="9"/>
+        <source>Load mod list</source>
+        <translation>मॉड सूची लोड करें</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="24"/>
+        <source>Load</source>
+        <translation>लोड करें</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="25"/>
+        <source>Delete</source>
+        <translation>हटाएँ</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="26"/>
+        <source>Cancel</source>
+        <translation>रद्द करें (Cancel)</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="60"/>
+        <source>Delete mod list</source>
+        <translation>मॉड सूची हटाएँ</translation>
+    </message>
+    <message>
+        <location filename="../../dashboard/widgets/saved_mods_dialog.py" line="61"/>
+        <source>Delete saved list &quot;%1&quot;?</source>
+        <translation>सहेजी गई सूची &quot;%1&quot; हटाएँ?</translation>
+    </message>
+</context>
+<context>
     <name>UpdateDialog</name>
     <message>
         <location filename="../../dashboard/widgets/update_dialog.py" line="15"/>
@@ -857,7 +926,7 @@ It will be simplified automatically when used, which may change its shape. Savin
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;नवीनतम रिलीज़: &lt;a href=&quot;%1&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#9cebff;&quot;&gt;%1&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="757"/>
+        <location filename="../../dashboard/dashboard.py" line="838"/>
         <source>Automatic update has not been implemented yet</source>
         <translation>स्वचालित अपडेट अभी तक लागू नहीं किया गया है</translation>
     </message>
@@ -865,17 +934,17 @@ It will be simplified automatically when used, which may change its shape. Savin
 <context>
     <name>tray-icon</name>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="780"/>
+        <location filename="../../dashboard/dashboard.py" line="861"/>
         <source>Show Panel</source>
         <translation>पैनल दिखाएं</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="789"/>
+        <location filename="../../dashboard/dashboard.py" line="870"/>
         <source>About</source>
         <translation>के बारे में (About)</translation>
     </message>
     <message>
-        <location filename="../../dashboard/dashboard.py" line="794"/>
+        <location filename="../../dashboard/dashboard.py" line="875"/>
         <source>Close</source>
         <translation>बंद करें</translation>
     </message>

@@ -34,5 +34,6 @@
         "hitbox_overlay": false,
         "debug_window": true
     },
-    "active_mods": []
+    "active_mods": [],
+    "saved_mods_list": {}
 }

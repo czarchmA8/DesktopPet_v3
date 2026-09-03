@@ -5,7 +5,7 @@ from ctypes import wintypes
 
 import win32gui, win32con
 from PySide6.QtWidgets import QWidget, QApplication
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QCoreApplication
 
 import utils_debug
 import logger
@@ -23,6 +23,11 @@ class TransparentWindow(QWidget):
 
         self.target_hwnd: int = target_hwnd
         self.hwnd_self = int(self.winId())
+
+        self.show()
+
+    def paintEvent(self, event) -> None:
+        pass
 
     def keyPressEvent(self, event) -> None:
         pass
@@ -118,16 +123,17 @@ class EntitiesManager(QApplication):
                 log.debug("Changes detected in window z-order")
 
             # Creating and updating z-order `TransparentWindow`
-            hdwp = self.user32.BeginDeferWindowPos(len(self.watcher.neighbor_windows))
-            flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
-            for hwnd, neighbors in self.watcher.neighbor_windows.items():
-                if hwnd not in self.transparent_windows:
-                    self.transparent_windows[hwnd] = TransparentWindow(hwnd)
-                    title = win32gui.GetWindowText(hwnd)
-                    log.debug(f'A new layer has been created on the window {hwnd} ({title})')
+            if self.watcher.neighbor_windows:
+                hdwp = self.user32.BeginDeferWindowPos(len(self.watcher.neighbor_windows))
+                flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
+                for hwnd, neighbors in self.watcher.neighbor_windows.items():
+                    if hwnd not in self.transparent_windows:
+                        self.transparent_windows[hwnd] = TransparentWindow(hwnd)
+                        title = win32gui.GetWindowText(hwnd)
+                        log.debug(f'A new layer has been created on the window {hwnd} ({title})')
 
-                hdwp = self.user32.DeferWindowPos(hdwp, self.transparent_windows[hwnd].hwnd_self, neighbors.window_above, 0, 0, 0, 0, flags)
-            self.user32.EndDeferWindowPos(hdwp)
+                    hdwp = self.user32.DeferWindowPos(hdwp, self.transparent_windows[hwnd].hwnd_self, neighbors.window_above, 0, 0, 0, 0, flags)
+                self.user32.EndDeferWindowPos(hdwp)
 
             # Deleting a `TransparentWindow` if the window assigned to it does not exist
             for hwnd in list(self.transparent_windows):
@@ -140,7 +146,7 @@ class EntitiesManager(QApplication):
 
         self.process_timer.stop("tick")
 
-    def _send_ipc_command(self, msg: list[str]):
+    def send_ipc_command(self, msg: list[str]):
         """Sends message to other processes"""
         log.debug(f"Sent IPC: {msg}")
         self.conn.send(msg)
@@ -150,8 +156,9 @@ class EntitiesManager(QApplication):
         if self.conn.poll():
             msg = self.conn.recv()
             log.debug(f"Received IPC: {msg}")
-            if msg[0] == "":
-                log.debug(f"Unknown command: {msg}")
+            if msg[0] == "close_app":
+                self.watcher.stop()
+                QCoreApplication.quit()
             else:
                 log.error(f"Unknown command: {msg}")
 

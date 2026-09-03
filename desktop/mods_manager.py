@@ -64,8 +64,8 @@ class ModsManager:
                     for entity_path in (mod_folder_path / "entities").iterdir():
                         entity = self.load_entity_from_folder(entity_path, mod.id)
                         if entity:
-                            entities[entity.id] = entity
-        
+                            entities[f"{mod.id}:{entity.id}"] = entity
+
         self.shared_data.mods = mods
         self.shared_data.entities = entities
         log.info(f"Mods loaded: {len(mods)}")
