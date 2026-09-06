@@ -50,6 +50,9 @@ def test_the_translation_works_correctly() -> None:
     """Tests the runtime translation mechanism to ensure text dynamically switches between languages as expected."""
     from dashboard.translator import Translator
     from PySide6 import QtCore, QtWidgets
+
+    update_languages.update_qm_files(TS_DIR, QM_DIR, LANG_CODES_TS)
+    
     QtWidgets.QApplication()
     
     translator = Translator("en")
