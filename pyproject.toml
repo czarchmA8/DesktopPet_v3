@@ -1,0 +1,40 @@
+[project]
+name = "DesktopPet_v3"
+version = "0.0.0"
+description = "An interactive desktop pet application featuring physics simulation, a control panel, and sophisticated system window behavior."
+authors = [
+    { name = "czarchmA8" }
+]
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+requires-python = "==3.13.*"
+dependencies = [
+    "box2d==2.3.10",
+    "keyboard==0.13.5",
+    "lupa==2.8",
+    "numpy==2.5.1",
+    "psutil==7.2.2",
+    "pyside6==6.11.1",
+    "pyside6-addons==6.11.1",
+    "pyside6-essentials==6.11.1",
+    "pywin32==312",
+    "requests==2.34.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/czarchmA8/DesktopPet_v3"
+Repository = "https://github.com/czarchmA8/DesktopPet_v3"
+Issues = "https://github.com/czarchmA8/DesktopPet_v3/issues"
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "mypy==2.2.0",
+    "pathspec==1.1.1",
+    "pipreqs==0.4.13",
+    "pyinstaller==6.21.0",
+    "pytest==9.1.1",
+    "ruff==0.15.20",
+]

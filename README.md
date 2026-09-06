@@ -55,20 +55,18 @@
    ```
    No Git? [Download ZIP](https://github.com/czarchmA8/DesktopPet_v3/archive/refs/heads/master.zip) and extract it instead.
 
-2. **Create a virtual environment (optional, but recommended)**
+2. **Install `uv`** (if you don't have it yet)
    ```bash
-   python -m venv .venv
-   .venv\Scripts\activate
+   winget install --id=astral-sh.uv -e
    ```
 
-3. **Install required libraries**
+3. **Install dependencies and create the environment**
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
-
-   Additional libraries if you want to use developer scripts:
+   Additional libraries for developer scripts:
    ```bash
-   pip install -r requirements_dev.txt
+   uv sync --group dev
    ```
 
 ## ▶️ Running the Application
@@ -76,7 +74,7 @@
 ### Normal Launch
 
 ```bash
-python main.py
+uv run main.py
 ```
 
 ### Launch Options with Arguments
@@ -88,13 +86,13 @@ The application supports the following command-line parameters:
 | `--debug` | `-D`  | `int` | Debug level (0-2)        | `0`     |
 
 ```bash
-python main.py --debug 0
+uv run main.py --debug 0
 ```
 
 ### Creating an .exe file (Windows, optional)
 If you want to create an executable .exe file, you can use the included build script:
 ```bash
-python tools/create_exe.py
+uv run tools/create_exe.py
 ```
 
 ---
@@ -139,7 +137,8 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`desktop/pet.py`**               | **(Not used, pending update)** Legacy virtual pet implementation — to be reworked for the mod system.                                                                                   |
 | **`desktop/world_objects.py`**     | **(Not used, pending update)** Legacy interactive world objects — to be reworked for the mod system.                                                                                    |
 | **`desktop/physics_utils.py`**     | **Physics utilities.** Helper module providing custom collision detection, data structures for shapes, Box2D unit conversions, and geometry simplification utilities.                   |
-| **`requirements.txt`**             | **Dependencies list.** Contains external Python packages required by the project.                                                                                                       |
+| **`pyproject.toml`**               | **Project configuration.** Declares dependencies, dependency groups, and project metadata for `uv`.                                                                                     |
+| **`uv.lock`**                      | **Dependency lockfile.** Pins exact resolved versions of all dependencies (including transitive ones) for reproducible installs. Auto-generated — do not edit manually.                 |
 | **`settings.default.json`**        | **Default configuration.** Contains the baseline application settings used to initialize or restore settings.json                                                                       |
 | **`version.json`**                 | **Version.** Stores information about the version and its date.                                                                                                                         |
 
@@ -156,7 +155,6 @@ Communication between processes occurs via a structured JSON protocol sent throu
 |:----------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`.github/`**                    | **GitHub configuration.** Contains issue templates, the pull request template, and CI workflows.                                                          |
 | **`tests/`**                      | **Tests.** Contains the automated tests suite                                                                                                             |
-| **`requirements_dev.txt`**        | **Dependencies list.** Contains external Python packages required by additional scripts.                                                                  |
 | **`tools/`**                      | **Helper scripts.** Contains scripts useful only for the developer                                                                                        |
 | **`tools/create_exe.py`**         | **Executable builder.** Packages the application into a standalone `.exe` using PyInstaller.                                                              |
 | **`tools/run_tests.py`**          | **Test runner.** Runs the full code-quality pipeline: Ruff linting, MyPy type checking, dependency verification via `pipreqs`, and the pytest test suite. |
