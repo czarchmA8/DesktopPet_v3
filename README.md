@@ -36,6 +36,8 @@
 - Objects Editor — create and edit object hitboxes and physics properties from the control panel
 - Multi-process logging — colored console output, file logs, automatic cleanup
 - Debug mode with hitbox/collision overlay and live state panel
+- Mod system with Lua scripting support — user-created mods loaded from the `Mods/` folder
+- Update checker with in-app notification dialog
 
 ---
 
@@ -64,6 +66,11 @@
    pip install -r requirements.txt
    ```
 
+   Additional libraries if you want to use developer scripts:
+   ```bash
+   pip install -r requirements_dev.txt
+   ```
+
 ## ▶️ Running the Application
 
 ### Normal Launch
@@ -88,10 +95,6 @@ python main.py --debug 0
 If you want to create an executable .exe file, you can use the included build script:
 ```bash
 python tools/create_exe.py
-```
-or you can use the following command:
-```bash
-pyinstaller main.py --onedir --windowed --icon=icon.ico --name=DesktopPet_v3
 ```
 
 ---
@@ -120,38 +123,46 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | File                               | Description                                                                                                                                                                             |
 |:-----------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`main.py`**                      | **Starting point.** Launches `dashboard.py` and `desktop/app.py` as separate processes.                                                                                                 |
-| **`logger.py`**              | **Log management.** Handles message logging, file saving, and automatic cleanup of old log files.                                                                                       |
+| **`config.py`**                    | **Configuration.** Stores and initializes variables for the application.                                                                                                                |
+| **`logger.py`**                    | **Log management.** Handles message logging, file saving, and automatic cleanup of old log files.                                                                                       |
 | **`utils_debug.py`**               | **Debugging utilities.** Debug info window, hitbox rendering, and general helper functions.                                                                                             |
 | **`windows_z_order/neighbors.py`** | **Window layering (Z-order).** Retrieves windows directly above and below a specified window handle (`hwnd`).                                                                           |
 | **`windows_z_order/watcher.py`**   | **Window layering (Z-order).** Listens to window events and then updates the z-order list that can be used                                                                              |
 | **`dashboard/dashboard.py`**       | **Control Panel & GUI.** Central hub for application control, displaying settings, mods, list of entities, and entities creation via interactive buttons, including a system tray icon. |
 | **`dashboard/objects_editor.py`**  | **Objects Editor.** A GUI tool for automatically generating object shapes, and manually editing hitbox vertices and physics properties.                                                 |
 | **`dashboard/translator.py`**      | **Translation System.** Manages dynamic, on-the-fly language switching within the application using registration callbacks.                                                             |
-| **`desktop/app.py`**               | **Desktop manager.** Launches and manages the pet and world objects.                                                                                                                    |
-| **`desktop/pet.py`**               | **Pet.** The virtual pet itself.                                                                                                                                                        |
-| **`desktop/world_objects.py`**     | **World Objects.** Manages interactive, physical objects within the pet's environment.                                                                                                  |
+| **`dashboard/ui/`**                | **Generated UI layout.** Qt Designer-generated main window layout files.                                                                                                                |
+| **`dashboard/widgets/`**           | **Custom widgets.** Reusable UI components used across the dashboard (dialogs, list rows, custom controls, etc.).                                                                       |
+| **`desktop/entities_manager.py`**  | **Desktop manager.** Launches and manages entities.                                                                                                                                     |
+| **`desktop/mods_manager.py`**      | **Mods manager.** Loads, manages and runs mods.                                                                                                                                         |
+| **`desktop/app.py`**               | **(Not used)** Legacy pet and world objects manager implementation — replaced by `entities_manager.py`.                                                                                 |
+| **`desktop/pet.py`**               | **(Not used, pending update)** Legacy virtual pet implementation — to be reworked for the mod system.                                                                                   |
+| **`desktop/world_objects.py`**     | **(Not used, pending update)** Legacy interactive world objects — to be reworked for the mod system.                                                                                    |
 | **`desktop/physics_utils.py`**     | **Physics utilities.** Helper module providing custom collision detection, data structures for shapes, Box2D unit conversions, and geometry simplification utilities.                   |
 | **`requirements.txt`**             | **Dependencies list.** Contains external Python packages required by the project.                                                                                                       |
 | **`settings.default.json`**        | **Default configuration.** Contains the baseline application settings used to initialize or restore settings.json                                                                       |
+| **`version.json`**                 | **Version.** Stores information about the version and its date.                                                                                                                         |
 
-| Directory           | Description                                                                             |
-|:--------------------|:----------------------------------------------------------------------------------------|
-| **`logs/`**         | Stores application log files.                                                           |
-| **`Assets/`**       | Contains all project assets, including sounds, animations, and object images.           |
-| **`translations/`** | Contains Compiled Qt translation files (.qm) used for application internationalization. |
-| *`Mods/`*           | Stores all user mods                                                                    |
+| Directory           | Description                                                                                                                |
+|:--------------------|:---------------------------------------------------------------------------------------------------------------------------|
+| **`logs/`**         | Stores application log files.                                                                                              |
+| **`Assets/`**       | Contains all project assets, including sounds, animations, and object images.                                              |
+| **`translations/`** | Contains Compiled Qt translation files (.qm) and translation source files (.ts) used for application internationalization. |
+| *`Mods/`*           | Stores all user mods                                                                                                       |
 
 #### Additional files and folders:
 
-| File / Directory                | Description                                                                                                                                               |
-|:--------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`requirements_dev.txt`**      | **Dependencies list.** Contains external Python packages required by additional scripts.                                                                  |
-| **`tools/`**                    | **Helper scripts.** Contains scripts useful only for the developer                                                                                        |
-| **`tools/create_exe.py`**       | **Executable builder.** Packages the application into a standalone `.exe` using PyInstaller.                                                              |
-| **`tools/run_tests.py`**        | **Test runner.** Runs the full code-quality pipeline: Ruff linting, MyPy type checking, dependency verification via `pipreqs`, and the pytest test suite. |
-| **`tools/update_languages.py`** | **Translation updater.** Automates the Qt translation workflow — regenerates `.ts` files from the source code and compiles them into `.qm` files.         |
-| **`.github/`**                  | **GitHub configuration.** Contains issue templates, the pull request template, and CI workflows.                                                          |
-| **`tests/`**                    | **Tests.** Contains the automated tests suite                                                                                                             |
+| File / Directory                  | Description                                                                                                                                               |
+|:----------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`.github/`**                    | **GitHub configuration.** Contains issue templates, the pull request template, and CI workflows.                                                          |
+| **`tests/`**                      | **Tests.** Contains the automated tests suite                                                                                                             |
+| **`requirements_dev.txt`**        | **Dependencies list.** Contains external Python packages required by additional scripts.                                                                  |
+| **`tools/`**                      | **Helper scripts.** Contains scripts useful only for the developer                                                                                        |
+| **`tools/create_exe.py`**         | **Executable builder.** Packages the application into a standalone `.exe` using PyInstaller.                                                              |
+| **`tools/run_tests.py`**          | **Test runner.** Runs the full code-quality pipeline: Ruff linting, MyPy type checking, dependency verification via `pipreqs`, and the pytest test suite. |
+| **`tools/update_languages.py`**   | **Translation updater.** Automates the Qt translation workflow — regenerates `.ts` files from the source code and compiles them into `.qm` files.         |
+| **`tools/generate_lua_stubs.py`** | **Lua definitions updater.** Generates a `mod_api.lua` file used to add autocomplete and better code formatting in mod scripts.                           |
+| **`.luarc.json`**                 | **Lua configuration.** Definitions and settings for the Lua language server, utilized for mod development.                                                |
 
 ---
 

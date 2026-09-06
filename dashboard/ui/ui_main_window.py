@@ -18,7 +18,6 @@ class Ui_MainWindow(object):
     def setup_ui(self, MainWindow: QMainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -667,6 +666,11 @@ class Ui_MainWindow(object):
         self.checkBox_debug_information_window.setEnabled(False)
 
         self.verticalLayout_6.addWidget(self.checkBox_debug_information_window)
+
+        self.pushButton_open_app_folder = QPushButton(self.groupBox_advanced)
+        self.pushButton_open_app_folder.setObjectName("pushButton_open_app_folder")
+
+        self.verticalLayout_6.addWidget(self.pushButton_open_app_folder)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_advanced)
@@ -1399,6 +1403,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_info_updates.addWidget(self.label_check_for_updates)
 
+        self.label_check_for_updates_time = QLabel(self.frame_updates)
+        self.label_check_for_updates_time.setObjectName("label_check_for_updates_time")
+        self.label_check_for_updates_time.setStyleSheet("color: #aaa; font-style: italic; font-family: monospace;")
+
+        self.horizontalLayout_info_updates.addWidget(self.label_check_for_updates_time)
+
         self.horizontalSpacer_info_updates = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_info_updates.addItem(self.horizontalSpacer_info_updates)
@@ -1547,6 +1557,7 @@ class Ui_MainWindow(object):
         self.checkBox_debug_mode.setText(QCoreApplication.translate("MainWindow", "Debug mode", None))
         self.checkBox_hitboxes_overlay.setText(QCoreApplication.translate("MainWindow", "Displaying hitboxes", None))
         self.checkBox_debug_information_window.setText(QCoreApplication.translate("MainWindow", "Information window", None))
+        self.pushButton_open_app_folder.setText(QCoreApplication.translate("MainWindow", "Open the application folder", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_settings), QCoreApplication.translate("MainWindow", "Settings", None))
         self.groupBox_mods_list.setTitle(QCoreApplication.translate("MainWindow", "Mods (%1)", None))
         self.groupBox_mod_details.setTitle(QCoreApplication.translate("MainWindow", "Mod details", None))

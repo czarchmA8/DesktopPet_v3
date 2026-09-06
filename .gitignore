@@ -5,8 +5,11 @@ logs/*
 !logs/.gitkeep
 settings.json
 /translations/*
-!/translations/*.qm
+!/translations/*.ts
 /tools/output/*
 !tools/output/.gitkeep
 /Mods/*
 !/Mods/.gitkeep
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

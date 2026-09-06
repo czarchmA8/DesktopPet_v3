@@ -6,10 +6,11 @@ from ctypes import wintypes
 import win32gui, win32con
 from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtCore import Qt, QTimer, QCoreApplication
+from PySide6.QtGui import QPainter, QPen
 
 import utils_debug
 import logger
-from windows_z_order.watcher import NeighborsWatcher
+from windows_z_order.watcher import WindowsWatcher, WatchWindow
 from desktop.mods_manager import ModsManager
 
 log = logger.get_logger("desktop")
@@ -24,10 +25,48 @@ class TransparentWindow(QWidget):
         self.target_hwnd: int = target_hwnd
         self.hwnd_self = int(self.winId())
 
+        self.draw_commands: list = []
+
         self.show()
 
     def paintEvent(self, event) -> None:
-        pass
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        for cmd in self.draw_commands:
+            kind = cmd[0]
+            if kind == "rect":
+                _, x, y, w, h, color, filled = cmd
+                painter.setPen(QPen(color))
+                painter.setBrush(color if filled else Qt.BrushStyle.NoBrush)
+                painter.drawRect(x, y, w, h)
+            elif kind == "line":
+                _, x1, y1, x2, y2, color, width = cmd
+                painter.setPen(QPen(color, width))
+                painter.drawLine(x1, y1, x2, y2)
+            elif kind == "text":
+                _, x, y, text, color, size = cmd
+                painter.setPen(QPen(color))
+                font = painter.font()
+                font.setPointSize(size)
+                painter.setFont(font)
+                painter.drawText(x, y, text)
+            elif kind == "image":
+                _, x, y, w, h, pixmap, opacity = cmd
+                painter.setOpacity(opacity)
+                if w is not None and h is not None:
+                    painter.drawPixmap(x, y, w, h, pixmap)
+                elif w is not None:
+                    h = round(pixmap.height() * (w / pixmap.width()))
+                    painter.drawPixmap(x, y, w, h, pixmap)
+                elif h is not None:
+                    w = round(pixmap.width() * (h / pixmap.height()))
+                    painter.drawPixmap(x, y, w, h, pixmap)
+                else:
+                    painter.drawPixmap(x, y, pixmap)
+                painter.setOpacity(1.0)
+            else:
+                raise Exception(f"Unknown command \"{cmd}\". This shouldn't have happened!")
+        painter.end()
 
     def keyPressEvent(self, event) -> None:
         pass
@@ -48,16 +87,11 @@ class EntitiesManager(QApplication):
         self.conn = conn
         self.shared_data = shared_data
 
-        self.watcher = NeighborsWatcher()
+        self.watcher = WindowsWatcher()
         self.watcher.start()
-        self.watch_windows_hwnd: list[int] = []
         self.transparent_windows: dict[int, TransparentWindow] = {}
 
-        self.mods_manager = ModsManager(conn, shared_data)
-
-        # # To jest testowa logika więc usuń to później
-        # hwnd = win32gui.FindWindow(None, "Widok główny — Eksplorator plików")
-        # self.watch_windows_hwnd.append(hwnd)
+        self.mods_manager = ModsManager(conn, shared_data, self)
 
         # Initialization of the Windows API function to bulk update the z-order of multiple windows in a single operation.
         self.user32 = ctypes.windll.user32
@@ -88,45 +122,37 @@ class EntitiesManager(QApplication):
         self.dt = now - self._last_tick_time
         self._last_tick_time = now
         
-        
         self.process_timer.start("check IPC")
         self._handle_ipc_commands()
         self.process_timer.stop("check IPC")
 
         self.process_timer.start("entities tick")
-        if not self.watch_windows_hwnd: # Nie wiem czy ten duplikat nadal jest potrzebny. Przemyśl to później
-            hwnd = win32gui.GetForegroundWindow()
-            self.watch_windows_hwnd.append(hwnd)
+        watch_windows: set[WatchWindow] = set()
+        for mod in self.mods_manager.mods:
+            mod.globals().ModAPI._watch_windows.clear()
+            mod.globals().tick()
+            watch_windows.update(mod.globals().ModAPI._watch_windows)
+        self.process_timer.stop("entities tick")
 
-            title = win32gui.GetWindowText(hwnd)
-            log.debug(f"Due to empty list, added window {hwnd} ({title}) to watch")
-
-        if self.watcher.changes_detected:
+        self.process_timer.start("update z-order")
+        if self.watcher._z_order_changes_detected:
             # Remove windows that have removed or are no longer visible from watchlist
-            for hwnd in list(self.watch_windows_hwnd):
-                if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowVisible(hwnd):
-                    title = win32gui.GetWindowText(hwnd)
-                    log.debug(f"Window {hwnd} ({title}) no longer exists or is hidden — stopped watching it")
-                    self.watch_windows_hwnd.remove(hwnd)
-
-            # Adding a window to watch if the list is empty
-            if not self.watch_windows_hwnd:
-                hwnd = win32gui.GetForegroundWindow()
-                self.watch_windows_hwnd.append(hwnd)
-
-                title = win32gui.GetWindowText(hwnd)
-                log.debug(f"Due to empty list, added window {hwnd} ({title}) to watch")
+            for window in watch_windows.copy():
+                if not win32gui.IsWindow(window.target_hwnd) or not win32gui.IsWindowVisible(window.target_hwnd):
+                    title = win32gui.GetWindowText(window.target_hwnd)
+                    log.debug(f"Window {window.target_hwnd} ({title}) no longer exists or is hidden — stopped watching it")
+                    watch_windows.remove(window)
 
             # Getting neighbors of watched windows
-            self.watcher.update_neighbor_windows(self.watch_windows_hwnd)
-            if self.watcher.old_neighbor_windows != self.watcher.neighbor_windows:
-                log.debug("Changes detected in window z-order")
+            self.watcher.update_info_in_watched_windows(watch_windows)
+            # if {(w.real_window_above, w.real_window_below) for w in self.watcher.old_watched_windows.values()} != {(w.real_window_above, w.real_window_below) for w in self.watcher.watched_windows.values()}:
+            #     log.debug("Changes detected in window z-order")
 
             # Creating and updating z-order `TransparentWindow`
-            if self.watcher.neighbor_windows:
-                hdwp = self.user32.BeginDeferWindowPos(len(self.watcher.neighbor_windows))
+            if self.watcher.watched_windows:
+                hdwp = self.user32.BeginDeferWindowPos(len(self.watcher.watched_windows))
                 flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
-                for hwnd, neighbors in self.watcher.neighbor_windows.items():
+                for hwnd, neighbors in self.watcher.watched_windows.items():
                     if hwnd not in self.transparent_windows:
                         self.transparent_windows[hwnd] = TransparentWindow(hwnd)
                         title = win32gui.GetWindowText(hwnd)
@@ -137,12 +163,23 @@ class EntitiesManager(QApplication):
 
             # Deleting a `TransparentWindow` if the window assigned to it does not exist
             for hwnd in list(self.transparent_windows):
-                if hwnd not in self.watcher.neighbor_windows:
+                if hwnd not in self.watcher.watched_windows:
                     title = win32gui.GetWindowText(hwnd)
                     log.debug(f'Removed layer assigned to hwnd {hwnd} ({title})')
                     self.transparent_windows[hwnd].close()
                     del self.transparent_windows[hwnd]
-        self.process_timer.stop("entities tick")
+        self.process_timer.stop("update z-order")
+
+        self.process_timer.start("entities paint_tick")
+        for window in self.transparent_windows.values():
+            window.draw_commands.clear()
+
+        for mod in self.mods_manager.mods:
+            mod.globals().paint_tick()
+
+        for window in self.transparent_windows.values():
+            window.repaint()
+        self.process_timer.stop("entities paint_tick")
 
         self.process_timer.stop("tick")
 

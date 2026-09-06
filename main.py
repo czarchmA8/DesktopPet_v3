@@ -165,6 +165,7 @@ def main() -> None:
     log = logger.get_logger("main")
     log.info(f"APP_NAME: \"{config.APP_NAME}\"")
     log.info(F"APP_DIR: \"{config.APP_DIR}\"")
+    log.info(f'RESOURCE_DIR: "{config.RESOURCE_DIR}"')
     log.info(f"APP_VERSION: \"{config.APP_VERSION}\"")
     log.info(f"APP_VERSION_DATE: \"{config.APP_VERSION_DATE}\"")
 

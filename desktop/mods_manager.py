@@ -3,17 +3,112 @@ from pathlib import Path
 import json
 from enum import StrEnum, auto
 
-from PySide6.QtGui import QImageReader
+import win32gui
+from PySide6.QtGui import QImageReader, QColor, QPixmap
 from lupa import LuaRuntime
 
 import config
 import logger
+from windows_z_order.watcher import WatchWindow
 
 log = logger.get_logger("mods_manager")
 MODS_DIR = config.APP_DIR / "Mods"
 
-class ModsAPI:
-    pass
+class ModAPI:
+    def __init__(self, entities_manager, mod_id: str) -> None:
+        self._entities_manager = entities_manager
+        self._mod_id: str = mod_id
+        self._watch_windows: set[WatchWindow] = set()
+        self._image_cache: dict[Path, QPixmap] = {}
+    
+    def get_foreground_window_hwnd(self) -> int:
+        return win32gui.GetForegroundWindow()
+
+    def get_window_title(self, hwnd) -> str:
+        return win32gui.GetWindowText(hwnd)
+    
+    def watch_window(self, hwnd: int, *args: bool) -> None:
+        self._watch_windows.add(WatchWindow(hwnd, *args))
+    
+    def stop_watching_window(self, hwnd: int, *args: bool) -> None:
+        self._watch_windows.remove(WatchWindow(hwnd, *args))
+
+    def clear_windows_watchlist(self) -> None:
+        self._watch_windows.clear()
+
+    def get_windows_watchlist(self) -> set[WatchWindow]:
+        return self._watch_windows.copy()
+
+    def get_watched_windows_info(self):
+        return self._entities_manager.watcher.watched_windows.copy()
+
+    @staticmethod
+    def _normalize_color(color) -> QColor:
+        if hasattr(color, "values"):
+            color = QColor(*(int(x) for x in color.values()))
+        else:
+            color = QColor(color)
+        return color
+
+    def draw_rect(self, hwnd: int, x: int, y: int, width: int, height: int, color: str | tuple[int, int, int] | tuple[int, int, int, int]="#ff0000", filled: bool=True):
+        qcolor = self._normalize_color(color)
+        cmd = ("rect", x, y, width, height, qcolor, filled)
+        self._entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
+
+    def draw_line(self, hwnd: int, x1: int, y1: int, x2: int, y2: int, color: str="#ffffff", width: int=1):
+        qcolor = self._normalize_color(color)
+        cmd = ("line", x1, y1, x2, y2, qcolor, width)
+        self._entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
+
+    def draw_text(self, hwnd: int, x: int, y: int, text: str, color: str="#ffffff", size: int=12):
+        qcolor = self._normalize_color(color)
+        cmd = ("text", x, y, str(text), qcolor, size)
+        self._entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
+
+    def _resolve_mod_path(self, relative_path: str) -> Path:
+        """Resolves a path a mod supplies against the mod's own folder."""
+        mod_dir = (config.APP_DIR / "Mods" / self._mod_id).resolve()
+        resolved = (mod_dir / relative_path).resolve()
+        if not resolved.is_relative_to(mod_dir):
+            raise ValueError(f'Path "{relative_path}" escapes the mod\'s own folder')
+        return resolved
+
+    def draw_image(self, hwnd: int, x: int, y: int, path: str, width: int | None = None, height: int | None = None, opacity: float = 1.0):
+        """Draws an image from a file inside the mod's own folder."""
+        image_path = self._resolve_mod_path(path)
+        pixmap = self._image_cache.get(image_path)
+        if pixmap is None:
+            pixmap = QPixmap(str(image_path))
+            if pixmap.isNull():
+                log.warning(f'draw_image: could not load image "{image_path}"')
+                return
+            self._image_cache[image_path] = pixmap
+        cmd = ("image", x, y, width, height, pixmap, float(opacity))
+        self._entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
+
+    class _Logger:
+        def __init__(self, mod_id: str) -> None:
+            self._mod_id = mod_id
+            self._log = logger.get_logger(mod_id)
+
+        def debug(self, text: str) -> None:
+            self._log.debug(text)
+
+        def info(self, text: str) -> None:
+            self._log.info(text)
+
+        def warning(self, text: str) -> None:
+            self._log.warning(text)
+
+        def error(self, text: str) -> None:
+            self._log.error(text)
+
+        def critical(self, text: str) -> None:
+            self._log.critical(text)
+
+    @property
+    def Logger(self) -> _Logger:
+        return self._Logger(self._mod_id)
 
 class ScriptLanguage(StrEnum):
     python = auto()
@@ -44,9 +139,12 @@ def filter_attribute_access(obj, attr_name, is_setting):
     raise AttributeError("access denied")
 
 class ModsManager:
-    def __init__(self, conn, shared_data):
+    def __init__(self, conn, shared_data, entities_manager):
         self.conn = conn
         self.shared_data = shared_data
+        self.entities_manager = entities_manager
+
+        self.mods: list = []
         
         self.load_mods()
 
@@ -177,12 +275,13 @@ class ModsManager:
                 """)
 
                 # Sharing the program API in a mod
-                lua.globals().ModsAPI = ModsAPI()
+                lua.globals().ModAPI = ModAPI(self.entities_manager, mod_id)
 
                 # Running the mod code
                 code = mod_lua_script_path.read_text(encoding="utf-8")
                 try:
                     lua.execute(code)
+                    self.mods.append(lua)
                     log.info(f"Mod \"{mod_id}\" launched")
                 except Exception as e:
                     log.warning(f"Error in mod code \"{mod_id}\": {e}")

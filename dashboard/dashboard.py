@@ -7,6 +7,7 @@ from typing import Callable
 import requests
 import time
 from datetime import datetime
+from threading import Thread
 
 import keyboard
 from PySide6.QtCore import (
@@ -18,9 +19,9 @@ from PySide6.QtWidgets import (
     QApplication, QListWidgetItem, QMenu,
     QMessageBox, QMainWindow, QSystemTrayIcon,
     QDialog, QLabel, QPushButton, 
-    QAbstractItemView, QInputDialog
+    QAbstractItemView, QInputDialog, QCheckBox
 )
-from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
+from PySide6.QtGui import QIcon, QPixmap, QDesktopServices, QGuiApplication
 
 import config
 import logger
@@ -54,21 +55,23 @@ class MainWindow(QMainWindow):
 
     def __init__(self, conn, shared_data, translator):
         super().__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setup_ui(self)
-
-        self.setWindowIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")))
-
+        
         self.conn = conn
         self.shared_data = shared_data
         self.translator = translator
+
+        self.ui = Ui_MainWindow()
+        self.ui.setup_ui(self)
+        self.restore_window_geometry()
+
+        self.setWindowIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")))
 
         self.hwnd_self = int(self.winId())
         self.editor_window: ObjectsEditorWindow | None = None
         self._active_mods_baseline: list[str] = []
         self._pending_active_mods: list[str] = []
         self._category_header_items: list[tuple[QListWidgetItem, CategorySeparator]] = []
-
+        
         self._setup_hotkeys()
 
         self.setup_connections()
@@ -82,6 +85,7 @@ class MainWindow(QMainWindow):
         self.refresh_timer.timeout.connect(self.tick)
         self.refresh_timer.start(1000)
 
+    # Appearance and functionality
     def setup_connections(self) -> None:
         # === Settings ===
         
@@ -109,12 +113,6 @@ class MainWindow(QMainWindow):
             for key in self.hotkeys_widgets[category]:
                 self.hotkeys_widgets[category][key].button_set.clicked.connect(lambda e, category=category, key=key: self._set_hotkey(category, key))
                 self.hotkeys_widgets[category][key].button_remove.clicked.connect(lambda e, category=category, key=key: self._remove_hotkey(category, key))
-                seq = self.shared_data.settings["hotkeys"][category][key]
-                self.hotkeys_widgets[category][key].button_remove.setEnabled(seq is not None)
-                if seq:
-                    self.hotkeys_widgets[category][key].label_shortcut.setText(seq)
-                else:
-                    self.translator.tr(lambda category=category, key=key: self.hotkeys_widgets[category][key].label_shortcut.setText(self.translate("MainWindow", "No keyboard shortcut", None)))
         
         # > System
         self.ui.checkBox_check_for_updates.setChecked(self.shared_data.settings["check_for_updates"])
@@ -138,6 +136,8 @@ class MainWindow(QMainWindow):
         self.ui.checkBox_debug_information_window.toggled.connect(self.update_debug_visibility)
 
         self.update_debug_check_states()
+
+        self.ui.pushButton_open_app_folder.clicked.connect(self.open_app_folder)
         
         # === Mods ===
         self.ui.listWidget_mods.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
@@ -146,6 +146,7 @@ class MainWindow(QMainWindow):
         self.ui.listWidget_mods.currentRowChanged.connect(self._on_mod_selected)
 
         self.ui.pushButton_mod_settings.clicked.connect(self._on_mod_settings)
+        self.ui.toolButton_mod_browse.clicked.connect(self._on_mod_browse)
         self.ui.pushButton_load_mod_list.clicked.connect(self._on_load_mod_list)
         self.ui.pushButton_save_mod_list.clicked.connect(self._on_save_mod_list)
         self.ui.pushButton_discard_mod_changes.clicked.connect(self._on_discard_changes)
@@ -179,7 +180,7 @@ class MainWindow(QMainWindow):
                     label_shortcut = self.ui.label_show_shortcut_value,
                     button_set = self.ui.pushButton_show_shortcut_set,
                     button_remove = self.ui.pushButton_show_shortcut_remove,
-                    callback = self._show_and_focus_window,
+                    callback = self.show_and_focus_window,
                 ),
                 "hide": HotkeyBinding(
                     label_shortcut = self.ui.label_hide_shortcut_value,
@@ -199,43 +200,43 @@ class MainWindow(QMainWindow):
                     label_shortcut = self.ui.label_kill_all_entities_shortcut_value,
                     button_set = self.ui.pushButton_kill_all_entities_shortcut_set,
                     button_remove = self.ui.pushButton_kill_all_entities_shortcut_remove,
-                    callback = lambda: (self.clear_all_entities(), print("TODO: kill all entities")),
+                    callback = lambda: self.kill_all_entities(),
                 ),
                 "show all": HotkeyBinding(
                     label_shortcut = self.ui.label_show_all_entities_shortcut_value,
                     button_set = self.ui.pushButton_show_all_entities_shortcut_set,
                     button_remove = self.ui.pushButton_show_all_entities_shortcut_remove,
-                    callback = lambda: print("TODO: show all entities"),
+                    callback = lambda: self.show_all_entities,
                 ),
                 "hide all": HotkeyBinding(
                     label_shortcut = self.ui.label_hide_all_entities_shortcut_value,
                     button_set = self.ui.pushButton_hide_all_entities_shortcut_set,
                     button_remove = self.ui.pushButton_hide_all_entities_shortcut_remove,
-                    callback = lambda: print("TODO: hide all entities"),
+                    callback = lambda: self.hide_all_entities,
                 ),
                 "kill": HotkeyBinding(
                     label_shortcut = self.ui.label_kill_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_kill_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_kill_selected_entity_shortcut_remove,
-                    callback = lambda: print("TODO: kill entity"),
+                    callback = lambda: self.kill_selected_entity,
                 ),
                 "show": HotkeyBinding(
                     label_shortcut = self.ui.label_show_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_show_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_show_selected_entity_shortcut_remove,
-                    callback = lambda: (self.send_ipc_command(["show_pet"]), print("TODO: show entity")),
+                    callback = lambda: self.show_selected_entity,
                 ),
                 "hide": HotkeyBinding(
                     label_shortcut = self.ui.label_hide_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_hide_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_hide_selected_entity_shortcut_remove,
-                    callback = lambda: (self.send_ipc_command(["hide_pet"]), print("TODO: hide entity")),
+                    callback = lambda: self.hide_selected_entity,
                 ),
                 "teleport": HotkeyBinding(
                     label_shortcut = self.ui.label_teleport_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_teleport_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_teleport_selected_entity_shortcut_remove,
-                    callback = lambda: (self.send_ipc_command(["teleport_pet"]), print("TODO: teleport entity")),
+                    callback = lambda: self.teleport_selected_entity,
                 ),
             },
         }
@@ -250,9 +251,17 @@ class MainWindow(QMainWindow):
         #     if Path("Assets", "Objects", name).exists()
         # }
 
-    def retranslate_ui(self):
+    def retranslate_ui(self) -> None:
         self.ui.retranslate_static_ui(self)
         # Settings
+        for category in self.hotkeys_widgets:
+            for key in self.hotkeys_widgets[category]:
+                seq = self.shared_data.settings["hotkeys"][category][key]
+                self.hotkeys_widgets[category][key].button_remove.setEnabled(seq is not None)
+                if seq:
+                    self.hotkeys_widgets[category][key].label_shortcut.setText(seq)
+                else:
+                    self.translator.tr(lambda category=category, key=key: self.hotkeys_widgets[category][key].label_shortcut.setText(self.translate("MainWindow", "No keyboard shortcut", None)))
 
         # Mods
         self._update_mods_group_title()
@@ -264,14 +273,72 @@ class MainWindow(QMainWindow):
 
         # Info
         self.ui.label_app_version.setText(replace_format(self.translate("MainWindow", "version: %1  \u2022  %2", None), config.APP_VERSION, config.APP_VERSION_DATE))
+        self.update_label_check_for_updates()
 
         # Version
         self.ui.label_version.setText(replace_format(self.translate("MainWindow", "Version: %1", None), config.APP_VERSION))
 
-    def _show_and_focus_window(self) -> None:
+    # Window geometry
+    def show_and_focus_window(self) -> None:
+        if self.isVisible():
+            self.reset_geometry()
+            QApplication.alert(self, 1)
+
         self.show()
         self.raise_()
         self.activateWindow()
+
+    def reset_geometry(self) -> None:
+        self.adjustSize()
+
+        screen = QGuiApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+
+        frame_geo = self.frameGeometry()
+        frame_geo.moveCenter(screen_geometry.center())
+        self.move(frame_geo.topLeft())
+    
+    def save_window_geometry(self) -> None:
+        screen = self.screen() or QGuiApplication.primaryScreen()
+
+        window_geometry = {
+            "x": self.pos().x(),
+            "y": self.pos().y(),
+            "width": self.size().width(),
+            "height": self.size().height(),
+            "screen_name": screen.name(),
+        }
+
+        settings = self.shared_data.settings
+        settings["window_geometry"] = window_geometry
+        self.shared_data.settings = settings
+        self.save_settings_state()
+
+    def restore_window_geometry(self) -> None:
+        window_geometry = self.shared_data.settings["window_geometry"]
+        if not all([window_geometry["width"], window_geometry["height"], window_geometry["x"], window_geometry["y"], window_geometry["screen_name"]]):
+            self.reset_geometry()
+            return
+
+        self.resize(window_geometry["width"], window_geometry["height"])
+        self.move(window_geometry["x"], window_geometry["y"])
+
+        target_screen_name = window_geometry["screen_name"]
+        screens = QGuiApplication.screens()
+        target_screen = next((s for s in screens if s.name() == target_screen_name), None)
+        if target_screen is None:
+            target_screen = QGuiApplication.primaryScreen()
+        self.windowHandle()
+        self.setScreen(target_screen)
+
+    # Window events
+    def resizeEvent(self, event):
+        self.save_window_geometry()
+        super().resizeEvent(event)
+
+    def moveEvent(self, event):
+        self.save_window_geometry()
+        super().moveEvent(event)
 
     def changeEvent(self, event):
         if event.type() == QEvent.Type.LanguageChange:
@@ -283,15 +350,18 @@ class MainWindow(QMainWindow):
         event.ignore()
         self.hide()
 
-    def tick(self):
+    def tick(self) -> None:
         self._handle_ipc_commands()
 
-    def send_ipc_command(self, msg: list[str]):
+        self.update_label_check_for_updates()
+
+    # IPC commands
+    def send_ipc_command(self, msg: list[str]) -> None:
         """Sends message to other processes"""
         log.debug(f"Sent IPC: {msg}")
         self.conn.send(msg)
 
-    def _handle_ipc_commands(self):
+    def _handle_ipc_commands(self) -> None:
         """Checks messages from other processes"""
         if self.conn.poll():
             msg = self.conn.recv()
@@ -306,14 +376,15 @@ class MainWindow(QMainWindow):
             else:
                 log.error(f"Unknown command: {msg}")
     
-    def close_app(self, restart=False):
+    # Closing the application
+    def close_app(self, restart=False) -> None:
         """Sends a command to close the second process and closes the current one"""
         if restart:
             self.shared_data.restart_requested = True
         self.send_ipc_command(["close_app"])
         QCoreApplication.quit()
     
-    def restart_app(self):
+    def restart_app(self) -> None:
         """Sends a command to close the second process and closes the current one, then restarts the application"""
         self.close_app(restart=True)
 
@@ -334,7 +405,7 @@ class MainWindow(QMainWindow):
             row_widget = Mod_row()
             row_widget.checkBox.setChecked(mod.id in active_set)
             row_widget.label.setText(mod.name)
-            row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, checked))
+            row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, row_widget.checkBox))
             row_widget.toolButton.clicked.connect(lambda _=False, m=mod: self._on_mod_menu(m))
 
             item = QListWidgetItem()
@@ -377,12 +448,29 @@ class MainWindow(QMainWindow):
         self.ui.label_mod_id.setText(mod.id)
         self.ui.label_mod_description.setText(mod.description)
 
-    def _on_mod_toggled(self, mod: Mod, checked: bool) -> None:
-        if checked:
-            self._pending_active_mods.append(mod.id)
+    def _on_mod_toggled(self, mod: Mod, checkbox) -> None:
+        if checkbox.isChecked():
+            if mod.id not in self.shared_data.settings["trusted_mods"]:
+                accepted, dont_ask_again = self._confirm_trust_mod(mod, show_dont_ask_checkbox=True)
+
+                if not accepted:
+                    checkbox.blockSignals(True)
+                    checkbox.setChecked(False)
+                    checkbox.blockSignals(False)
+                    return
+
+                self._pending_active_mods.append(mod.id)
+                if dont_ask_again:
+                    settings = self.shared_data.settings
+                    settings["trusted_mods"].append(mod.id)
+                    self.shared_data.settings = settings
+                    self.save_settings_state()
+            else:
+                self._pending_active_mods.append(mod.id)
         else:
             self._pending_active_mods.remove(mod.id)
-        log.debug(f"[mods] pending: {mod.id} -> {'active' if checked else 'inactive'}")
+
+        log.debug(f"[mods] pending: {mod.id} -> {'active' if checkbox.isChecked() else 'inactive'}")
         self._populate_mods_list()
         self._update_mod_changes_ui()
 
@@ -406,9 +494,22 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         folder_mod_path_url = QUrl.fromLocalFile(str(MODS_DIR / mod.id))
         menu.addAction(self.translate("MainWindow", "Open folder", None), lambda url=folder_mod_path_url: QDesktopServices.openUrl(url))
-        menu.addAction(self.translate("MainWindow", "Remove", None), lambda: print(f"[mods] remove: {mod.name}")) # TODO: Dodaj funkcjonalność przenoszenia folderu moda do kosza i dialog z pytaniem "Czy na pewno chcesz usunąć moda \"%1\""
+        menu.addAction(self.translate("MainWindow", "Delete", None), lambda: print(f"[mods] delete: {mod.name}"))  # TODO: Dodaj funkcjonalność przenoszenia folderu moda do kosza i dialog z pytaniem "Czy na pewno chcesz usunąć moda \"%1\""
+
+        if mod.id in self.shared_data.settings["trusted_mods"]:
+            menu.addAction(self.translate("MainWindow", "Revoke trust", None), lambda: self._untrust_mod(mod))
+        else:
+            menu.addAction(self.translate("MainWindow", "Trust", None), lambda: self._trust_mod(mod))
+
         menu.exec(self.cursor().pos())
 
+    def _on_mod_browse(self) -> None:
+        mod = self._mod_for_row(self.ui.listWidget_mods.currentRow())
+        if mod is None:
+            QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "Select a mod first.", None))
+            return
+        self._on_mod_menu(mod)
+    
     def _on_mod_settings(self) -> None:
         mod = self._mod_for_row(self.ui.listWidget_mods.currentRow())
         if mod is None:
@@ -416,6 +517,54 @@ class MainWindow(QMainWindow):
             return
         # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
         QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", mod.name))
+
+    # Trust the mod
+    def _confirm_trust_mod(self, mod: Mod, show_dont_ask_checkbox: bool = True) -> tuple[bool, bool]:
+        """Shows a warning about trusting a mod. Returns (accepted, dont_ask_again)."""
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle(self.translate("TrustModDialog", "Security Warning", None))
+        msg_box.setText(replace_format(self.translate("TrustModDialog", "This mod \"%1\" may contain malware. Are you sure you want to trust it?", None), mod.id))
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+
+        dont_ask_checkbox = None
+        if show_dont_ask_checkbox:
+            dont_ask_checkbox = QCheckBox(self.translate("TrustModDialog", "Don't ask me again for this mod", None))
+            msg_box.setCheckBox(dont_ask_checkbox)
+
+        accepted = msg_box.exec() == QMessageBox.StandardButton.Yes
+        dont_ask_again = dont_ask_checkbox.isChecked() if dont_ask_checkbox else False
+        return accepted, dont_ask_again
+
+    def _trust_mod(self, mod: Mod) -> None:
+        if mod.id in self.shared_data.settings["trusted_mods"]:
+            return
+
+        accepted, _ = self._confirm_trust_mod(mod, show_dont_ask_checkbox=False)
+        if not accepted:
+            return
+
+        settings = self.shared_data.settings
+        settings["trusted_mods"].append(mod.id)
+        self.shared_data.settings = settings
+        self.save_settings_state()
+        log.debug(f"[mods] trusted: {mod.id}")
+
+    def _untrust_mod(self, mod: Mod) -> None:
+        if mod.id not in self.shared_data.settings["trusted_mods"]:
+            return
+
+        settings = self.shared_data.settings
+        settings["trusted_mods"].remove(mod.id)
+        self.shared_data.settings = settings
+        self.save_settings_state()
+        log.debug(f"[mods] untrusted: {mod.id}")
+
+        if mod.id in self._pending_active_mods:
+            self._pending_active_mods.remove(mod.id)
+            self._populate_mods_list()
+            self._update_mod_changes_ui()
 
     # Loading and saving mod list changes
     def _on_load_mod_list(self) -> None:
@@ -518,7 +667,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, self.translate("MainWindow", "File saving error", None), self.translate("MainWindow", "Failed to save settings: %x", None).replace("%x", str(e)))
 
     # Language
-    def _on_combobox_language_change(self, index):
+    def _on_combobox_language_change(self, index) -> None:
         lang_code = self.ui.comboBox_language.itemData(index)
         settings = self.shared_data.settings
         settings["language"] = self.ui.comboBox_language.currentData()
@@ -528,17 +677,17 @@ class MainWindow(QMainWindow):
         self.translator.change_language(lang_code)
 
     # Sound
-    def _on_slider_volume_changes(self, value):
+    def _on_slider_volume_changes(self, value) -> None:
         self.ui.label_volume_percent.setText(f"{value}%")
 
-    def _on_slider_volume_release(self):
+    def _on_slider_volume_release(self) -> None:
         settings = self.shared_data.settings
         settings["volume"] = self.ui.horizontalSlider_volume.value()
         self.shared_data.settings = settings
         self.save_settings_state()
 
     # Shortcuts
-    def _set_hotkey(self, category: str, key: str):
+    def _set_hotkey(self, category: str, key: str) -> None:
         dialog = HotkeyDialog(self)
         dialog.setWindowModality(Qt.WindowModality.WindowModal)
         if dialog.exec():
@@ -558,7 +707,7 @@ class MainWindow(QMainWindow):
             self.save_settings_state()
             QMessageBox.information(self, self.translate("MainWindow", "Success", None), self.translate("MainWindow", "Assigned '%x'.", None).replace("%x", seq))
 
-    def _remove_hotkey(self, category: str, key):
+    def _remove_hotkey(self, category: str, key) -> None:
         seq = self.shared_data.settings["hotkeys"][category].get(key)
         if seq:
             keyboard.remove_hotkey(seq)
@@ -622,15 +771,18 @@ class MainWindow(QMainWindow):
         settings["autostart"] = self.ui.checkBox_autostart.isChecked()
         self.shared_data.settings = settings
         self.save_settings_state()
+    
+    def open_app_folder(self) -> None:
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(config.APP_DIR)))
 
     # Advanced
-    def update_debug_check_states(self):
+    def update_debug_check_states(self) -> None:
         """Updates enabled/disabled state of debug checkboxes"""
         checked = self.ui.checkBox_debug_mode.isChecked()
         self.ui.checkBox_hitboxes_overlay.setEnabled(checked)
         self.ui.checkBox_debug_information_window.setEnabled(checked)
 
-    def update_debug_visibility(self, checked: bool | None=None):
+    def update_debug_visibility(self, checked: bool | None=None) -> None:
         """Updates visibility of debug overlays"""
         self.update_debug_check_states()
 
@@ -659,15 +811,33 @@ class MainWindow(QMainWindow):
             self.editor_window.raise_()
             self.editor_window.activateWindow()
 
-    def _on_editor_window_closed(self):
+    def _on_editor_window_closed(self) -> None:
         self.editor_window = None
         self.translator.delete_calls_from_owner("dashboard.object_editor")
 
     # ================= ENTITIES =================
     
-    def clear_all_entities(self):
+    def kill_all_entities(self) -> None:
         """Removes all spawned entities from the world"""
-        self.send_ipc_command(["clear_all_entities"])
+        self.send_ipc_command(["kill_all_entities"])
+
+    def show_all_entities(self):
+        self.send_ipc_command(["show_all_entities"])
+
+    def hide_all_entities(self):
+        self.send_ipc_command(["hide_all_entities"])
+
+    def kill_selected_entity(self):
+        self.send_ipc_command(["kill_selected_entity"])
+
+    def show_selected_entity(self):
+        self.send_ipc_command(["show_selected_entity"])
+
+    def hide_selected_entity(self):
+        self.send_ipc_command(["hide_selected_entity"])
+
+    def teleport_selected_entity(self):
+        self.send_ipc_command(["teleport_selected_entity"])
     
     # ================= ADD ENTITY =================
 
@@ -731,7 +901,7 @@ class MainWindow(QMainWindow):
 
         self._update_entities_add_group_title()
     
-    def _update_entities_add_group_title(self):
+    def _update_entities_add_group_title(self) -> None:
         self.ui.groupBox_add_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.entities)))
 
     def _update_category_header_widths(self) -> None:
@@ -765,28 +935,35 @@ class MainWindow(QMainWindow):
         url = f"https://api.github.com/repos/{config.APP_AUTHOR}/{config.REPO_NAME}/releases/latest"
         headers = {"User-Agent": "Python-Script"}
 
-        response = requests.get(url, headers=headers)
+        try:
+            response = requests.get(url, headers=headers, timeout=5)
 
-        if response.status_code == 200:
-            data = response.json()
+            if response.status_code == 200:
+                data = response.json()
 
-            new_version = data["tag_name"]
-            if new_version.startswith("v"):
-                new_version = new_version[1:]
+                new_version = data["tag_name"]
+                if new_version.startswith("v"):
+                    new_version = new_version[1:]
 
-            published_at_formatted = datetime.fromisoformat(data["published_at"]).strftime("%Y-%m-%d, %H:%M")
-            
-            return {
-                "tag": data["tag_name"],
-                "version": new_version,
-                "name": data["name"],
-                "published_at": published_at_formatted,
-                "url": data["html_url"],
-            }
-        else:
-            return response.status_code
+                published_at_formatted = datetime.fromisoformat(data["published_at"]).strftime("%Y-%m-%d, %H:%M")
+
+                return {
+                    "tag": data["tag_name"],
+                    "version": new_version,
+                    "name": data["name"],
+                    "published_at": published_at_formatted,
+                    "url": data["html_url"],
+                }
+            else:
+                return response.status_code
+        except requests.exceptions.RequestException as e:
+            log.error(f"Network error while checking updates: {e}")
+            return -1
 
     def update_label_check_for_updates(self) -> None:
+        now = time.time()
+
+        # label update information status
         if isinstance(self.latest_release_info, dict):
             if config.APP_VERSION != self.latest_release_info["version"]:
                 self.ui.label_check_for_updates.setText(replace_format(self.translate("MainWindow", "New update \"%1\" from %2 available!", None), self.latest_release_info["version"], self.latest_release_info["published_at"]))
@@ -796,40 +973,64 @@ class MainWindow(QMainWindow):
         elif isinstance(self.latest_release_info, int):
             if self.latest_release_info == 404:
                 self.ui.label_check_for_updates.setText(self.translate("MainWindow", "Repository not found or no versions published.", None))
+            elif self.latest_release_info == -1:
+                self.ui.label_check_for_updates.setText(self.translate("MainWindow","Network error. Check your internet connection.",None))
             else:
                 self.ui.label_check_for_updates.setText(replace_format(self.translate("MainWindow", "Error: %1", None), self.latest_release_info))
         elif self.latest_release_info is None:
-            self.ui.label_check_for_updates.setText(self.translate("MainWindow", "The version has not been checked yet", None))
+            if self.last_time_checked is None or now > self.last_time_checked + self.update_check_cooldown:
+                self.ui.label_check_for_updates.setText(self.translate("MainWindow", "The version has not been checked yet", None))
+            else:
+                self.ui.label_check_for_updates.setText(self.translate("MainWindow", "Checking for updates...", None))
         else:
             raise Exception("This shouldn't have happened!")
-    
-    def _on_check_for_updates(self) -> None:
-        now = time.time()
-        if self.last_time_checked is None or now > self.last_time_checked + self.update_check_cooldown:
-            self.last_time_checked = time.time()
-            
-            log.debug("Checking for updates...")
-            self.ui.label_check_for_updates.setText(self.translate("MainWindow", "Checking for updates...", None))
-            
-            self.latest_release_info = self.get_latest_release()
-            
-            if isinstance(self.latest_release_info, int):
-                self.update_check_cooldown = 30
-            else:
-                self.update_check_cooldown = 60
-            
-            self.update_label_check_for_updates()
-            log.debug(self.ui.label_check_for_updates.text())
-        else:
-            time_elapsed = int((self.last_time_checked + self.update_check_cooldown) - now)
-            log.debug(f"You can check for updates again in {time_elapsed} seconds")
+        
+        # button "Check for updates"
+        if not self.ui.pushButton_check_for_updates.isEnabled() and (self.last_time_checked is None or now > self.last_time_checked + self.update_check_cooldown):
+            self.ui.pushButton_check_for_updates.setEnabled(True)
 
-    def on_click_update(self):
+        # label 0 seconds have passed or try again in 0 seconds
+        if self.last_time_checked is not None and now < self.last_time_checked + self.update_check_cooldown:
+            self.ui.label_check_for_updates_time.setVisible(True)
+            if self.latest_release_info is None:
+                self.ui.label_check_for_updates_time.setText(replace_format(self.translate("MainWindow", "(%1s)", None), str(round(now - self.last_time_checked))))
+            else:
+                self.ui.label_check_for_updates_time.setText(replace_format(self.translate("MainWindow", "(%1s)", None), str(max(0, round(self.last_time_checked + self.update_check_cooldown - now)))))
+        else:
+            self.ui.label_check_for_updates_time.setVisible(False)
+
+    def _worker_check_for_updates(self) -> None:
+        self.latest_release_info = self.get_latest_release()
+
+        self.last_time_checked = time.time()
+        if isinstance(self.latest_release_info, int):
+            self.update_check_cooldown = 60
+        else:
+            self.update_check_cooldown = 120
+
+        self.update_label_check_for_updates()
+        log.debug(self.ui.label_check_for_updates.text())
+
+    def _on_check_for_updates(self) -> None:
+        self.last_time_checked = time.time()
+        self.update_check_cooldown = 120
+        self.ui.pushButton_check_for_updates.setEnabled(False)
+        self.latest_release_info = None
+
+        log.debug("Checking for updates...")
+        self.update_label_check_for_updates()
+
+        thread = Thread(target=self._worker_check_for_updates, daemon=True)
+        thread.start()
+
+    def on_click_update(self) -> None:
+        if not isinstance(self.latest_release_info, dict):
+            raise Exception("This shouldn't have happened!")
         new_version = self.latest_release_info["version"]
         new_version_date = self.latest_release_info["published_at"]
         dialog = UpdateDialog(new_version, new_version_date, parent=self)
         result = dialog.exec()
-        if result == QDialog.Accepted: # TODO: Dodaj automatyczną aktualizacje
+        if result == QDialog.DialogCode.Accepted: # TODO: Dodaj automatyczną aktualizacje
             self.ui.pushButton_update_application.setEnabled(False)
             log.debug("[UpdateDialog] The user selected 'Yes'. Updating the app...")
 
@@ -856,14 +1057,15 @@ def run_app(conn, shared_data, log_queue) -> None:
 
     # Creating a tray icon
     tray = QSystemTrayIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")), app)
+    
+    def _show_info_tab() -> None:
+        window.show_and_focus_window()
+        window.ui.tabWidget.setCurrentWidget(window.ui.tab_info)
+    
     menu = QMenu()
     show_action = menu.addAction("Show Panel")
     translator.tr(lambda: show_action.setText(QCoreApplication.translate("tray-icon", "Show Panel", None)))
-    show_action.triggered.connect(window._show_and_focus_window)
-
-    def _show_info_tab() -> None:
-        window._show_and_focus_window()
-        window.ui.tabWidget.setCurrentWidget(window.ui.tab_info)
+    show_action.triggered.connect(window.show_and_focus_window)
     
     menu.addSeparator()
     about_action = menu.addAction("About")

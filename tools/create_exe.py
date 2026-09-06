@@ -1,39 +1,27 @@
 """Builds applications and creates exe file using PyInstaller."""
 
+import time
 import shutil
 from pathlib import Path
 
-import pathspec
 import PyInstaller.__main__
 
 import config
 
 # Resources packed inside .exe (read-only)
 RESOURCES_TO_INCLUDE = [
-    "Assets",
-    "translations",
+    "Assets/",
+    "translations/*.qm",
     "icon.ico",
     "settings.default.json",
     "version.json",
 ]
 # Resources next to the .exe file that the user has access to (for saving logs/database/settings)
 USER_RESOURCES_TO_COPY = [
-    "Mods"
+    "Mods/"
 ]
 
-def build_gitignore_spec(project_root: Path) -> pathspec.PathSpec:
-    """Build a pathspec matcher from the project's `.gitignore` rules."""
-    gitignore_patterns = (project_root / ".gitignore").read_text(encoding="utf-8").split("\n")
-
-    exclude_path = project_root / ".git" / "info" / "exclude"
-    exclude_patterns = exclude_path.read_text(encoding="utf-8").split("\n") if exclude_path.is_file() else []
-
-    gitignore_patterns = gitignore_patterns + exclude_patterns + [".git/"]
-    gitignore_patterns = [x for x in gitignore_patterns if x != "" and x[0] != "#"]
-
-    return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, gitignore_patterns)
-
-def copy_files(project_root: Path, app_dist_dir: Path, spec: pathspec.PathSpec) -> None:
+def copy_files(project_root: Path, app_dist_dir: Path) -> None:
     """Copy runtime resources from the project into the build output directory."""
     for item_name in USER_RESOURCES_TO_COPY:
         src = project_root / item_name
@@ -45,21 +33,7 @@ def copy_files(project_root: Path, app_dist_dir: Path, spec: pathspec.PathSpec) 
 
         if src.is_dir():
             print(f'Copying folder "{src}" -> "{dst}"...')
-
-            def ignore_gitignored(current_dir: str, names: list[str]) -> list[str]:
-                """`shutil.copytree` ignore-callback that filters out gitignored entries."""
-                current_path = Path(current_dir)
-                ignored = []
-                for name in names:
-                    rel_path = (current_path / name).relative_to(project_root)
-                    rel_str = rel_path.as_posix()
-                    if (current_path / name).is_dir():
-                        rel_str += "/"
-                    if spec.match_file(rel_str):
-                        ignored.append(name)
-                return ignored
-
-            shutil.copytree(src, dst, ignore=ignore_gitignored, dirs_exist_ok=True)
+            shutil.copytree(src, dst, dirs_exist_ok=True)
         else:
             print(f'Copying file "{src}" -> "{dst}"...')
             dst.parent.mkdir(parents=True, exist_ok=True)
@@ -67,28 +41,46 @@ def copy_files(project_root: Path, app_dist_dir: Path, spec: pathspec.PathSpec) 
 
     print("[✅] Application files and folders copied.")
 
+def get_option(question: str, default_option: str | None=None):
+    options = ["y", "n"]
+
+    show_options = options.copy()
+    if default_option:
+        default_option = default_option.lower()
+        show_options[show_options.index(default_option)] = default_option.upper()
+    show_options_str = '/'.join(show_options)
+    
+    while True:
+        option = input(f"{question} ({show_options_str}): ").lower()
+        
+        if option == "" and default_option:
+            return default_option
+        elif option in options:
+            return option
+        else:
+            print("[ERROR] Unknown option.")
+
 def main() -> None:
     """Builds the executable and optionally bundle resources."""
     print(f"App name: {config.APP_NAME}")
     print(f"Project root: {config.APP_DIR}")
+    
+    option_update_translations = get_option("Update translations?", "y")
+    option_run_tests = get_option("Run tests?", "y")
+    option_copy_mods = get_option("Build the app with copied mods?", None)
+    start_time = time.perf_counter()
 
-    while True:
-        option = input("Run tests? (y/n): ").lower()
-        if option in ("y", "n"):
-            break
-        else:
-            print("[ERROR] Unknown option.")
+    if option_update_translations == "y":
+        from tools import update_languages
+        print('[#] Updating ".ts" files...')
+        update_languages.update_ts_files(update_languages.TS_DIR, update_languages.LANG_CODES)
 
-    if option == "y":
+        print('[#] Updating ".qm" files...')
+        update_languages.update_qm_files(update_languages.TS_DIR, update_languages.QM_DIR, update_languages.LANG_CODES)
+
+    if option_run_tests == "y":
         from tools.run_tests import run_tests as run_tests_main
         run_tests_main()
-
-    while True:
-        option = input("Build the app with copied folders? (y/n): ").lower()
-        if option in ("y", "n"):
-            break
-        else:
-            print("[ERROR] Unknown option.")
 
     main_file_path = config.APP_DIR / "main.py"
     icon_file_path = config.APP_DIR / "icon.ico"
@@ -111,15 +103,23 @@ def main() -> None:
 
     add_data_args = []
     for item in RESOURCES_TO_INCLUDE:
-        src_path = config.APP_DIR / item
+        if any(ch in item for ch in "*?["):
+            matches = list(config.APP_DIR.glob(item))
+            if not matches:
+                print(f'[!] Warning: no files match "{item}", skipping.')
+                continue
 
-        if src_path.exists():
-            dst_rel = item if src_path.is_dir() else "."
-
-            # Format: "source_absolute_path;destination_relative_path"
-            add_data_args.extend(["--add-data", f"{src_path};{dst_rel}"])
+            dst_rel = str(Path(item).parent)
+            for src_path in matches:
+                add_data_args.extend(["--add-data", f"{src_path};{dst_rel}"])
         else:
-            print(f'[!] Warning: "{src_path}" does not exist, skipping.')
+            src_path = config.APP_DIR / item
+
+            if src_path.exists():
+                dst_rel = item if src_path.is_dir() else "."
+                add_data_args.extend(["--add-data", f"{src_path};{dst_rel}"])
+            else:
+                print(f'[!] Warning: "{src_path}" does not exist, skipping.')
 
     PyInstaller.__main__.run(
         [
@@ -129,13 +129,12 @@ def main() -> None:
             f"--icon={icon_file_path}",
             f"--name={config.APP_NAME}",
             "--clean",
-            "--specpath",
-            str(spec_file_path.parent),
-            "--workpath",
-            str(work_dir_path),
-            "--distpath",
-            str(dist_dir_path),
-        ] + add_data_args
+            "--specpath", str(spec_file_path.parent),
+            "--workpath", str(work_dir_path),
+            "--distpath", str(dist_dir_path),
+            "--collect-all", "lupa",
+        ]
+        + add_data_args
     )
 
     if spec_file_path.is_file():
@@ -149,11 +148,13 @@ def main() -> None:
         print(f'Directory "{work_dir_path}" has been removed.')
 
     app_dist_dir = dist_dir_path / config.APP_NAME
-    if option == "y":
-        spec = build_gitignore_spec(config.APP_DIR)
-        copy_files(config.APP_DIR, app_dist_dir, spec)
+    if option_copy_mods == "y":
+        copy_files(config.APP_DIR, app_dist_dir)
 
     print(f'[✅] Application built at "{app_dist_dir}"')
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"Execution time: {round(execution_time)} seconds")
 
 if __name__ == "__main__":
     main()
