@@ -159,10 +159,12 @@ def main() -> None:
     # Handling arguments passed from the command line
     parser = argparse.ArgumentParser(description="DesktopPet_v3")
     parser.add_argument("--debug", "-D", type=int, help="Debug level 0-2", required=False, default=0, choices=[0, 1, 2])
+    parser.add_argument("--autostart", action="store_true", help="Indicates the app was launched by autostart", required=False)
     args = parser.parse_args()
 
     logger.init(file_name="main", debug=False if args.debug == 0 else True, max_old_logs=settings["debug"]["delete_logs_older_than"])
     log = logger.get_logger("main")
+    log.debug(f"Args: {args}")
     log.info(f"APP_NAME: \"{config.APP_NAME}\"")
     log.info(F"APP_DIR: \"{config.APP_DIR}\"")
     log.info(f'RESOURCE_DIR: "{config.RESOURCE_DIR}"')
@@ -180,9 +182,12 @@ def main() -> None:
         log_queue = logger.get_queue()
 
         while True:
-            shared_data.mods = {} # dict[str, Mod]
-            shared_data.entities = {} # dict[str, Entity]
-            shared_data.restart_requested = False # stores information about whether the application should be restarted instead of closed
+            shared_data.active_mods = {} # dict[str, Mod]
+            shared_data.spawnable_entities = {} # dict[str, Entity]
+            shared_data.displayed_entities = {} # dict[str, str] "unique-id": "entity-id"
+            shared_data.restart_requested = False  # stores information about whether the application should be restarted instead of closed
+            shared_data.selected_entity = None # "unique-id"
+            shared_data.entity_details = {} # dict[str, str]
 
             error_msg = run_processes(shared_data, error_queue, log_queue)
 
@@ -195,11 +200,14 @@ def main() -> None:
         if error_msg is not None:
             try:
                 settings = shared_data.settings
-                settings["saved_mods_list"]["ERROR"] = settings["active_mods"]
-                settings["active_mods"] = []
-                settings_file_path = config.APP_DIR / "settings.json"
-                settings_file_path.write_text(json.dumps(settings, indent=4, ensure_ascii=False), encoding="utf-8")
-                log.info("Saved active mod list to mod list with name \"ERROR\" in \"settings.json\".")
+                if settings["active_mods"]:
+                    settings["saved_mods_list"]["ERROR"] = settings["active_mods"]
+                    settings["active_mods"] = []
+                    settings_file_path = config.APP_DIR / "settings.json"
+                    settings_file_path.write_text(json.dumps(settings, indent=4, ensure_ascii=False), encoding="utf-8")
+                    log.info("Saved active mod list to mod list with name \"ERROR\" in \"settings.json\".")
+                else:
+                    log.info('Due to the empty list of active mods, saving the list under the name "ERROR" in the "settings.json" file was omitted.')
             except Exception as e:
                 log.exception(f"Failed to save active mod list to mod list with name \"ERROR\" in \"settings.json\". Error: {e}")
 

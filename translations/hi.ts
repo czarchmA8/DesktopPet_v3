@@ -126,19 +126,19 @@
     </message>
     <message>
         <source>Kill selected</source>
-        <translation>चयनित समाप्त करें</translation>
+        <translation type="vanished">चयनित समाप्त करें</translation>
     </message>
     <message>
         <source>Show selected</source>
-        <translation>चयनित दिखाएँ</translation>
+        <translation type="vanished">चयनित दिखाएँ</translation>
     </message>
     <message>
         <source>Hide selected</source>
-        <translation>चयनित छिपाएँ</translation>
+        <translation type="vanished">चयनित छिपाएँ</translation>
     </message>
     <message>
         <source>Teleport selected</source>
-        <translation>चयनित को टेलीपोर्ट करें</translation>
+        <translation type="vanished">चयनित को टेलीपोर्ट करें</translation>
     </message>
     <message>
         <source>Opens the built-in hitbox editor for objects</source>
@@ -154,7 +154,7 @@
     </message>
     <message>
         <source>This option does not update the software itself.</source>
-        <translation>यह विकल्प सॉफ़्टवेयर को स्वयं अपडेट नहीं करता है।</translation>
+        <translation type="vanished">यह विकल्प सॉफ़्टवेयर को स्वयं अपडेट नहीं करता है।</translation>
     </message>
     <message>
         <source>Check for updates</source>
@@ -189,6 +189,78 @@
         <translation>एप्लिकेशन फ़ोल्डर खोलें</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation>दिखावट (Appearance)</translation>
+    </message>
+    <message>
+        <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
+        <translation>बंद करते समय विंडो का आकार और स्थान सहेजता है, और स्टार्टअप पर उन्हें पुनर्स्थापित करता है।</translation>
+    </message>
+    <message>
+        <source>Restore window size and position</source>
+        <translation>विंडो का आकार और स्थिति पुनर्स्थापित करें</translation>
+    </message>
+    <message>
+        <source>Kill selected entity</source>
+        <translation>चयनित इकाई समाप्त करें</translation>
+    </message>
+    <message>
+        <source>Show selected entity</source>
+        <translation>चयनित इकाई दिखाएँ</translation>
+    </message>
+    <message>
+        <source>Hide selected entity</source>
+        <translation>चयनित इकाई छिपाएँ</translation>
+    </message>
+    <message>
+        <source>Teleport selected entity</source>
+        <translation>चयनित इकाई को टेलीपोर्ट करें</translation>
+    </message>
+    <message>
+        <source>Checks for updates when the application starts. This option does not update the software itself.</source>
+        <translation>एप्लिकेशन शुरू होने पर अपडेट के लिए जाँच करता है। यह विकल्प सॉफ़्टवेयर को स्वयं अपडेट नहीं करता है।</translation>
+    </message>
+    <message>
+        <source>Automatically launches applications with the system</source>
+        <translation>सिस्टम के साथ स्वचालित रूप से एप्लिकेशन लॉन्च करता है</translation>
+    </message>
+    <message>
+        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
+        <translation>सिस्टम के साथ स्वचालित रूप से शुरू होकर स्टार्टअप पर विंडो दिखाता है। यह विकल्प सामान्य स्टार्टअप पर विंडो प्रदर्शित होने के तरीके को नहीं बदलता है।</translation>
+    </message>
+    <message>
+        <source>Show window on startup</source>
+        <translation>स्टार्टअप पर विंडो दिखाएँ</translation>
+    </message>
+    <message>
+        <source>General debug mode switch. This option does nothing by itself.</source>
+        <translation>सामान्य डिबग मोड स्विच। यह विकल्प अकेले कुछ नहीं करता है।</translation>
+    </message>
+    <message>
+        <source>Shows normally invisible entity hitboxes. Only works for entities that support this option.</source>
+        <translation>सामान्य रूप से अदृश्य इकाई हिटबॉक्स दिखाता है। यह केवल उन इकाइयों के लिए काम करता है जो इस विकल्प का समर्थन करती हैं।</translation>
+    </message>
+    <message>
+        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
+        <translation>एप्लिकेशन के बारे में सामान्य जानकारी वाली एक विंडो दिखाता है। उदाहरण के लिए, FPS और देखी जा रही विंडो की सूची।</translation>
+    </message>
+    <message>
+        <source>Shows a window displaying the current application logs</source>
+        <translation>वर्तमान एप्लिकेशन लॉग दिखाने वाली एक विंडो दिखाता है</translation>
+    </message>
+    <message>
+        <source>Show debug console</source>
+        <translation>डिबग कंसोल दिखाएँ</translation>
+    </message>
+    <message>
+        <source>Open latest log</source>
+        <translation>नवीनतम लॉग खोलें</translation>
+    </message>
+    <message>
+        <source>🔍 Search mods...</source>
+        <translation>🔍 मॉड्स खोजें...</translation>
+    </message>
+    <message>
         <source>Mod details</source>
         <translation>मॉड विवरण</translation>
     </message>
@@ -217,8 +289,16 @@
         <translation>मॉड सूची सहेजें</translation>
     </message>
     <message>
+        <source>Undoes changes to the mod list</source>
+        <translation>मॉड सूची में किए गए परिवर्तनों को पूर्ववत करता है</translation>
+    </message>
+    <message>
         <source>Discard changes</source>
         <translation>परिवर्तन छोड़ें</translation>
+    </message>
+    <message>
+        <source>Saves changes to the mod list and restarts the application</source>
+        <translation>मॉड सूची में परिवर्तन सहेजता है और एप्लिकेशन को पुनः आरंभ करता है</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -234,7 +314,7 @@
     </message>
     <message>
         <source> Search entities...</source>
-        <translation> इकाइयाँ खोजें...</translation>
+        <translation type="vanished"> इकाइयाँ खोजें...</translation>
     </message>
     <message>
         <source>Entity details</source>
@@ -249,8 +329,20 @@
         <translation>मॉड आईडी:</translation>
     </message>
     <message>
+        <source>🗑️ Kill entity</source>
+        <translation>🗑️ इकाई समाप्त करें</translation>
+    </message>
+    <message>
         <source>Position:</source>
         <translation>स्थिति:</translation>
+    </message>
+    <message>
+        <source>Updates the application to the latest version</source>
+        <translation>एप्लिकेशन को नवीनतम संस्करण में अपडेट करता है</translation>
+    </message>
+    <message>
+        <source>Checks for the availability of a new version of the application.</source>
+        <translation>एप्लिकेशन के नए संस्करण की उपलब्धता की जाँच करता है।</translation>
     </message>
     <message>
         <source>🔄 Check for updates</source>
@@ -405,8 +497,46 @@
         <translation>फ़ाइल सुरक्षित करने में त्रुटि</translation>
     </message>
     <message>
+        <source>Failed to save settings: %1</source>
+        <translation>सेटिंग्स सहेजने में विफल: %1</translation>
+    </message>
+    <message>
+        <source>Assigned &apos;%1&apos;.</source>
+        <translation>&apos;%1&apos; असाइन किया गया।</translation>
+    </message>
+    <message>
+        <source>Failed to change autostart setting:
+%1</source>
+        <translation>ऑटो-स्टार्ट सेटिंग बदलने में विफल:
+%1</translation>
+    </message>
+    <message>
+        <source>EntityName</source>
+        <translation>इकाई का नाम</translation>
+    </message>
+    <message>
+        <source>Teleport</source>
+        <translation>टेलीपोर्ट</translation>
+    </message>
+    <message>
+        <source>Entity</source>
+        <translation>इकाई</translation>
+    </message>
+    <message>
+        <source>Select an entity first.</source>
+        <translation>पहले एक इकाई चुनें।</translation>
+    </message>
+    <message>
+        <source>Entity settings</source>
+        <translation>इकाई सेटिंग्स</translation>
+    </message>
+    <message>
+        <source>Select a entity first.</source>
+        <translation>पहले एक इकाई चुनें।</translation>
+    </message>
+    <message>
         <source>Failed to save settings: %x</source>
-        <translation>सेटिंग्स सुरक्षित करने में विफल: %x</translation>
+        <translation type="vanished">सेटिंग्स सुरक्षित करने में विफल: %x</translation>
     </message>
     <message>
         <source>Success</source>
@@ -414,7 +544,7 @@
     </message>
     <message>
         <source>Assigned &apos;%x&apos;.</source>
-        <translation>&apos;%x&apos; असाइन कर दिया गया है।</translation>
+        <translation type="vanished">&apos;%x&apos; असाइन कर दिया गया है।</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -439,7 +569,7 @@
     <message>
         <source>Failed to change autostart setting:
 %x</source>
-        <translation>ऑटो-स्टार्ट सेटिंग बदलने में विफल: %x</translation>
+        <translation type="vanished">ऑटो-स्टार्ट सेटिंग बदलने में विफल: %x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

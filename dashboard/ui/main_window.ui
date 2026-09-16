@@ -35,8 +35,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>341</width>
-             <height>1168</height>
+             <width>742</width>
+             <height>1328</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -91,6 +91,25 @@
                   </widget>
                  </item>
                 </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_appearance">
+              <property name="title">
+               <string>Appearance</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_15">
+               <item>
+                <widget class="QCheckBox" name="checkBox_restore_window_geometry">
+                 <property name="toolTip">
+                  <string>Saves the window's size and location when closed, and restores them on startup.</string>
+                 </property>
+                 <property name="text">
+                  <string>Restore window size and position</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -834,7 +853,7 @@
                        <string notr="true">font-weight: 600;</string>
                       </property>
                       <property name="text">
-                       <string>Kill selected</string>
+                       <string>Kill selected entity</string>
                       </property>
                      </widget>
                     </item>
@@ -946,7 +965,7 @@
                        <string notr="true">font-weight: 600;</string>
                       </property>
                       <property name="text">
-                       <string>Show selected</string>
+                       <string>Show selected entity</string>
                       </property>
                      </widget>
                     </item>
@@ -1058,7 +1077,7 @@
                        <string notr="true">font-weight: 600;</string>
                       </property>
                       <property name="text">
-                       <string>Hide selected</string>
+                       <string>Hide selected entity</string>
                       </property>
                      </widget>
                     </item>
@@ -1170,7 +1189,7 @@
                        <string notr="true">font-weight: 600;</string>
                       </property>
                       <property name="text">
-                       <string>Teleport selected</string>
+                       <string>Teleport selected entity</string>
                       </property>
                      </widget>
                     </item>
@@ -1275,7 +1294,7 @@
                <item>
                 <widget class="QCheckBox" name="checkBox_check_for_updates">
                  <property name="toolTip">
-                  <string>This option does not update the software itself.</string>
+                  <string>Checks for updates when the application starts. This option does not update the software itself.</string>
                  </property>
                  <property name="text">
                   <string>Check for updates</string>
@@ -1287,8 +1306,24 @@
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
+                 <property name="toolTip">
+                  <string>Automatically launches applications with the system</string>
+                 </property>
                  <property name="text">
                   <string>Run at system startup</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_show_window_on_startup">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</string>
+                 </property>
+                 <property name="text">
+                  <string>Show window on startup</string>
                  </property>
                 </widget>
                </item>
@@ -1303,6 +1338,9 @@
               <layout class="QVBoxLayout" name="verticalLayout_6">
                <item>
                 <widget class="QCheckBox" name="checkBox_debug_mode">
+                 <property name="toolTip">
+                  <string>General debug mode switch. This option does nothing by itself.</string>
+                 </property>
                  <property name="text">
                   <string>Debug mode</string>
                  </property>
@@ -1312,6 +1350,9 @@
                 <widget class="QCheckBox" name="checkBox_hitboxes_overlay">
                  <property name="enabled">
                   <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>Shows normally invisible entity hitboxes. Only works for entities that support this option.</string>
                  </property>
                  <property name="text">
                   <string>Displaying hitboxes</string>
@@ -1323,8 +1364,24 @@
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
+                 <property name="toolTip">
+                  <string>Shows a window with general information about the application. For example, FPS and a list of watched windows.</string>
+                 </property>
                  <property name="text">
                   <string>Information window</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_debug_console">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>Shows a window displaying the current application logs</string>
+                 </property>
+                 <property name="text">
+                  <string>Show debug console</string>
                  </property>
                 </widget>
                </item>
@@ -1332,6 +1389,13 @@
                 <widget class="QPushButton" name="pushButton_open_app_folder">
                  <property name="text">
                   <string>Open the application folder</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_open_latest_log">
+                 <property name="text">
+                  <string>Open latest log</string>
                  </property>
                 </widget>
                </item>
@@ -1375,6 +1439,16 @@
             <string>Mods (%1)</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
+            <item>
+             <widget class="QLineEdit" name="lineEdit_mods_search">
+              <property name="placeholderText">
+               <string>🔍 Search mods...</string>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
             <item>
              <widget class="QListWidget" name="listWidget_mods">
               <property name="frameShape">
@@ -1650,6 +1724,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="toolTip">
+             <string>Undoes changes to the mod list</string>
+            </property>
             <property name="text">
              <string>Discard changes</string>
             </property>
@@ -1660,6 +1737,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="toolTip">
+             <string>Saves changes to the mod list and restarts the application</string>
+            </property>
             <property name="text">
              <string>Save changes</string>
             </property>
@@ -1669,7 +1749,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_list">
+      <widget class="QWidget" name="tab_displayed_entities">
        <attribute name="title">
         <string>List</string>
        </attribute>
@@ -1682,13 +1762,13 @@
           <property name="childrenCollapsible">
            <bool>false</bool>
           </property>
-          <widget class="QGroupBox" name="groupBox_entities_list">
+          <widget class="QGroupBox" name="groupBox_displayed_entities_list">
            <property name="title">
             <string>Entities (%1)</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_24">
             <item>
-             <widget class="QLineEdit" name="lineEdit_entity_search">
+             <widget class="QLineEdit" name="lineEdit_displayed_entity_search">
               <property name="placeholderText">
                <string>🔍 Search entities...</string>
               </property>
@@ -1698,21 +1778,60 @@
              </widget>
             </item>
             <item>
-             <widget class="QListWidget" name="listWidget_entities_list">
+             <widget class="QListWidget" name="listWidget_displayed_entities_list">
               <property name="frameShape">
                <enum>QFrame::Shape::NoFrame</enum>
               </property>
-              <property name="spacing">
-               <number>2</number>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+              </property>
+              <property name="dragDropMode">
+               <enum>QAbstractItemView::DragDropMode::NoDragDrop</enum>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>64</width>
+                <height>64</height>
+               </size>
+              </property>
+              <property name="movement">
+               <enum>QListView::Movement::Static</enum>
+              </property>
+              <property name="flow">
+               <enum>QListView::Flow::LeftToRight</enum>
+              </property>
+              <property name="resizeMode">
+               <enum>QListView::ResizeMode::Adjust</enum>
+              </property>
+              <property name="gridSize">
+               <size>
+                <width>88</width>
+                <height>96</height>
+               </size>
+              </property>
+              <property name="viewMode">
+               <enum>QListView::ViewMode::IconMode</enum>
               </property>
               <property name="uniformItemSizes">
+               <bool>true</bool>
+              </property>
+              <property name="wordWrap">
                <bool>true</bool>
               </property>
              </widget>
             </item>
            </layout>
           </widget>
-          <widget class="QGroupBox" name="groupBox_entity_details">
+          <widget class="QGroupBox" name="groupBox_displayed_entity_details">
            <property name="title">
             <string>Entity details</string>
            </property>
@@ -1729,9 +1848,9 @@
                <property name="geometry">
                 <rect>
                  <x>0</x>
-                 <y>-116</y>
+                 <y>0</y>
                  <width>263</width>
-                 <height>498</height>
+                 <height>534</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_26">
@@ -1739,7 +1858,7 @@
                  <number>10</number>
                 </property>
                 <item>
-                 <widget class="AspectRatioLabel" name="label_entity_preview">
+                 <widget class="AspectRatioLabel" name="label_displayed_entity_preview">
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
@@ -1779,7 +1898,7 @@
                    </spacer>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="pushButton_entity_settings">
+                   <widget class="QPushButton" name="pushButton_displayed_entity_settings">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
@@ -1807,7 +1926,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QToolButton" name="toolButton_entity_browse">
+                   <widget class="QToolButton" name="toolButton_displayed_entity_browse">
                     <property name="text">
                      <string notr="true">...</string>
                     </property>
@@ -1816,7 +1935,7 @@
                  </layout>
                 </item>
                 <item>
-                 <widget class="QFrame" name="frame_entity_info">
+                 <widget class="QFrame" name="frame_displayed_entity_info">
                   <property name="styleSheet">
                    <string notr="true">QFrame#frame_mod_info {
   background-color: rgba(127, 127, 127, 20);
@@ -1847,7 +1966,7 @@
                     <number>8</number>
                    </property>
                    <item row="0" column="0" colspan="2">
-                    <widget class="QLabel" name="label_entity_name">
+                    <widget class="QLabel" name="label_displayed_entity_name">
                      <property name="font">
                       <font>
                        <pointsize>12</pointsize>
@@ -1860,14 +1979,14 @@
                     </widget>
                    </item>
                    <item row="1" column="0" colspan="2">
-                    <widget class="Line" name="line_mod_info_sep_2">
+                    <widget class="Line" name="line_displayed_entity_info_sep">
                      <property name="orientation">
                       <enum>Qt::Orientation::Horizontal</enum>
                      </property>
                     </widget>
                    </item>
                    <item row="2" column="0">
-                    <widget class="QLabel" name="label_entity_mod_name_title">
+                    <widget class="QLabel" name="label_displayed_entity_mod_name_title">
                      <property name="styleSheet">
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
@@ -1877,14 +1996,14 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QLabel" name="label_entity_mod_name">
+                    <widget class="QLabel" name="label_displayed_entity_mod_name">
                      <property name="text">
                       <string notr="true">unknown</string>
                      </property>
                     </widget>
                    </item>
                    <item row="3" column="0">
-                    <widget class="QLabel" name="label_entity_mod_id_title">
+                    <widget class="QLabel" name="label_displayed_entity_mod_id_title">
                      <property name="styleSheet">
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
@@ -1894,14 +2013,14 @@
                     </widget>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QLabel" name="label_entity_mod_id">
+                    <widget class="QLabel" name="label_displayed_entity_mod_id">
                      <property name="text">
                       <string notr="true">unknown</string>
                      </property>
                     </widget>
                    </item>
                    <item row="4" column="0">
-                    <widget class="QLabel" name="label_entity_id_title">
+                    <widget class="QLabel" name="label_displayed_entity_id_title">
                      <property name="styleSheet">
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
@@ -1911,7 +2030,7 @@
                     </widget>
                    </item>
                    <item row="4" column="1">
-                    <widget class="QLabel" name="label_entity_id">
+                    <widget class="QLabel" name="label_displayed_entity_id">
                      <property name="text">
                       <string notr="true">unknown</string>
                      </property>
@@ -1921,7 +2040,14 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLabel" name="label_entity_description">
+                 <widget class="QPushButton" name="pushButton_kill_selected_entity">
+                  <property name="text">
+                   <string>🗑️ Kill entity</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_displayed_entity_description">
                   <property name="text">
                    <string>No description available.</string>
                   </property>
@@ -1931,7 +2057,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QFrame" name="frame_entity_debug">
+                 <widget class="QFrame" name="frame_displayed_entity_debug">
                   <property name="styleSheet">
                    <string notr="true">QFrame#frame_mod_info {
   background-color: rgba(127, 127, 127, 20);
@@ -2080,13 +2206,13 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_add">
+      <widget class="QWidget" name="tab_spawnable_entities">
        <attribute name="title">
         <string>Add</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_21">
         <item>
-         <widget class="QSplitter" name="splitter_add">
+         <widget class="QSplitter" name="splitter_spawnable_entities">
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
           </property>
@@ -2096,7 +2222,7 @@
           <property name="childrenCollapsible">
            <bool>false</bool>
           </property>
-          <widget class="QTreeWidget" name="treeWidget_add_categories">
+          <widget class="QTreeWidget" name="treeWidget_spawnable_entities_categories">
            <property name="minimumSize">
             <size>
              <width>170</width>
@@ -2142,7 +2268,7 @@
             </property>
            </item>
           </widget>
-          <widget class="QGroupBox" name="groupBox_add_entities">
+          <widget class="QGroupBox" name="groupBox_spawnable_entities">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>1</horstretch>
@@ -2154,7 +2280,7 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_add_objects_2">
             <item>
-             <widget class="QLineEdit" name="lineEdit_add_search">
+             <widget class="QLineEdit" name="lineEdit_spawnable_entities_search">
               <property name="placeholderText">
                <string>🔍 Search entities...</string>
               </property>
@@ -2164,7 +2290,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QListWidget" name="listWidget_add_entities_list">
+             <widget class="QListWidget" name="listWidget_spawnable_entities_list">
               <property name="frameShape">
                <enum>QFrame::Shape::NoFrame</enum>
               </property>
@@ -2217,7 +2343,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QGroupBox" name="groupBox_add_entity_details">
+          <widget class="QGroupBox" name="groupBox_spawnable_entity_details">
            <property name="minimumSize">
             <size>
              <width>230</width>
@@ -2256,7 +2382,7 @@
                  <number>10</number>
                 </property>
                 <item>
-                 <widget class="AspectRatioLabel" name="label_add_entity_preview">
+                 <widget class="AspectRatioLabel" name="label_spawnable_entity_preview">
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
@@ -2296,7 +2422,7 @@
                    </spacer>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="pushButton_add_entity_settings">
+                   <widget class="QPushButton" name="pushButton_spawnable_entity_settings">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
@@ -2324,7 +2450,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QToolButton" name="toolButton_add_entity_browse">
+                   <widget class="QToolButton" name="toolButton_spawnable_entity_browse">
                     <property name="text">
                      <string notr="true">...</string>
                     </property>
@@ -2333,7 +2459,7 @@
                  </layout>
                 </item>
                 <item>
-                 <widget class="QFrame" name="frame_add_entity_info">
+                 <widget class="QFrame" name="frame_spawnable_entity_info">
                   <property name="styleSheet">
                    <string notr="true">QFrame#frame_mod_info {
   background-color: rgba(127, 127, 127, 20);
@@ -2364,7 +2490,7 @@
                     <number>8</number>
                    </property>
                    <item row="0" column="0" colspan="2">
-                    <widget class="QLabel" name="label_add_entity_name">
+                    <widget class="QLabel" name="label_spawnable_entity_name">
                      <property name="font">
                       <font>
                        <pointsize>12</pointsize>
@@ -2384,7 +2510,7 @@
                     </widget>
                    </item>
                    <item row="2" column="0">
-                    <widget class="QLabel" name="label_add_entity_mod_name_title">
+                    <widget class="QLabel" name="label_spawnable_entity_mod_name_title">
                      <property name="styleSheet">
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
@@ -2394,14 +2520,14 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QLabel" name="label_add_entity_mod_name">
+                    <widget class="QLabel" name="label_spawnable_entity_mod_name">
                      <property name="text">
                       <string notr="true">unknown</string>
                      </property>
                     </widget>
                    </item>
                    <item row="3" column="0">
-                    <widget class="QLabel" name="label_add_entity_mod_id_title">
+                    <widget class="QLabel" name="label_spawnable_entity_mod_id_title">
                      <property name="styleSheet">
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
@@ -2411,14 +2537,14 @@
                     </widget>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QLabel" name="label_add_entity_mod_id">
+                    <widget class="QLabel" name="label_spawnable_entity_mod_id">
                      <property name="text">
                       <string notr="true">unknown</string>
                      </property>
                     </widget>
                    </item>
                    <item row="4" column="0">
-                    <widget class="QLabel" name="label_add_entity_id_title">
+                    <widget class="QLabel" name="label_spawnable_entity_id_title">
                      <property name="styleSheet">
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
@@ -2428,7 +2554,7 @@
                     </widget>
                    </item>
                    <item row="4" column="1">
-                    <widget class="QLabel" name="label_add_entity_id">
+                    <widget class="QLabel" name="label_spawnable_entity_id">
                      <property name="text">
                       <string notr="true">unknown</string>
                      </property>
@@ -2438,14 +2564,14 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_add_entity">
+                 <widget class="QPushButton" name="pushButton_add_spawnable_entity">
                   <property name="text">
                    <string>➕ Add to list</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLabel" name="label_add_entity_description">
+                 <widget class="QLabel" name="label_spawnable_entity_description">
                   <property name="text">
                    <string>No description available.</string>
                   </property>
@@ -2498,7 +2624,7 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_22">
             <item>
-             <widget class="AspectRatioLabel" name="label_app_banner">
+             <widget class="BannerLabel" name="label_app_banner">
               <property name="styleSheet">
                <string notr="true">font-size: 40px;</string>
               </property>
@@ -2720,6 +2846,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="toolTip">
+                  <string>Updates the application to the latest version</string>
+                 </property>
                  <property name="text">
                   <string>Update</string>
                  </property>
@@ -2732,6 +2861,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Checks for the availability of a new version of the application.</string>
                  </property>
                  <property name="text">
                   <string>🔄 Check for updates</string>
@@ -2793,7 +2925,12 @@
   <customwidget>
    <class>AspectRatioLabel</class>
    <extends>QLabel</extends>
-   <header>dashboard.widgets.aspect_ratio_label</header>
+   <header>dashboard.widgets.custom_labels</header>
+  </customwidget>
+  <customwidget>
+   <class>BannerLabel</class>
+   <extends>QLabel</extends>
+   <header>dashboard.widgets.custom_labels</header>
   </customwidget>
  </customwidgets>
  <resources/>

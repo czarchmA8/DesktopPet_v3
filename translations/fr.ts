@@ -126,19 +126,19 @@
     </message>
     <message>
         <source>Kill selected</source>
-        <translation>Terminer la sélection</translation>
+        <translation type="vanished">Terminer la sélection</translation>
     </message>
     <message>
         <source>Show selected</source>
-        <translation>Afficher la sélection</translation>
+        <translation type="vanished">Afficher la sélection</translation>
     </message>
     <message>
         <source>Hide selected</source>
-        <translation>Masquer la sélection</translation>
+        <translation type="vanished">Masquer la sélection</translation>
     </message>
     <message>
         <source>Teleport selected</source>
-        <translation>Téléporter la sélection</translation>
+        <translation type="vanished">Téléporter la sélection</translation>
     </message>
     <message>
         <source>Opens the built-in hitbox editor for objects</source>
@@ -154,7 +154,7 @@
     </message>
     <message>
         <source>This option does not update the software itself.</source>
-        <translation>Cette option ne met pas à jour le logiciel lui-même.</translation>
+        <translation type="vanished">Cette option ne met pas à jour le logiciel lui-même.</translation>
     </message>
     <message>
         <source>Check for updates</source>
@@ -189,6 +189,78 @@
         <translation>Ouvrir le dossier de l&apos;application</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation>Apparence</translation>
+    </message>
+    <message>
+        <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
+        <translation>Enregistre la taille et l&apos;emplacement de la fenêtre à sa fermeture, puis les restaure au démarrage.</translation>
+    </message>
+    <message>
+        <source>Restore window size and position</source>
+        <translation>Restaurer la taille et la position de la fenêtre</translation>
+    </message>
+    <message>
+        <source>Kill selected entity</source>
+        <translation>Terminer l&apos;entité sélectionnée</translation>
+    </message>
+    <message>
+        <source>Show selected entity</source>
+        <translation>Afficher l&apos;entité sélectionnée</translation>
+    </message>
+    <message>
+        <source>Hide selected entity</source>
+        <translation>Masquer l&apos;entité sélectionnée</translation>
+    </message>
+    <message>
+        <source>Teleport selected entity</source>
+        <translation>Téléporter l&apos;entité sélectionnée</translation>
+    </message>
+    <message>
+        <source>Checks for updates when the application starts. This option does not update the software itself.</source>
+        <translation>Recherche des mises à jour au démarrage de l&apos;application. Cette option ne met pas à jour le logiciel lui-même.</translation>
+    </message>
+    <message>
+        <source>Automatically launches applications with the system</source>
+        <translation>Lance automatiquement les applications avec le système</translation>
+    </message>
+    <message>
+        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
+        <translation>Affiche la fenêtre au démarrage en la lançant automatiquement avec le système. Cette option ne modifie pas la façon dont la fenêtre s&apos;affiche lors d&apos;un démarrage normal.</translation>
+    </message>
+    <message>
+        <source>Show window on startup</source>
+        <translation>Afficher la fenêtre au démarrage</translation>
+    </message>
+    <message>
+        <source>General debug mode switch. This option does nothing by itself.</source>
+        <translation>Interrupteur général du mode débogage. Cette option ne fait rien par elle-même.</translation>
+    </message>
+    <message>
+        <source>Shows normally invisible entity hitboxes. Only works for entities that support this option.</source>
+        <translation>Affiche les hitbox normalement invisibles des entités. Ne fonctionne que pour les entités prenant en charge cette option.</translation>
+    </message>
+    <message>
+        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
+        <translation>Affiche une fenêtre avec des informations générales sur l&apos;application. Par exemple, les FPS et une liste des fenêtres surveillées.</translation>
+    </message>
+    <message>
+        <source>Shows a window displaying the current application logs</source>
+        <translation>Affiche une fenêtre montrant les journaux actuels de l&apos;application</translation>
+    </message>
+    <message>
+        <source>Show debug console</source>
+        <translation>Afficher la console de débogage</translation>
+    </message>
+    <message>
+        <source>Open latest log</source>
+        <translation>Ouvrir le dernier journal</translation>
+    </message>
+    <message>
+        <source>🔍 Search mods...</source>
+        <translation>🔍 Rechercher des mods...</translation>
+    </message>
+    <message>
         <source>Mod details</source>
         <translation>Détails du mod</translation>
     </message>
@@ -217,8 +289,16 @@
         <translation>Enregistrer la liste de mods</translation>
     </message>
     <message>
+        <source>Undoes changes to the mod list</source>
+        <translation>Annule les modifications apportées à la liste de mods</translation>
+    </message>
+    <message>
         <source>Discard changes</source>
         <translation>Annuler les modifications</translation>
+    </message>
+    <message>
+        <source>Saves changes to the mod list and restarts the application</source>
+        <translation>Enregistre les modifications de la liste de mods et redémarre l&apos;application</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -234,7 +314,7 @@
     </message>
     <message>
         <source> Search entities...</source>
-        <translation> Rechercher des entités...</translation>
+        <translation type="vanished"> Rechercher des entités...</translation>
     </message>
     <message>
         <source>Entity details</source>
@@ -249,8 +329,20 @@
         <translation>ID du mod :</translation>
     </message>
     <message>
+        <source>🗑️ Kill entity</source>
+        <translation>🗑️ Terminer l&apos;entité</translation>
+    </message>
+    <message>
         <source>Position:</source>
         <translation>Position :</translation>
+    </message>
+    <message>
+        <source>Updates the application to the latest version</source>
+        <translation>Met à jour l&apos;application vers la dernière version</translation>
+    </message>
+    <message>
+        <source>Checks for the availability of a new version of the application.</source>
+        <translation>Vérifie la disponibilité d&apos;une nouvelle version de l&apos;application.</translation>
     </message>
     <message>
         <source>🔄 Check for updates</source>
@@ -405,8 +497,46 @@
         <translation>Erreur d&apos;enregistrement du fichier</translation>
     </message>
     <message>
+        <source>Failed to save settings: %1</source>
+        <translation>Échec de l&apos;enregistrement des paramètres : %1</translation>
+    </message>
+    <message>
+        <source>Assigned &apos;%1&apos;.</source>
+        <translation>« %1 » attribué.</translation>
+    </message>
+    <message>
+        <source>Failed to change autostart setting:
+%1</source>
+        <translation>Échec de la modification du paramètre de démarrage automatique :
+%1</translation>
+    </message>
+    <message>
+        <source>EntityName</source>
+        <translation>Nom de l&apos;entité</translation>
+    </message>
+    <message>
+        <source>Teleport</source>
+        <translation>Téléporter</translation>
+    </message>
+    <message>
+        <source>Entity</source>
+        <translation>Entité</translation>
+    </message>
+    <message>
+        <source>Select an entity first.</source>
+        <translation>Sélectionnez d&apos;abord une entité.</translation>
+    </message>
+    <message>
+        <source>Entity settings</source>
+        <translation>Paramètres de l&apos;entité</translation>
+    </message>
+    <message>
+        <source>Select a entity first.</source>
+        <translation>Sélectionnez d&apos;abord une entité.</translation>
+    </message>
+    <message>
         <source>Failed to save settings: %x</source>
-        <translation>Échec de l&apos;enregistrement des paramètres : %x</translation>
+        <translation type="vanished">Échec de l&apos;enregistrement des paramètres : %x</translation>
     </message>
     <message>
         <source>Success</source>
@@ -414,7 +544,7 @@
     </message>
     <message>
         <source>Assigned &apos;%x&apos;.</source>
-        <translation>Assigné à &apos;%x&apos;.</translation>
+        <translation type="vanished">Assigné à &apos;%x&apos;.</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -439,7 +569,7 @@
     <message>
         <source>Failed to change autostart setting:
 %x</source>
-        <translation>Échec de la modification du paramètre de démarrage automatique : %x</translation>
+        <translation type="vanished">Échec de la modification du paramètre de démarrage automatique : %x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

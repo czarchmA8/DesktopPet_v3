@@ -126,19 +126,19 @@
     </message>
     <message>
         <source>Kill selected</source>
-        <translation>Usuń zaznaczony</translation>
+        <translation type="vanished">Usuń zaznaczony</translation>
     </message>
     <message>
         <source>Show selected</source>
-        <translation>Pokaż zaznaczony</translation>
+        <translation type="vanished">Pokaż zaznaczony</translation>
     </message>
     <message>
         <source>Hide selected</source>
-        <translation>Ukryj zaznaczony</translation>
+        <translation type="vanished">Ukryj zaznaczony</translation>
     </message>
     <message>
         <source>Teleport selected</source>
-        <translation>Teleportuj zaznaczony</translation>
+        <translation type="vanished">Teleportuj zaznaczony</translation>
     </message>
     <message>
         <source>Opens the built-in hitbox editor for objects</source>
@@ -154,7 +154,7 @@
     </message>
     <message>
         <source>This option does not update the software itself.</source>
-        <translation>Ta opcja nie aktualizuje oprogramowania samodzielnie.</translation>
+        <translation type="vanished">Ta opcja nie aktualizuje oprogramowania samodzielnie.</translation>
     </message>
     <message>
         <source>Check for updates</source>
@@ -189,6 +189,78 @@
         <translation>Otwórz folder aplikacji</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation>Wygląd</translation>
+    </message>
+    <message>
+        <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
+        <translation>Zapisuje rozmiar i położenie okna przy zamknięciu i przywraca je przy uruchomieniu.</translation>
+    </message>
+    <message>
+        <source>Restore window size and position</source>
+        <translation>Przywróć rozmiar i pozycję okna</translation>
+    </message>
+    <message>
+        <source>Kill selected entity</source>
+        <translation>Usuń zaznaczony byt</translation>
+    </message>
+    <message>
+        <source>Show selected entity</source>
+        <translation>Pokaż zaznaczony byt</translation>
+    </message>
+    <message>
+        <source>Hide selected entity</source>
+        <translation>Ukryj zaznaczony byt</translation>
+    </message>
+    <message>
+        <source>Teleport selected entity</source>
+        <translation>Teleportuj zaznaczony byt</translation>
+    </message>
+    <message>
+        <source>Checks for updates when the application starts. This option does not update the software itself.</source>
+        <translation>Sprawdza dostępność aktualizacji przy uruchomieniu aplikacji. Ta opcja nie aktualizuje oprogramowania samodzielnie.</translation>
+    </message>
+    <message>
+        <source>Automatically launches applications with the system</source>
+        <translation>Automatycznie uruchamia aplikacje wraz z systemem</translation>
+    </message>
+    <message>
+        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
+        <translation>Pokazuje okno przy starcie, uruchamiając się automatycznie razem z systemem. Ta opcja nie zmienia sposobu wyświetlania okna przy normalnym uruchomieniu.</translation>
+    </message>
+    <message>
+        <source>Show window on startup</source>
+        <translation>Pokaż okno przy starcie</translation>
+    </message>
+    <message>
+        <source>General debug mode switch. This option does nothing by itself.</source>
+        <translation>Ogólny przełącznik trybu debugowania. Ta opcja sama w sobie nic nie robi.</translation>
+    </message>
+    <message>
+        <source>Shows normally invisible entity hitboxes. Only works for entities that support this option.</source>
+        <translation>Pokazuje zwykle niewidoczne hitboxy bytów. Działa tylko dla bytów obsługujących tę opcję.</translation>
+    </message>
+    <message>
+        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
+        <translation>Pokazuje okno z ogólnymi informacjami o aplikacji. Na przykład FPS i listę obserwowanych okien.</translation>
+    </message>
+    <message>
+        <source>Shows a window displaying the current application logs</source>
+        <translation>Pokazuje okno wyświetlające bieżące logi aplikacji</translation>
+    </message>
+    <message>
+        <source>Show debug console</source>
+        <translation>Pokaż konsolę debugowania</translation>
+    </message>
+    <message>
+        <source>Open latest log</source>
+        <translation>Otwórz najnowszy log</translation>
+    </message>
+    <message>
+        <source>🔍 Search mods...</source>
+        <translation>🔍 Szukaj modów...</translation>
+    </message>
+    <message>
         <source>Mod details</source>
         <translation>Szczegóły moda</translation>
     </message>
@@ -209,6 +281,10 @@
         <translation>Brak dostępnego opisu.</translation>
     </message>
     <message>
+        <source>Updates the application to the latest version</source>
+        <translation>Cofa zmiany na liście modów</translation>
+    </message>
+    <message>
         <source>Load mod list</source>
         <translation>Załaduj listę modów</translation>
     </message>
@@ -217,8 +293,16 @@
         <translation>Zapisz listę modów</translation>
     </message>
     <message>
+        <source>Undoes changes to the mod list</source>
+        <translation>Zapisuje zmiany na liście modów i uruchamia aplikację ponownie</translation>
+    </message>
+    <message>
         <source>Discard changes</source>
         <translation>Odrzuć zmiany</translation>
+    </message>
+    <message>
+        <source>Saves changes to the mod list and restarts the application</source>
+        <translation>🗑️ Usuń byt</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -238,7 +322,7 @@
     </message>
     <message>
         <source> Search entities...</source>
-        <translation> Szukaj bytów...</translation>
+        <translation type="vanished"> Szukaj bytów...</translation>
     </message>
     <message>
         <source>Entity details</source>
@@ -251,6 +335,10 @@
     <message>
         <source>Mod ID:</source>
         <translation>ID moda:</translation>
+    </message>
+    <message>
+        <source>🗑️ Kill entity</source>
+        <translation>Aktualizuje aplikację do najnowszej wersji</translation>
     </message>
     <message>
         <source>Position:</source>
@@ -323,6 +411,10 @@
     <message>
         <source>Update</source>
         <translation>Aktualizuj</translation>
+    </message>
+    <message>
+        <source>Checks for the availability of a new version of the application.</source>
+        <translation>Sprawdza dostępność nowej wersji aplikacji.</translation>
     </message>
     <message>
         <source>Info</source>
@@ -405,8 +497,46 @@
         <translation>Błąd zapisu pliku</translation>
     </message>
     <message>
+        <source>Failed to save settings: %1</source>
+        <translation>Nie udało się zapisać ustawień: %1</translation>
+    </message>
+    <message>
+        <source>Assigned &apos;%1&apos;.</source>
+        <translation>Przypisano „%1”.</translation>
+    </message>
+    <message>
+        <source>Failed to change autostart setting:
+%1</source>
+        <translation>Nie udało się zmienić ustawienia autostartu:
+%1</translation>
+    </message>
+    <message>
+        <source>EntityName</source>
+        <translation>Nazwa bytu</translation>
+    </message>
+    <message>
+        <source>Teleport</source>
+        <translation>Teleportuj</translation>
+    </message>
+    <message>
+        <source>Entity</source>
+        <translation>Byt</translation>
+    </message>
+    <message>
+        <source>Select an entity first.</source>
+        <translation>Najpierw wybierz byt.</translation>
+    </message>
+    <message>
+        <source>Entity settings</source>
+        <translation>Ustawienia bytu</translation>
+    </message>
+    <message>
+        <source>Select a entity first.</source>
+        <translation>Najpierw wybierz byt.</translation>
+    </message>
+    <message>
         <source>Failed to save settings: %x</source>
-        <translation>Nie udało się zapisać ustawień: %x</translation>
+        <translation type="vanished">Nie udało się zapisać ustawień: %x</translation>
     </message>
     <message>
         <source>Success</source>
@@ -414,7 +544,7 @@
     </message>
     <message>
         <source>Assigned &apos;%x&apos;.</source>
-        <translation>Przypisano `%x`</translation>
+        <translation type="vanished">Przypisano `%x`</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -439,7 +569,7 @@
     <message>
         <source>Failed to change autostart setting:
 %x</source>
-        <translation>Nie udało się zmienić ustawienia autostartu:\n%x</translation>
+        <translation type="vanished">Nie udało się zmienić ustawienia autostartu:\n%x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

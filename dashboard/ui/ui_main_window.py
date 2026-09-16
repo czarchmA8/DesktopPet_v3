@@ -1,23 +1,32 @@
-from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, QSize, Qt
-from PySide6.QtGui import QFont, QPixmap
-from PySide6.QtWidgets import (
-        QAbstractItemView, QCheckBox, QComboBox,
-        QFormLayout, QFrame, QGroupBox,
-        QHBoxLayout, QLabel, QLineEdit, QListView,
-        QListWidget, QMenuBar, QPushButton,
-        QScrollArea, QSizePolicy, QSlider,
-        QSpacerItem, QSplitter, QStatusBar,
-        QTabWidget, QToolButton, QTreeWidget,
-        QTreeWidgetItem, QVBoxLayout, QWidget,
-        QMainWindow
-)
+# -*- coding: utf-8 -*-
 
-from dashboard.widgets.aspect_ratio_label import AspectRatioLabel
+################################################################################
+## Form generated from reading UI file 'main_window.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect,
+    QSize, Qt)
+from PySide6.QtGui import (QFont, QPixmap)
+from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox,
+    QFormLayout, QFrame, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QListView,
+    QListWidget, QMenuBar,
+    QPushButton, QScrollArea, QSizePolicy, QSlider,
+    QSpacerItem, QSplitter, QStatusBar, QTabWidget,
+    QToolButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+    QWidget)
+
+from dashboard.widgets.custom_labels import (AspectRatioLabel, BannerLabel)
 
 class Ui_MainWindow(object):
-    def setup_ui(self, MainWindow: QMainWindow):
+    def setup_ui(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName("MainWindow")
+        
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -33,7 +42,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 341, 1136))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 341, 1328))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.groupBox_language = QGroupBox(self.scrollAreaWidgetContents)
@@ -83,6 +92,18 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addWidget(self.groupBox_sound)
 
+        self.groupBox_appearance = QGroupBox(self.scrollAreaWidgetContents)
+        self.groupBox_appearance.setObjectName("groupBox_appearance")
+        self.verticalLayout_15 = QVBoxLayout(self.groupBox_appearance)
+        self.verticalLayout_15.setObjectName("verticalLayout_15")
+        self.checkBox_restore_window_geometry = QCheckBox(self.groupBox_appearance)
+        self.checkBox_restore_window_geometry.setObjectName("checkBox_restore_window_geometry")
+
+        self.verticalLayout_15.addWidget(self.checkBox_restore_window_geometry)
+
+
+        self.verticalLayout_3.addWidget(self.groupBox_appearance)
+
         self.groupBox_app = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_app.setObjectName("groupBox_app")
         self.verticalLayout_7 = QVBoxLayout(self.groupBox_app)
@@ -95,7 +116,11 @@ class Ui_MainWindow(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.frame_show.sizePolicy().hasHeightForWidth())
         self.frame_show.setSizePolicy(sizePolicy1)
-        self.frame_show.setStyleSheet("QFrame#frame_show {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_show.setStyleSheet("QFrame#frame_show {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_show.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_9 = QHBoxLayout(self.frame_show)
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
@@ -151,7 +176,11 @@ class Ui_MainWindow(object):
         self.frame_hide.setObjectName("frame_hide")
         sizePolicy1.setHeightForWidth(self.frame_hide.sizePolicy().hasHeightForWidth())
         self.frame_hide.setSizePolicy(sizePolicy1)
-        self.frame_hide.setStyleSheet("QFrame#frame_hide {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_hide.setStyleSheet("QFrame#frame_hide {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_hide.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_2 = QHBoxLayout(self.frame_hide)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -201,7 +230,11 @@ class Ui_MainWindow(object):
         self.frame_close.setObjectName("frame_close")
         sizePolicy1.setHeightForWidth(self.frame_close.sizePolicy().hasHeightForWidth())
         self.frame_close.setSizePolicy(sizePolicy1)
-        self.frame_close.setStyleSheet("QFrame#frame_close {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_close.setStyleSheet("QFrame#frame_close {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_close.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_8 = QHBoxLayout(self.frame_close)
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
@@ -258,7 +291,11 @@ class Ui_MainWindow(object):
         self.frame_kill_all_entities_shortcut.setObjectName("frame_kill_all_entities_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_kill_all_entities_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_kill_all_entities_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_kill_all_entities_shortcut.setStyleSheet("QFrame#frame_8 {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_kill_all_entities_shortcut.setStyleSheet("QFrame#frame_8 {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_kill_all_entities_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_12 = QHBoxLayout(self.frame_kill_all_entities_shortcut)
         self.horizontalLayout_12.setObjectName("horizontalLayout_12")
@@ -308,7 +345,11 @@ class Ui_MainWindow(object):
         self.frame_show_all_entities_shortcut.setObjectName("frame_show_all_entities_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_show_all_entities_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_show_all_entities_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_show_all_entities_shortcut.setStyleSheet("QFrame#frame_delete_all {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_show_all_entities_shortcut.setStyleSheet("QFrame#frame_delete_all {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_show_all_entities_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_14 = QHBoxLayout(self.frame_show_all_entities_shortcut)
         self.horizontalLayout_14.setObjectName("horizontalLayout_14")
@@ -358,7 +399,11 @@ class Ui_MainWindow(object):
         self.frame_hide_all_entities_shortcut.setObjectName("frame_hide_all_entities_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_hide_all_entities_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_hide_all_entities_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_hide_all_entities_shortcut.setStyleSheet("QFrame#frame_delete_all {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_hide_all_entities_shortcut.setStyleSheet("QFrame#frame_delete_all {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_hide_all_entities_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_16 = QHBoxLayout(self.frame_hide_all_entities_shortcut)
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
@@ -415,7 +460,11 @@ class Ui_MainWindow(object):
         self.frame_kill_selected_entity_shortcut.setObjectName("frame_kill_selected_entity_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_kill_selected_entity_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_kill_selected_entity_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_kill_selected_entity_shortcut.setStyleSheet("QFrame#frame_8 {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_kill_selected_entity_shortcut.setStyleSheet("QFrame#frame_8 {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_kill_selected_entity_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_15 = QHBoxLayout(self.frame_kill_selected_entity_shortcut)
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
@@ -465,7 +514,11 @@ class Ui_MainWindow(object):
         self.frame_show_selected_entity_shortcut.setObjectName("frame_show_selected_entity_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_show_selected_entity_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_show_selected_entity_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_show_selected_entity_shortcut.setStyleSheet("QFrame#frame_delete_all {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_show_selected_entity_shortcut.setStyleSheet("QFrame#frame_delete_all {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_show_selected_entity_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_18 = QHBoxLayout(self.frame_show_selected_entity_shortcut)
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
@@ -515,7 +568,11 @@ class Ui_MainWindow(object):
         self.frame_hide_selected_entity_shortcut.setObjectName("frame_hide_selected_entity_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_hide_selected_entity_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_hide_selected_entity_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_hide_selected_entity_shortcut.setStyleSheet("QFrame#frame_delete_all {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_hide_selected_entity_shortcut.setStyleSheet("QFrame#frame_delete_all {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_hide_selected_entity_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_19 = QHBoxLayout(self.frame_hide_selected_entity_shortcut)
         self.horizontalLayout_19.setObjectName("horizontalLayout_19")
@@ -565,7 +622,11 @@ class Ui_MainWindow(object):
         self.frame_teleport_selected_entity_shortcut.setObjectName("frame_teleport_selected_entity_shortcut")
         sizePolicy1.setHeightForWidth(self.frame_teleport_selected_entity_shortcut.sizePolicy().hasHeightForWidth())
         self.frame_teleport_selected_entity_shortcut.setSizePolicy(sizePolicy1)
-        self.frame_teleport_selected_entity_shortcut.setStyleSheet("QFrame#frame_delete_all {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_teleport_selected_entity_shortcut.setStyleSheet("QFrame#frame_delete_all {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_teleport_selected_entity_shortcut.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_20 = QHBoxLayout(self.frame_teleport_selected_entity_shortcut)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
@@ -643,6 +704,12 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.checkBox_autostart)
 
+        self.checkBox_show_window_on_startup = QCheckBox(self.groupBox_system)
+        self.checkBox_show_window_on_startup.setObjectName("checkBox_show_window_on_startup")
+        self.checkBox_show_window_on_startup.setEnabled(False)
+
+        self.verticalLayout_5.addWidget(self.checkBox_show_window_on_startup)
+
 
         self.verticalLayout_3.addWidget(self.groupBox_system)
 
@@ -667,10 +734,21 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6.addWidget(self.checkBox_debug_information_window)
 
+        self.checkBox_debug_console = QCheckBox(self.groupBox_advanced)
+        self.checkBox_debug_console.setObjectName("checkBox_debug_console")
+        self.checkBox_debug_console.setEnabled(False)
+
+        self.verticalLayout_6.addWidget(self.checkBox_debug_console)
+
         self.pushButton_open_app_folder = QPushButton(self.groupBox_advanced)
         self.pushButton_open_app_folder.setObjectName("pushButton_open_app_folder")
 
         self.verticalLayout_6.addWidget(self.pushButton_open_app_folder)
+
+        self.pushButton_open_latest_log = QPushButton(self.groupBox_advanced)
+        self.pushButton_open_latest_log.setObjectName("pushButton_open_latest_log")
+
+        self.verticalLayout_6.addWidget(self.pushButton_open_latest_log)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_advanced)
@@ -696,6 +774,12 @@ class Ui_MainWindow(object):
         self.groupBox_mods_list.setObjectName("groupBox_mods_list")
         self.verticalLayout_17 = QVBoxLayout(self.groupBox_mods_list)
         self.verticalLayout_17.setObjectName("verticalLayout_17")
+        self.lineEdit_mods_search = QLineEdit(self.groupBox_mods_list)
+        self.lineEdit_mods_search.setObjectName("lineEdit_mods_search")
+        self.lineEdit_mods_search.setClearButtonEnabled(True)
+
+        self.verticalLayout_17.addWidget(self.lineEdit_mods_search)
+
         self.listWidget_mods = QListWidget(self.groupBox_mods_list)
         self.listWidget_mods.setObjectName("listWidget_mods")
         self.listWidget_mods.setFrameShape(QFrame.Shape.NoFrame)
@@ -756,7 +840,11 @@ class Ui_MainWindow(object):
 
         self.frame_mod_info = QFrame(self.scrollAreaWidgetContents_3)
         self.frame_mod_info.setObjectName("frame_mod_info")
-        self.frame_mod_info.setStyleSheet("QFrame#frame_mod_info {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_mod_info.setStyleSheet("QFrame#frame_mod_info {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_mod_info.setFrameShape(QFrame.Shape.StyledPanel)
         self.formLayout_mod_info = QFormLayout(self.frame_mod_info)
         self.formLayout_mod_info.setObjectName("formLayout_mod_info")
@@ -865,55 +953,66 @@ class Ui_MainWindow(object):
         self.verticalLayout_16.addLayout(self.horizontalLayout_4)
 
         self.tabWidget.addTab(self.tab_mods, "")
-        self.tab_list = QWidget()
-        self.tab_list.setObjectName("tab_list")
-        self.verticalLayout_23 = QVBoxLayout(self.tab_list)
+        self.tab_displayed_entities = QWidget()
+        self.tab_displayed_entities.setObjectName("tab_displayed_entities")
+        self.verticalLayout_23 = QVBoxLayout(self.tab_displayed_entities)
         self.verticalLayout_23.setObjectName("verticalLayout_23")
-        self.splitter_2 = QSplitter(self.tab_list)
+        self.splitter_2 = QSplitter(self.tab_displayed_entities)
         self.splitter_2.setObjectName("splitter_2")
         self.splitter_2.setOrientation(Qt.Orientation.Horizontal)
         self.splitter_2.setChildrenCollapsible(False)
-        self.groupBox_entities_list = QGroupBox(self.splitter_2)
-        self.groupBox_entities_list.setObjectName("groupBox_entities_list")
-        self.verticalLayout_24 = QVBoxLayout(self.groupBox_entities_list)
+        self.groupBox_displayed_entities_list = QGroupBox(self.splitter_2)
+        self.groupBox_displayed_entities_list.setObjectName("groupBox_displayed_entities_list")
+        self.verticalLayout_24 = QVBoxLayout(self.groupBox_displayed_entities_list)
         self.verticalLayout_24.setObjectName("verticalLayout_24")
-        self.lineEdit_entity_search = QLineEdit(self.groupBox_entities_list)
-        self.lineEdit_entity_search.setObjectName("lineEdit_entity_search")
-        self.lineEdit_entity_search.setClearButtonEnabled(True)
+        self.lineEdit_displayed_entity_search = QLineEdit(self.groupBox_displayed_entities_list)
+        self.lineEdit_displayed_entity_search.setObjectName("lineEdit_displayed_entity_search")
+        self.lineEdit_displayed_entity_search.setClearButtonEnabled(True)
 
-        self.verticalLayout_24.addWidget(self.lineEdit_entity_search)
+        self.verticalLayout_24.addWidget(self.lineEdit_displayed_entity_search)
 
-        self.listWidget_entities_list = QListWidget(self.groupBox_entities_list)
-        self.listWidget_entities_list.setObjectName("listWidget_entities_list")
-        self.listWidget_entities_list.setFrameShape(QFrame.Shape.NoFrame)
-        self.listWidget_entities_list.setSpacing(2)
-        self.listWidget_entities_list.setUniformItemSizes(True)
+        self.listWidget_displayed_entities_list = QListWidget(self.groupBox_displayed_entities_list)
+        self.listWidget_displayed_entities_list.setObjectName("listWidget_displayed_entities_list")
+        self.listWidget_displayed_entities_list.setFrameShape(QFrame.Shape.NoFrame)
+        self.listWidget_displayed_entities_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.listWidget_displayed_entities_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.listWidget_displayed_entities_list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.listWidget_displayed_entities_list.setDragDropMode(QAbstractItemView.DragDropMode.NoDragDrop)
+        self.listWidget_displayed_entities_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.listWidget_displayed_entities_list.setIconSize(QSize(64, 64))
+        self.listWidget_displayed_entities_list.setMovement(QListView.Movement.Static)
+        self.listWidget_displayed_entities_list.setFlow(QListView.Flow.LeftToRight)
+        self.listWidget_displayed_entities_list.setResizeMode(QListView.ResizeMode.Adjust)
+        self.listWidget_displayed_entities_list.setGridSize(QSize(88, 96))
+        self.listWidget_displayed_entities_list.setViewMode(QListView.ViewMode.IconMode)
+        self.listWidget_displayed_entities_list.setUniformItemSizes(True)
+        self.listWidget_displayed_entities_list.setWordWrap(True)
 
-        self.verticalLayout_24.addWidget(self.listWidget_entities_list)
+        self.verticalLayout_24.addWidget(self.listWidget_displayed_entities_list)
 
-        self.splitter_2.addWidget(self.groupBox_entities_list)
-        self.groupBox_entity_details = QGroupBox(self.splitter_2)
-        self.groupBox_entity_details.setObjectName("groupBox_entity_details")
-        self.verticalLayout_25 = QVBoxLayout(self.groupBox_entity_details)
+        self.splitter_2.addWidget(self.groupBox_displayed_entities_list)
+        self.groupBox_displayed_entity_details = QGroupBox(self.splitter_2)
+        self.groupBox_displayed_entity_details.setObjectName("groupBox_displayed_entity_details")
+        self.verticalLayout_25 = QVBoxLayout(self.groupBox_displayed_entity_details)
         self.verticalLayout_25.setObjectName("verticalLayout_25")
-        self.scrollArea_4 = QScrollArea(self.groupBox_entity_details)
+        self.scrollArea_4 = QScrollArea(self.groupBox_displayed_entity_details)
         self.scrollArea_4.setObjectName("scrollArea_4")
         self.scrollArea_4.setFrameShape(QFrame.Shape.NoFrame)
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName("scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 159, 498))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 159, 534))
         self.verticalLayout_26 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_26.setSpacing(10)
         self.verticalLayout_26.setObjectName("verticalLayout_26")
-        self.label_entity_preview = AspectRatioLabel(self.scrollAreaWidgetContents_4)
-        self.label_entity_preview.setObjectName("label_entity_preview")
-        self.label_entity_preview.setMinimumSize(QSize(0, 140))
-        self.label_entity_preview.setFrameShape(QFrame.Shape.StyledPanel)
-        self.label_entity_preview.setPixmap(QPixmap(":/images/no-preview.jpg"))
-        self.label_entity_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label_displayed_entity_preview = AspectRatioLabel(self.scrollAreaWidgetContents_4)
+        self.label_displayed_entity_preview.setObjectName("label_displayed_entity_preview")
+        self.label_displayed_entity_preview.setMinimumSize(QSize(0, 140))
+        self.label_displayed_entity_preview.setFrameShape(QFrame.Shape.StyledPanel)
+        self.label_displayed_entity_preview.setPixmap(QPixmap(":/images/no-preview.jpg"))
+        self.label_displayed_entity_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.verticalLayout_26.addWidget(self.label_entity_preview)
+        self.verticalLayout_26.addWidget(self.label_displayed_entity_preview)
 
         self.horizontalLayout_11 = QHBoxLayout()
         self.horizontalLayout_11.setSpacing(4)
@@ -922,151 +1021,165 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11.addItem(self.horizontalSpacer_7)
 
-        self.pushButton_entity_settings = QPushButton(self.scrollAreaWidgetContents_4)
-        self.pushButton_entity_settings.setObjectName("pushButton_entity_settings")
-        sizePolicy3.setHeightForWidth(self.pushButton_entity_settings.sizePolicy().hasHeightForWidth())
-        self.pushButton_entity_settings.setSizePolicy(sizePolicy3)
-        self.pushButton_entity_settings.setMinimumSize(QSize(32, 28))
-        self.pushButton_entity_settings.setMaximumSize(QSize(32, 28))
-        self.pushButton_entity_settings.setText("⚙️")
+        self.pushButton_displayed_entity_settings = QPushButton(self.scrollAreaWidgetContents_4)
+        self.pushButton_displayed_entity_settings.setObjectName("pushButton_displayed_entity_settings")
+        sizePolicy3.setHeightForWidth(self.pushButton_displayed_entity_settings.sizePolicy().hasHeightForWidth())
+        self.pushButton_displayed_entity_settings.setSizePolicy(sizePolicy3)
+        self.pushButton_displayed_entity_settings.setMinimumSize(QSize(32, 28))
+        self.pushButton_displayed_entity_settings.setMaximumSize(QSize(32, 28))
+        self.pushButton_displayed_entity_settings.setText("⚙️")
 
-        self.horizontalLayout_11.addWidget(self.pushButton_entity_settings)
+        self.horizontalLayout_11.addWidget(self.pushButton_displayed_entity_settings)
 
-        self.toolButton_entity_browse = QToolButton(self.scrollAreaWidgetContents_4)
-        self.toolButton_entity_browse.setObjectName("toolButton_entity_browse")
-        self.toolButton_entity_browse.setText("...")
+        self.toolButton_displayed_entity_browse = QToolButton(self.scrollAreaWidgetContents_4)
+        self.toolButton_displayed_entity_browse.setObjectName("toolButton_displayed_entity_browse")
+        self.toolButton_displayed_entity_browse.setText("...")
 
-        self.horizontalLayout_11.addWidget(self.toolButton_entity_browse)
+        self.horizontalLayout_11.addWidget(self.toolButton_displayed_entity_browse)
 
 
         self.verticalLayout_26.addLayout(self.horizontalLayout_11)
 
-        self.frame_entity_info = QFrame(self.scrollAreaWidgetContents_4)
-        self.frame_entity_info.setObjectName("frame_entity_info")
-        self.frame_entity_info.setStyleSheet("QFrame#frame_mod_info {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
-        self.frame_entity_info.setFrameShape(QFrame.Shape.StyledPanel)
-        self.formLayout_mod_info_2 = QFormLayout(self.frame_entity_info)
+        self.frame_displayed_entity_info = QFrame(self.scrollAreaWidgetContents_4)
+        self.frame_displayed_entity_info.setObjectName("frame_displayed_entity_info")
+        self.frame_displayed_entity_info.setStyleSheet("QFrame#frame_mod_info {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
+        self.frame_displayed_entity_info.setFrameShape(QFrame.Shape.StyledPanel)
+        self.formLayout_mod_info_2 = QFormLayout(self.frame_displayed_entity_info)
         self.formLayout_mod_info_2.setObjectName("formLayout_mod_info_2")
         self.formLayout_mod_info_2.setHorizontalSpacing(8)
         self.formLayout_mod_info_2.setVerticalSpacing(4)
         self.formLayout_mod_info_2.setContentsMargins(10, 8, 10, 8)
-        self.label_entity_name = QLabel(self.frame_entity_info)
-        self.label_entity_name.setObjectName("label_entity_name")
-        self.label_entity_name.setFont(font)
-        self.label_entity_name.setText("EntityName")
+        self.label_displayed_entity_name = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_name.setObjectName("label_displayed_entity_name")
+        self.label_displayed_entity_name.setFont(font)
+        self.label_displayed_entity_name.setText("EntityName")
 
-        self.formLayout_mod_info_2.setWidget(0, QFormLayout.ItemRole.SpanningRole, self.label_entity_name)
+        self.formLayout_mod_info_2.setWidget(0, QFormLayout.ItemRole.SpanningRole, self.label_displayed_entity_name)
 
-        self.line_mod_info_sep_2 = QFrame(self.frame_entity_info)
-        self.line_mod_info_sep_2.setObjectName("line_mod_info_sep_2")
-        self.line_mod_info_sep_2.setFrameShape(QFrame.Shape.HLine)
-        self.line_mod_info_sep_2.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_displayed_entity_info_sep = QFrame(self.frame_displayed_entity_info)
+        self.line_displayed_entity_info_sep.setObjectName("line_displayed_entity_info_sep")
+        self.line_displayed_entity_info_sep.setFrameShape(QFrame.Shape.HLine)
+        self.line_displayed_entity_info_sep.setFrameShadow(QFrame.Shadow.Sunken)
 
-        self.formLayout_mod_info_2.setWidget(1, QFormLayout.ItemRole.SpanningRole, self.line_mod_info_sep_2)
+        self.formLayout_mod_info_2.setWidget(1, QFormLayout.ItemRole.SpanningRole, self.line_displayed_entity_info_sep)
 
-        self.label_entity_mod_name_title = QLabel(self.frame_entity_info)
-        self.label_entity_mod_name_title.setObjectName("label_entity_mod_name_title")
-        self.label_entity_mod_name_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_displayed_entity_mod_name_title = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_mod_name_title.setObjectName("label_displayed_entity_mod_name_title")
+        self.label_displayed_entity_mod_name_title.setStyleSheet("color: #aaa; font-style: italic;")
 
-        self.formLayout_mod_info_2.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_entity_mod_name_title)
+        self.formLayout_mod_info_2.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_displayed_entity_mod_name_title)
 
-        self.label_entity_mod_name = QLabel(self.frame_entity_info)
-        self.label_entity_mod_name.setObjectName("label_entity_mod_name")
-        self.label_entity_mod_name.setText("unknown")
+        self.label_displayed_entity_mod_name = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_mod_name.setObjectName("label_displayed_entity_mod_name")
+        self.label_displayed_entity_mod_name.setText("unknown")
 
-        self.formLayout_mod_info_2.setWidget(2, QFormLayout.ItemRole.FieldRole, self.label_entity_mod_name)
+        self.formLayout_mod_info_2.setWidget(2, QFormLayout.ItemRole.FieldRole, self.label_displayed_entity_mod_name)
 
-        self.label_entity_mod_id_title = QLabel(self.frame_entity_info)
-        self.label_entity_mod_id_title.setObjectName("label_entity_mod_id_title")
-        self.label_entity_mod_id_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_displayed_entity_mod_id_title = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_mod_id_title.setObjectName("label_displayed_entity_mod_id_title")
+        self.label_displayed_entity_mod_id_title.setStyleSheet("color: #aaa; font-style: italic;")
 
-        self.formLayout_mod_info_2.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_entity_mod_id_title)
+        self.formLayout_mod_info_2.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_displayed_entity_mod_id_title)
 
-        self.label_entity_mod_id = QLabel(self.frame_entity_info)
-        self.label_entity_mod_id.setObjectName("label_entity_mod_id")
-        self.label_entity_mod_id.setText("unknown")
+        self.label_displayed_entity_mod_id = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_mod_id.setObjectName("label_displayed_entity_mod_id")
+        self.label_displayed_entity_mod_id.setText("unknown")
 
-        self.formLayout_mod_info_2.setWidget(3, QFormLayout.ItemRole.FieldRole, self.label_entity_mod_id)
+        self.formLayout_mod_info_2.setWidget(3, QFormLayout.ItemRole.FieldRole, self.label_displayed_entity_mod_id)
 
-        self.label_entity_id_title = QLabel(self.frame_entity_info)
-        self.label_entity_id_title.setObjectName("label_entity_id_title")
-        self.label_entity_id_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_displayed_entity_id_title = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_id_title.setObjectName("label_displayed_entity_id_title")
+        self.label_displayed_entity_id_title.setStyleSheet("color: #aaa; font-style: italic;")
 
-        self.formLayout_mod_info_2.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_entity_id_title)
+        self.formLayout_mod_info_2.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_displayed_entity_id_title)
 
-        self.label_entity_id = QLabel(self.frame_entity_info)
-        self.label_entity_id.setObjectName("label_entity_id")
-        self.label_entity_id.setText("unknown")
+        self.label_displayed_entity_id = QLabel(self.frame_displayed_entity_info)
+        self.label_displayed_entity_id.setObjectName("label_displayed_entity_id")
+        self.label_displayed_entity_id.setText("unknown")
 
-        self.formLayout_mod_info_2.setWidget(4, QFormLayout.ItemRole.FieldRole, self.label_entity_id)
+        self.formLayout_mod_info_2.setWidget(4, QFormLayout.ItemRole.FieldRole, self.label_displayed_entity_id)
 
 
-        self.verticalLayout_26.addWidget(self.frame_entity_info)
+        self.verticalLayout_26.addWidget(self.frame_displayed_entity_info)
 
-        self.label_entity_description = QLabel(self.scrollAreaWidgetContents_4)
-        self.label_entity_description.setObjectName("label_entity_description")
-        self.label_entity_description.setWordWrap(True)
+        self.pushButton_kill_selected_entity = QPushButton(self.scrollAreaWidgetContents_4)
+        self.pushButton_kill_selected_entity.setObjectName("pushButton_kill_selected_entity")
 
-        self.verticalLayout_26.addWidget(self.label_entity_description)
+        self.verticalLayout_26.addWidget(self.pushButton_kill_selected_entity)
 
-        self.frame_entity_debug = QFrame(self.scrollAreaWidgetContents_4)
-        self.frame_entity_debug.setObjectName("frame_entity_debug")
-        self.frame_entity_debug.setStyleSheet("QFrame#frame_mod_info {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
-        self.frame_entity_debug.setFrameShape(QFrame.Shape.StyledPanel)
-        self.formLayout_mod_info_4 = QFormLayout(self.frame_entity_debug)
+        self.label_displayed_entity_description = QLabel(self.scrollAreaWidgetContents_4)
+        self.label_displayed_entity_description.setObjectName("label_displayed_entity_description")
+        self.label_displayed_entity_description.setWordWrap(True)
+
+        self.verticalLayout_26.addWidget(self.label_displayed_entity_description)
+
+        self.frame_displayed_entity_debug = QFrame(self.scrollAreaWidgetContents_4)
+        self.frame_displayed_entity_debug.setObjectName("frame_displayed_entity_debug")
+        self.frame_displayed_entity_debug.setStyleSheet("QFrame#frame_mod_info {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
+        self.frame_displayed_entity_debug.setFrameShape(QFrame.Shape.StyledPanel)
+        self.formLayout_mod_info_4 = QFormLayout(self.frame_displayed_entity_debug)
         self.formLayout_mod_info_4.setObjectName("formLayout_mod_info_4")
         self.formLayout_mod_info_4.setHorizontalSpacing(8)
         self.formLayout_mod_info_4.setVerticalSpacing(4)
         self.formLayout_mod_info_4.setContentsMargins(10, 8, 10, 8)
-        self.label_entity_position_title = QLabel(self.frame_entity_debug)
+        self.label_entity_position_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_position_title.setObjectName("label_entity_position_title")
         self.label_entity_position_title.setStyleSheet("color: #aaa; font-style: italic;")
 
         self.formLayout_mod_info_4.setWidget(1, QFormLayout.ItemRole.LabelRole, self.label_entity_position_title)
 
-        self.label_entity_position = QLabel(self.frame_entity_debug)
-        self.label_entity_position.setText("x: 0, y: 0")
+        self.label_entity_position = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_position.setObjectName("label_entity_position")
+        self.label_entity_position.setText("x: 0, y: 0")
 
         self.formLayout_mod_info_4.setWidget(1, QFormLayout.ItemRole.FieldRole, self.label_entity_position)
 
-        self.label_entity_rotation_title = QLabel(self.frame_entity_debug)
+        self.label_entity_rotation_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_rotation_title.setObjectName("label_entity_rotation_title")
         self.label_entity_rotation_title.setStyleSheet("color: #aaa; font-style: italic;")
 
         self.formLayout_mod_info_4.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_entity_rotation_title)
 
-        self.label_entity_rotation = QLabel(self.frame_entity_debug)
-        self.label_entity_rotation.setText("0")
+        self.label_entity_rotation = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_rotation.setObjectName("label_entity_rotation")
+        self.label_entity_rotation.setText("0")
 
         self.formLayout_mod_info_4.setWidget(2, QFormLayout.ItemRole.FieldRole, self.label_entity_rotation)
 
-        self.label_entity_velocity_title = QLabel(self.frame_entity_debug)
+        self.label_entity_velocity_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_velocity_title.setObjectName("label_entity_velocity_title")
         self.label_entity_velocity_title.setStyleSheet("color: #aaa; font-style: italic;")
 
         self.formLayout_mod_info_4.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_entity_velocity_title)
 
-        self.label_entity_velocity = QLabel(self.frame_entity_debug)
-        self.label_entity_velocity.setText("x: 0, y: 0")
+        self.label_entity_velocity = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_velocity.setObjectName("label_entity_velocity")
+        self.label_entity_velocity.setText("x: 0, y: 0")
 
         self.formLayout_mod_info_4.setWidget(3, QFormLayout.ItemRole.FieldRole, self.label_entity_velocity)
 
-        self.label_entity_hwnd_title = QLabel(self.frame_entity_debug)
+        self.label_entity_hwnd_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_hwnd_title.setObjectName("label_entity_hwnd_title")
         self.label_entity_hwnd_title.setStyleSheet("color: #aaa; font-style: italic;")
 
         self.formLayout_mod_info_4.setWidget(0, QFormLayout.ItemRole.LabelRole, self.label_entity_hwnd_title)
 
-        self.label_entity_hwnd = QLabel(self.frame_entity_debug)
+        self.label_entity_hwnd = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_hwnd.setObjectName("label_entity_hwnd")
+        self.label_entity_hwnd.setText("unknown")
 
         self.formLayout_mod_info_4.setWidget(0, QFormLayout.ItemRole.FieldRole, self.label_entity_hwnd)
 
 
-        self.verticalLayout_26.addWidget(self.frame_entity_debug)
+        self.verticalLayout_26.addWidget(self.frame_displayed_entity_debug)
 
         self.verticalSpacer_4 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -1076,23 +1189,23 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_25.addWidget(self.scrollArea_4)
 
-        self.splitter_2.addWidget(self.groupBox_entity_details)
+        self.splitter_2.addWidget(self.groupBox_displayed_entity_details)
 
         self.verticalLayout_23.addWidget(self.splitter_2)
 
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
-        self.pushButton_kill_all_entities = QPushButton(self.tab_list)
+        self.pushButton_kill_all_entities = QPushButton(self.tab_displayed_entities)
         self.pushButton_kill_all_entities.setObjectName("pushButton_kill_all_entities")
 
         self.horizontalLayout_6.addWidget(self.pushButton_kill_all_entities)
 
-        self.pushButton_show_all_entities = QPushButton(self.tab_list)
+        self.pushButton_show_all_entities = QPushButton(self.tab_displayed_entities)
         self.pushButton_show_all_entities.setObjectName("pushButton_show_all_entities")
 
         self.horizontalLayout_6.addWidget(self.pushButton_show_all_entities)
 
-        self.pushButton_hide_all_entities = QPushButton(self.tab_list)
+        self.pushButton_hide_all_entities = QPushButton(self.tab_displayed_entities)
         self.pushButton_hide_all_entities.setObjectName("pushButton_hide_all_entities")
 
         self.horizontalLayout_6.addWidget(self.pushButton_hide_all_entities)
@@ -1100,70 +1213,70 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_23.addLayout(self.horizontalLayout_6)
 
-        self.tabWidget.addTab(self.tab_list, "")
-        self.tab_add = QWidget()
-        self.tab_add.setObjectName("tab_add")
-        self.verticalLayout_21 = QVBoxLayout(self.tab_add)
+        self.tabWidget.addTab(self.tab_displayed_entities, "")
+        self.tab_spawnable_entities = QWidget()
+        self.tab_spawnable_entities.setObjectName("tab_spawnable_entities")
+        self.verticalLayout_21 = QVBoxLayout(self.tab_spawnable_entities)
         self.verticalLayout_21.setObjectName("verticalLayout_21")
-        self.splitter_add = QSplitter(self.tab_add)
-        self.splitter_add.setObjectName("splitter_add")
-        self.splitter_add.setOrientation(Qt.Orientation.Horizontal)
-        self.splitter_add.setHandleWidth(4)
-        self.splitter_add.setChildrenCollapsible(False)
-        self.treeWidget_add_categories = QTreeWidget(self.splitter_add)
-        QTreeWidgetItem(self.treeWidget_add_categories)
-        QTreeWidgetItem(self.treeWidget_add_categories)
-        QTreeWidgetItem(self.treeWidget_add_categories)
-        self.treeWidget_add_categories.setObjectName("treeWidget_add_categories")
-        self.treeWidget_add_categories.setMinimumSize(QSize(170, 0))
-        self.treeWidget_add_categories.setMaximumSize(QSize(240, 16777215))
-        self.treeWidget_add_categories.setFrameShape(QFrame.Shape.NoFrame)
-        self.treeWidget_add_categories.setIndentation(14)
-        self.treeWidget_add_categories.setAnimated(True)
-        self.treeWidget_add_categories.setHeaderHidden(True)
-        self.splitter_add.addWidget(self.treeWidget_add_categories)
-        self.groupBox_add_entities = QGroupBox(self.splitter_add)
-        self.groupBox_add_entities.setObjectName("groupBox_add_entities")
+        self.splitter_spawnable_entities = QSplitter(self.tab_spawnable_entities)
+        self.splitter_spawnable_entities.setObjectName("splitter_spawnable_entities")
+        self.splitter_spawnable_entities.setOrientation(Qt.Orientation.Horizontal)
+        self.splitter_spawnable_entities.setHandleWidth(4)
+        self.splitter_spawnable_entities.setChildrenCollapsible(False)
+        self.treeWidget_spawnable_entities_categories = QTreeWidget(self.splitter_spawnable_entities)
+        QTreeWidgetItem(self.treeWidget_spawnable_entities_categories)
+        QTreeWidgetItem(self.treeWidget_spawnable_entities_categories)
+        QTreeWidgetItem(self.treeWidget_spawnable_entities_categories)
+        self.treeWidget_spawnable_entities_categories.setObjectName("treeWidget_spawnable_entities_categories")
+        self.treeWidget_spawnable_entities_categories.setMinimumSize(QSize(170, 0))
+        self.treeWidget_spawnable_entities_categories.setMaximumSize(QSize(240, 16777215))
+        self.treeWidget_spawnable_entities_categories.setFrameShape(QFrame.Shape.NoFrame)
+        self.treeWidget_spawnable_entities_categories.setIndentation(14)
+        self.treeWidget_spawnable_entities_categories.setAnimated(True)
+        self.treeWidget_spawnable_entities_categories.setHeaderHidden(True)
+        self.splitter_spawnable_entities.addWidget(self.treeWidget_spawnable_entities_categories)
+        self.groupBox_spawnable_entities = QGroupBox(self.splitter_spawnable_entities)
+        self.groupBox_spawnable_entities.setObjectName("groupBox_spawnable_entities")
         sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy4.setHorizontalStretch(1)
         sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.groupBox_add_entities.sizePolicy().hasHeightForWidth())
-        self.groupBox_add_entities.setSizePolicy(sizePolicy4)
-        self.verticalLayout_add_objects_2 = QVBoxLayout(self.groupBox_add_entities)
+        sizePolicy4.setHeightForWidth(self.groupBox_spawnable_entities.sizePolicy().hasHeightForWidth())
+        self.groupBox_spawnable_entities.setSizePolicy(sizePolicy4)
+        self.verticalLayout_add_objects_2 = QVBoxLayout(self.groupBox_spawnable_entities)
         self.verticalLayout_add_objects_2.setObjectName("verticalLayout_add_objects_2")
-        self.lineEdit_add_search = QLineEdit(self.groupBox_add_entities)
-        self.lineEdit_add_search.setObjectName("lineEdit_add_search")
-        self.lineEdit_add_search.setClearButtonEnabled(True)
+        self.lineEdit_spawnable_entities_search = QLineEdit(self.groupBox_spawnable_entities)
+        self.lineEdit_spawnable_entities_search.setObjectName("lineEdit_spawnable_entities_search")
+        self.lineEdit_spawnable_entities_search.setClearButtonEnabled(True)
 
-        self.verticalLayout_add_objects_2.addWidget(self.lineEdit_add_search)
+        self.verticalLayout_add_objects_2.addWidget(self.lineEdit_spawnable_entities_search)
 
-        self.listWidget_add_entities_list = QListWidget(self.groupBox_add_entities)
-        self.listWidget_add_entities_list.setObjectName("listWidget_add_entities_list")
-        self.listWidget_add_entities_list.setFrameShape(QFrame.Shape.NoFrame)
-        self.listWidget_add_entities_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.listWidget_add_entities_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.listWidget_add_entities_list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.listWidget_add_entities_list.setDragDropMode(QAbstractItemView.DragDropMode.NoDragDrop)
-        self.listWidget_add_entities_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.listWidget_add_entities_list.setIconSize(QSize(64, 64))
-        self.listWidget_add_entities_list.setMovement(QListView.Movement.Static)
-        self.listWidget_add_entities_list.setFlow(QListView.Flow.LeftToRight)
-        self.listWidget_add_entities_list.setResizeMode(QListView.ResizeMode.Adjust)
-        self.listWidget_add_entities_list.setGridSize(QSize(88, 96))
-        self.listWidget_add_entities_list.setViewMode(QListView.ViewMode.IconMode)
-        self.listWidget_add_entities_list.setUniformItemSizes(True)
-        self.listWidget_add_entities_list.setWordWrap(True)
+        self.listWidget_spawnable_entities_list = QListWidget(self.groupBox_spawnable_entities)
+        self.listWidget_spawnable_entities_list.setObjectName("listWidget_spawnable_entities_list")
+        self.listWidget_spawnable_entities_list.setFrameShape(QFrame.Shape.NoFrame)
+        self.listWidget_spawnable_entities_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.listWidget_spawnable_entities_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.listWidget_spawnable_entities_list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.listWidget_spawnable_entities_list.setDragDropMode(QAbstractItemView.DragDropMode.NoDragDrop)
+        self.listWidget_spawnable_entities_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.listWidget_spawnable_entities_list.setIconSize(QSize(64, 64))
+        self.listWidget_spawnable_entities_list.setMovement(QListView.Movement.Static)
+        self.listWidget_spawnable_entities_list.setFlow(QListView.Flow.LeftToRight)
+        self.listWidget_spawnable_entities_list.setResizeMode(QListView.ResizeMode.Adjust)
+        self.listWidget_spawnable_entities_list.setGridSize(QSize(88, 96))
+        self.listWidget_spawnable_entities_list.setViewMode(QListView.ViewMode.IconMode)
+        self.listWidget_spawnable_entities_list.setUniformItemSizes(True)
+        self.listWidget_spawnable_entities_list.setWordWrap(True)
 
-        self.verticalLayout_add_objects_2.addWidget(self.listWidget_add_entities_list)
+        self.verticalLayout_add_objects_2.addWidget(self.listWidget_spawnable_entities_list)
 
-        self.splitter_add.addWidget(self.groupBox_add_entities)
-        self.groupBox_add_entity_details = QGroupBox(self.splitter_add)
-        self.groupBox_add_entity_details.setObjectName("groupBox_add_entity_details")
-        self.groupBox_add_entity_details.setMinimumSize(QSize(230, 0))
-        self.groupBox_add_entity_details.setMaximumSize(QSize(300, 16777215))
-        self.verticalLayout_add_object_details_2 = QVBoxLayout(self.groupBox_add_entity_details)
+        self.splitter_spawnable_entities.addWidget(self.groupBox_spawnable_entities)
+        self.groupBox_spawnable_entity_details = QGroupBox(self.splitter_spawnable_entities)
+        self.groupBox_spawnable_entity_details.setObjectName("groupBox_spawnable_entity_details")
+        self.groupBox_spawnable_entity_details.setMinimumSize(QSize(230, 0))
+        self.groupBox_spawnable_entity_details.setMaximumSize(QSize(300, 16777215))
+        self.verticalLayout_add_object_details_2 = QVBoxLayout(self.groupBox_spawnable_entity_details)
         self.verticalLayout_add_object_details_2.setObjectName("verticalLayout_add_object_details_2")
-        self.scrollArea_5 = QScrollArea(self.groupBox_add_entity_details)
+        self.scrollArea_5 = QScrollArea(self.groupBox_spawnable_entity_details)
         self.scrollArea_5.setObjectName("scrollArea_5")
         self.scrollArea_5.setFrameShape(QFrame.Shape.NoFrame)
         self.scrollArea_5.setWidgetResizable(True)
@@ -1173,14 +1286,14 @@ class Ui_MainWindow(object):
         self.verticalLayout_27 = QVBoxLayout(self.scrollAreaWidgetContents_5)
         self.verticalLayout_27.setSpacing(10)
         self.verticalLayout_27.setObjectName("verticalLayout_27")
-        self.label_add_entity_preview = AspectRatioLabel(self.scrollAreaWidgetContents_5)
-        self.label_add_entity_preview.setObjectName("label_add_entity_preview")
-        self.label_add_entity_preview.setMinimumSize(QSize(0, 140))
-        self.label_add_entity_preview.setFrameShape(QFrame.Shape.StyledPanel)
-        self.label_add_entity_preview.setPixmap(QPixmap(":/images/no-preview.jpg"))
-        self.label_add_entity_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label_spawnable_entity_preview = AspectRatioLabel(self.scrollAreaWidgetContents_5)
+        self.label_spawnable_entity_preview.setObjectName("label_spawnable_entity_preview")
+        self.label_spawnable_entity_preview.setMinimumSize(QSize(0, 140))
+        self.label_spawnable_entity_preview.setFrameShape(QFrame.Shape.StyledPanel)
+        self.label_spawnable_entity_preview.setPixmap(QPixmap(":/images/no-preview.jpg"))
+        self.label_spawnable_entity_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.verticalLayout_27.addWidget(self.label_add_entity_preview)
+        self.verticalLayout_27.addWidget(self.label_spawnable_entity_preview)
 
         self.horizontalLayout_13 = QHBoxLayout()
         self.horizontalLayout_13.setSpacing(4)
@@ -1189,97 +1302,101 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_13.addItem(self.horizontalSpacer_8)
 
-        self.pushButton_add_entity_settings = QPushButton(self.scrollAreaWidgetContents_5)
-        self.pushButton_add_entity_settings.setObjectName("pushButton_add_entity_settings")
-        sizePolicy3.setHeightForWidth(self.pushButton_add_entity_settings.sizePolicy().hasHeightForWidth())
-        self.pushButton_add_entity_settings.setSizePolicy(sizePolicy3)
-        self.pushButton_add_entity_settings.setMinimumSize(QSize(32, 28))
-        self.pushButton_add_entity_settings.setMaximumSize(QSize(32, 28))
-        self.pushButton_add_entity_settings.setText("⚙️")
+        self.pushButton_spawnable_entity_settings = QPushButton(self.scrollAreaWidgetContents_5)
+        self.pushButton_spawnable_entity_settings.setObjectName("pushButton_spawnable_entity_settings")
+        sizePolicy3.setHeightForWidth(self.pushButton_spawnable_entity_settings.sizePolicy().hasHeightForWidth())
+        self.pushButton_spawnable_entity_settings.setSizePolicy(sizePolicy3)
+        self.pushButton_spawnable_entity_settings.setMinimumSize(QSize(32, 28))
+        self.pushButton_spawnable_entity_settings.setMaximumSize(QSize(32, 28))
+        self.pushButton_spawnable_entity_settings.setText("⚙️")
 
-        self.horizontalLayout_13.addWidget(self.pushButton_add_entity_settings)
+        self.horizontalLayout_13.addWidget(self.pushButton_spawnable_entity_settings)
 
-        self.toolButton_add_entity_browse = QToolButton(self.scrollAreaWidgetContents_5)
-        self.toolButton_add_entity_browse.setObjectName("toolButton_add_entity_browse")
-        self.toolButton_add_entity_browse.setText("...")
+        self.toolButton_spawnable_entity_browse = QToolButton(self.scrollAreaWidgetContents_5)
+        self.toolButton_spawnable_entity_browse.setObjectName("toolButton_spawnable_entity_browse")
+        self.toolButton_spawnable_entity_browse.setText("...")
 
-        self.horizontalLayout_13.addWidget(self.toolButton_add_entity_browse)
+        self.horizontalLayout_13.addWidget(self.toolButton_spawnable_entity_browse)
 
 
         self.verticalLayout_27.addLayout(self.horizontalLayout_13)
 
-        self.frame_add_entity_info = QFrame(self.scrollAreaWidgetContents_5)
-        self.frame_add_entity_info.setObjectName("frame_add_entity_info")
-        self.frame_add_entity_info.setStyleSheet("QFrame#frame_mod_info {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
-        self.frame_add_entity_info.setFrameShape(QFrame.Shape.StyledPanel)
-        self.formLayout_mod_info_3 = QFormLayout(self.frame_add_entity_info)
+        self.frame_spawnable_entity_info = QFrame(self.scrollAreaWidgetContents_5)
+        self.frame_spawnable_entity_info.setObjectName("frame_spawnable_entity_info")
+        self.frame_spawnable_entity_info.setStyleSheet("QFrame#frame_mod_info {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
+        self.frame_spawnable_entity_info.setFrameShape(QFrame.Shape.StyledPanel)
+        self.formLayout_mod_info_3 = QFormLayout(self.frame_spawnable_entity_info)
         self.formLayout_mod_info_3.setObjectName("formLayout_mod_info_3")
         self.formLayout_mod_info_3.setHorizontalSpacing(8)
         self.formLayout_mod_info_3.setVerticalSpacing(4)
         self.formLayout_mod_info_3.setContentsMargins(10, 8, 10, 8)
-        self.label_add_entity_name = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_name.setObjectName("label_add_entity_name")
-        self.label_add_entity_name.setFont(font)
-        self.label_add_entity_name.setText("EntityName")
+        self.label_spawnable_entity_name = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_name.setObjectName("label_spawnable_entity_name")
+        self.label_spawnable_entity_name.setFont(font)
+        self.label_spawnable_entity_name.setText("EntityName")
 
-        self.formLayout_mod_info_3.setWidget(0, QFormLayout.ItemRole.SpanningRole, self.label_add_entity_name)
+        self.formLayout_mod_info_3.setWidget(0, QFormLayout.ItemRole.SpanningRole, self.label_spawnable_entity_name)
 
-        self.line_mod_info_sep_3 = QFrame(self.frame_add_entity_info)
+        self.line_mod_info_sep_3 = QFrame(self.frame_spawnable_entity_info)
         self.line_mod_info_sep_3.setObjectName("line_mod_info_sep_3")
         self.line_mod_info_sep_3.setFrameShape(QFrame.Shape.HLine)
         self.line_mod_info_sep_3.setFrameShadow(QFrame.Shadow.Sunken)
 
         self.formLayout_mod_info_3.setWidget(1, QFormLayout.ItemRole.SpanningRole, self.line_mod_info_sep_3)
 
-        self.label_add_entity_mod_name_title = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_mod_name_title.setObjectName("label_add_entity_mod_name_title")
-        self.label_add_entity_mod_name_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_spawnable_entity_mod_name_title = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_mod_name_title.setObjectName("label_spawnable_entity_mod_name_title")
+        self.label_spawnable_entity_mod_name_title.setStyleSheet("color: #aaa; font-style: italic;")
 
-        self.formLayout_mod_info_3.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_add_entity_mod_name_title)
+        self.formLayout_mod_info_3.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_spawnable_entity_mod_name_title)
 
-        self.label_add_entity_mod_name = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_mod_name.setObjectName("label_add_entity_mod_name")
-        self.label_add_entity_mod_name.setText("unknown")
+        self.label_spawnable_entity_mod_name = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_mod_name.setObjectName("label_spawnable_entity_mod_name")
+        self.label_spawnable_entity_mod_name.setText("unknown")
 
-        self.formLayout_mod_info_3.setWidget(2, QFormLayout.ItemRole.FieldRole, self.label_add_entity_mod_name)
+        self.formLayout_mod_info_3.setWidget(2, QFormLayout.ItemRole.FieldRole, self.label_spawnable_entity_mod_name)
 
-        self.label_add_entity_mod_id_title = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_mod_id_title.setObjectName("label_add_entity_mod_id_title")
-        self.label_add_entity_mod_id_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_spawnable_entity_mod_id_title = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_mod_id_title.setObjectName("label_spawnable_entity_mod_id_title")
+        self.label_spawnable_entity_mod_id_title.setStyleSheet("color: #aaa; font-style: italic;")
 
-        self.formLayout_mod_info_3.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_add_entity_mod_id_title)
+        self.formLayout_mod_info_3.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_spawnable_entity_mod_id_title)
 
-        self.label_add_entity_mod_id = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_mod_id.setObjectName("label_add_entity_mod_id")
-        self.label_add_entity_mod_id.setText("unknown")
+        self.label_spawnable_entity_mod_id = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_mod_id.setObjectName("label_spawnable_entity_mod_id")
+        self.label_spawnable_entity_mod_id.setText("unknown")
 
-        self.formLayout_mod_info_3.setWidget(3, QFormLayout.ItemRole.FieldRole, self.label_add_entity_mod_id)
+        self.formLayout_mod_info_3.setWidget(3, QFormLayout.ItemRole.FieldRole, self.label_spawnable_entity_mod_id)
 
-        self.label_add_entity_id_title = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_id_title.setObjectName("label_add_entity_id_title")
-        self.label_add_entity_id_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_spawnable_entity_id_title = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_id_title.setObjectName("label_spawnable_entity_id_title")
+        self.label_spawnable_entity_id_title.setStyleSheet("color: #aaa; font-style: italic;")
 
-        self.formLayout_mod_info_3.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_add_entity_id_title)
+        self.formLayout_mod_info_3.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_spawnable_entity_id_title)
 
-        self.label_add_entity_id = QLabel(self.frame_add_entity_info)
-        self.label_add_entity_id.setObjectName("label_add_entity_id")
-        self.label_add_entity_id.setText("unknown")
+        self.label_spawnable_entity_id = QLabel(self.frame_spawnable_entity_info)
+        self.label_spawnable_entity_id.setObjectName("label_spawnable_entity_id")
+        self.label_spawnable_entity_id.setText("unknown")
 
-        self.formLayout_mod_info_3.setWidget(4, QFormLayout.ItemRole.FieldRole, self.label_add_entity_id)
+        self.formLayout_mod_info_3.setWidget(4, QFormLayout.ItemRole.FieldRole, self.label_spawnable_entity_id)
 
 
-        self.verticalLayout_27.addWidget(self.frame_add_entity_info)
+        self.verticalLayout_27.addWidget(self.frame_spawnable_entity_info)
 
-        self.pushButton_add_entity = QPushButton(self.scrollAreaWidgetContents_5)
-        self.pushButton_add_entity.setObjectName("pushButton_add_entity")
+        self.pushButton_add_spawnable_entity = QPushButton(self.scrollAreaWidgetContents_5)
+        self.pushButton_add_spawnable_entity.setObjectName("pushButton_add_spawnable_entity")
 
-        self.verticalLayout_27.addWidget(self.pushButton_add_entity)
+        self.verticalLayout_27.addWidget(self.pushButton_add_spawnable_entity)
 
-        self.label_add_entity_description = QLabel(self.scrollAreaWidgetContents_5)
-        self.label_add_entity_description.setObjectName("label_add_entity_description")
-        self.label_add_entity_description.setWordWrap(True)
+        self.label_spawnable_entity_description = QLabel(self.scrollAreaWidgetContents_5)
+        self.label_spawnable_entity_description.setObjectName("label_spawnable_entity_description")
+        self.label_spawnable_entity_description.setWordWrap(True)
 
-        self.verticalLayout_27.addWidget(self.label_add_entity_description)
+        self.verticalLayout_27.addWidget(self.label_spawnable_entity_description)
 
         self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -1289,11 +1406,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_add_object_details_2.addWidget(self.scrollArea_5)
 
-        self.splitter_add.addWidget(self.groupBox_add_entity_details)
+        self.splitter_spawnable_entities.addWidget(self.groupBox_spawnable_entity_details)
 
-        self.verticalLayout_21.addWidget(self.splitter_add)
+        self.verticalLayout_21.addWidget(self.splitter_spawnable_entities)
 
-        self.tabWidget.addTab(self.tab_add, "")
+        self.tabWidget.addTab(self.tab_spawnable_entities, "")
         self.tab_info = QWidget()
         self.tab_info.setObjectName("tab_info")
         self.verticalLayout_19 = QVBoxLayout(self.tab_info)
@@ -1306,7 +1423,7 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 754, 450))
         self.verticalLayout_22 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_22.setObjectName("verticalLayout_22")
-        self.label_app_banner = AspectRatioLabel(self.scrollAreaWidgetContents_2)
+        self.label_app_banner = BannerLabel(self.scrollAreaWidgetContents_2)
         self.label_app_banner.setObjectName("label_app_banner")
         self.label_app_banner.setStyleSheet("font-size: 40px;")
         self.label_app_banner.setFrameShape(QFrame.Shape.StyledPanel)
@@ -1347,7 +1464,11 @@ class Ui_MainWindow(object):
 
         self.frame_app_details = QFrame(self.scrollAreaWidgetContents_2)
         self.frame_app_details.setObjectName("frame_app_details")
-        self.frame_app_details.setStyleSheet("QFrame#frame_app_details {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_app_details.setStyleSheet("QFrame#frame_app_details {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_app_details.setFrameShape(QFrame.Shape.StyledPanel)
         self.formLayout_app_details = QFormLayout(self.frame_app_details)
         self.formLayout_app_details.setObjectName("formLayout_app_details")
@@ -1386,7 +1507,11 @@ class Ui_MainWindow(object):
         self.frame_updates.setObjectName("frame_updates")
         sizePolicy1.setHeightForWidth(self.frame_updates.sizePolicy().hasHeightForWidth())
         self.frame_updates.setSizePolicy(sizePolicy1)
-        self.frame_updates.setStyleSheet("QFrame#frame_updates {\n  background-color: rgba(127, 127, 127, 20);\n  border: 1px solid rgba(127, 127, 127, 60);\n  border-radius: 6px;\n}")
+        self.frame_updates.setStyleSheet("QFrame#frame_updates {\n"
+"  background-color: rgba(127, 127, 127, 20);\n"
+"  border: 1px solid rgba(127, 127, 127, 60);\n"
+"  border-radius: 6px;\n"
+"}")
         self.frame_updates.setFrameShape(QFrame.Shape.StyledPanel)
         self.horizontalLayout_info_updates = QHBoxLayout(self.frame_updates)
         self.horizontalLayout_info_updates.setObjectName("horizontalLayout_info_updates")
@@ -1399,6 +1524,7 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.label_check_for_updates.sizePolicy().hasHeightForWidth())
         self.label_check_for_updates.setSizePolicy(sizePolicy5)
         self.label_check_for_updates.setStyleSheet("color: #aaa; font-style: italic; font-family: monospace;")
+        self.label_check_for_updates.setText("The version has not been checked yet")
         self.label_check_for_updates.setWordWrap(True)
 
         self.horizontalLayout_info_updates.addWidget(self.label_check_for_updates)
@@ -1459,18 +1585,24 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-        # self.retranslate_ui(MainWindow)
+        self.retranslate_ui(MainWindow)
 
         self.tabWidget.setCurrentIndex(4)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
 
-    def retranslate_static_ui(self, MainWindow):
+
+    def retranslate_ui(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", "DesktopPet_v3", None))
         self.groupBox_language.setTitle(QCoreApplication.translate("MainWindow", "Language", None))
         self.groupBox_sound.setTitle(QCoreApplication.translate("MainWindow", "Sound", None))
         self.label_volume.setText(QCoreApplication.translate("MainWindow", "Volume:", None))
+        self.groupBox_appearance.setTitle(QCoreApplication.translate("MainWindow", "Appearance", None))
+
+        self.checkBox_restore_window_geometry.setToolTip(QCoreApplication.translate("MainWindow", "Saves the window's size and location when closed, and restores them on startup.", None))
+
+        self.checkBox_restore_window_geometry.setText(QCoreApplication.translate("MainWindow", "Restore window size and position", None))
         self.groupBox_app.setTitle(QCoreApplication.translate("MainWindow", "App", None))
         self.label_show_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Show application", None))
         self.label_show_shortcut_value.setText(QCoreApplication.translate("MainWindow", "No keyboard shortcut", None))
@@ -1515,28 +1647,28 @@ class Ui_MainWindow(object):
         self.pushButton_hide_all_entities_shortcut_remove.setToolTip(QCoreApplication.translate("MainWindow", "Remove shortcut", None))
 
         self.pushButton_hide_all_entities_shortcut_remove.setText(QCoreApplication.translate("MainWindow", "🗑️ Remove", None))
-        self.label_kill_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Kill selected", None))
+        self.label_kill_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Kill selected entity", None))
         self.label_kill_selected_entity_shortcut_value.setText(QCoreApplication.translate("MainWindow", "No keyboard shortcut", None))
         self.pushButton_kill_selected_entity_shortcut_set.setText(QCoreApplication.translate("MainWindow", "➕ Set", None))
 
         self.pushButton_kill_selected_entity_shortcut_remove.setToolTip(QCoreApplication.translate("MainWindow", "Remove shortcut", None))
 
         self.pushButton_kill_selected_entity_shortcut_remove.setText(QCoreApplication.translate("MainWindow", "🗑️ Remove", None))
-        self.label_show_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Show selected", None))
+        self.label_show_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Show selected entity", None))
         self.label_show_selected_entity_shortcut_value.setText(QCoreApplication.translate("MainWindow", "No keyboard shortcut", None))
         self.pushButton_show_selected_entity_shortcut_set.setText(QCoreApplication.translate("MainWindow", "➕ Set", None))
 
         self.pushButton_show_selected_entity_shortcut_remove.setToolTip(QCoreApplication.translate("MainWindow", "Remove shortcut", None))
 
         self.pushButton_show_selected_entity_shortcut_remove.setText(QCoreApplication.translate("MainWindow", "🗑️ Remove", None))
-        self.label_hide_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Hide selected", None))
+        self.label_hide_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Hide selected entity", None))
         self.label_hide_selected_entity_shortcut_value.setText(QCoreApplication.translate("MainWindow", "No keyboard shortcut", None))
         self.pushButton_hide_selected_entity_shortcut_set.setText(QCoreApplication.translate("MainWindow", "➕ Set", None))
 
         self.pushButton_hide_selected_entity_shortcut_remove.setToolTip(QCoreApplication.translate("MainWindow", "Remove shortcut", None))
 
         self.pushButton_hide_selected_entity_shortcut_remove.setText(QCoreApplication.translate("MainWindow", "🗑️ Remove", None))
-        self.label_teleport_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Teleport selected", None))
+        self.label_teleport_selected_entity_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Teleport selected entity", None))
         self.label_teleport_selected_entity_shortcut_value.setText(QCoreApplication.translate("MainWindow", "No keyboard shortcut", None))
         self.pushButton_teleport_selected_entity_shortcut_set.setText(QCoreApplication.translate("MainWindow", "➕ Set", None))
 
@@ -1549,17 +1681,39 @@ class Ui_MainWindow(object):
         self.pushButton_open_objects_editor.setText(QCoreApplication.translate("MainWindow", "Open Objects Editor", None))
         self.groupBox_system.setTitle(QCoreApplication.translate("MainWindow", "System", None))
 
-        self.checkBox_check_for_updates.setToolTip(QCoreApplication.translate("MainWindow", "This option does not update the software itself.", None))
+        self.checkBox_check_for_updates.setToolTip(QCoreApplication.translate("MainWindow", "Checks for updates when the application starts. This option does not update the software itself.", None))
 
         self.checkBox_check_for_updates.setText(QCoreApplication.translate("MainWindow", "Check for updates", None))
+
+        self.checkBox_autostart.setToolTip(QCoreApplication.translate("MainWindow", "Automatically launches applications with the system", None))
+
         self.checkBox_autostart.setText(QCoreApplication.translate("MainWindow", "Run at system startup", None))
+
+        self.checkBox_show_window_on_startup.setToolTip(QCoreApplication.translate("MainWindow", "Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.", None))
+
+        self.checkBox_show_window_on_startup.setText(QCoreApplication.translate("MainWindow", "Show window on startup", None))
         self.groupBox_advanced.setTitle(QCoreApplication.translate("MainWindow", "Advanced", None))
+
+        self.checkBox_debug_mode.setToolTip(QCoreApplication.translate("MainWindow", "General debug mode switch. This option does nothing by itself.", None))
+
         self.checkBox_debug_mode.setText(QCoreApplication.translate("MainWindow", "Debug mode", None))
+
+        self.checkBox_hitboxes_overlay.setToolTip(QCoreApplication.translate("MainWindow", "Shows normally invisible entity hitboxes. Only works for entities that support this option.", None))
+
         self.checkBox_hitboxes_overlay.setText(QCoreApplication.translate("MainWindow", "Displaying hitboxes", None))
+
+        self.checkBox_debug_information_window.setToolTip(QCoreApplication.translate("MainWindow", "Shows a window with general information about the application. For example, FPS and a list of watched windows.", None))
+
         self.checkBox_debug_information_window.setText(QCoreApplication.translate("MainWindow", "Information window", None))
+
+        self.checkBox_debug_console.setToolTip(QCoreApplication.translate("MainWindow", "Shows a window displaying the current application logs", None))
+
+        self.checkBox_debug_console.setText(QCoreApplication.translate("MainWindow", "Show debug console", None))
         self.pushButton_open_app_folder.setText(QCoreApplication.translate("MainWindow", "Open the application folder", None))
+        self.pushButton_open_latest_log.setText(QCoreApplication.translate("MainWindow", "Open latest log", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_settings), QCoreApplication.translate("MainWindow", "Settings", None))
         self.groupBox_mods_list.setTitle(QCoreApplication.translate("MainWindow", "Mods (%1)", None))
+        self.lineEdit_mods_search.setPlaceholderText(QCoreApplication.translate("MainWindow", "🔍 Search mods...", None))
         self.groupBox_mod_details.setTitle(QCoreApplication.translate("MainWindow", "Mod details", None))
         self.label_mod_preview.setText("")
 
@@ -1571,62 +1725,76 @@ class Ui_MainWindow(object):
         self.label_mod_description.setText(QCoreApplication.translate("MainWindow", "No description available.", None))
         self.pushButton_load_mod_list.setText(QCoreApplication.translate("MainWindow", "Load mod list", None))
         self.pushButton_save_mod_list.setText(QCoreApplication.translate("MainWindow", "Save Mod List", None))
+
+        self.pushButton_discard_mod_changes.setToolTip(QCoreApplication.translate("MainWindow", "Undoes changes to the mod list", None))
+
         self.pushButton_discard_mod_changes.setText(QCoreApplication.translate("MainWindow", "Discard changes", None))
+
+        self.pushButton_save_mod_changes.setToolTip(QCoreApplication.translate("MainWindow", "Saves changes to the mod list and restarts the application", None))
+
         self.pushButton_save_mod_changes.setText(QCoreApplication.translate("MainWindow", "Save changes", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_mods), QCoreApplication.translate("MainWindow", "Mods", None))
-        self.groupBox_entities_list.setTitle(QCoreApplication.translate("MainWindow", "Entities (%1)", None))
-        self.lineEdit_entity_search.setPlaceholderText(QCoreApplication.translate("MainWindow", "\U0001f50d Search entities...", None))
-        self.groupBox_entity_details.setTitle(QCoreApplication.translate("MainWindow", "Entity details", None))
-        self.label_entity_preview.setText("")
+        self.groupBox_displayed_entities_list.setTitle(QCoreApplication.translate("MainWindow", "Entities (%1)", None))
+        self.lineEdit_displayed_entity_search.setPlaceholderText(QCoreApplication.translate("MainWindow", "🔍 Search entities...", None))
+        self.groupBox_displayed_entity_details.setTitle(QCoreApplication.translate("MainWindow", "Entity details", None))
+        self.label_displayed_entity_preview.setText("")
 
-        self.pushButton_entity_settings.setToolTip(QCoreApplication.translate("MainWindow", "Mod settings", None))
+        self.pushButton_displayed_entity_settings.setToolTip(QCoreApplication.translate("MainWindow", "Mod settings", None))
 
-        self.label_entity_mod_name_title.setText(QCoreApplication.translate("MainWindow", "Mod name:", None))
-        self.label_entity_mod_id_title.setText(QCoreApplication.translate("MainWindow", "Mod ID:", None))
-        self.label_entity_id_title.setText(QCoreApplication.translate("MainWindow", "ID:", None))
-        self.label_entity_description.setText(QCoreApplication.translate("MainWindow", "No description available.", None))
+        self.label_displayed_entity_mod_name_title.setText(QCoreApplication.translate("MainWindow", "Mod name:", None))
+        self.label_displayed_entity_mod_id_title.setText(QCoreApplication.translate("MainWindow", "Mod ID:", None))
+        self.label_displayed_entity_id_title.setText(QCoreApplication.translate("MainWindow", "ID:", None))
+        self.pushButton_kill_selected_entity.setText(QCoreApplication.translate("MainWindow", "🗑️ Kill entity", None))
+        self.label_displayed_entity_description.setText(QCoreApplication.translate("MainWindow", "No description available.", None))
         self.label_entity_position_title.setText(QCoreApplication.translate("MainWindow", "Position:", None))
         self.label_entity_rotation_title.setText(QCoreApplication.translate("MainWindow", "Rotation:", None))
         self.label_entity_velocity_title.setText(QCoreApplication.translate("MainWindow", "Velocity:", None))
         self.label_entity_hwnd_title.setText(QCoreApplication.translate("MainWindow", "HWND:", None))
-        self.label_entity_hwnd.setText(QCoreApplication.translate("MainWindow", "unknown", None))
         self.pushButton_kill_all_entities.setText(QCoreApplication.translate("MainWindow", "Kill all entities", None))
         self.pushButton_show_all_entities.setText(QCoreApplication.translate("MainWindow", "Show all entities", None))
         self.pushButton_hide_all_entities.setText(QCoreApplication.translate("MainWindow", "Hide all entities", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_list), QCoreApplication.translate("MainWindow", "List", None))
-        ___qtreewidgetitem = self.treeWidget_add_categories.headerItem()
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_displayed_entities), QCoreApplication.translate("MainWindow", "List", None))
+        ___qtreewidgetitem = self.treeWidget_spawnable_entities_categories.headerItem()
         ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", "Category", None))
 
-        __sortingEnabled = self.treeWidget_add_categories.isSortingEnabled()
-        self.treeWidget_add_categories.setSortingEnabled(False)
-        ___qtreewidgetitem1 = self.treeWidget_add_categories.topLevelItem(0)
+        __sortingEnabled = self.treeWidget_spawnable_entities_categories.isSortingEnabled()
+        self.treeWidget_spawnable_entities_categories.setSortingEnabled(False)
+        ___qtreewidgetitem1 = self.treeWidget_spawnable_entities_categories.topLevelItem(0)
         ___qtreewidgetitem1.setText(0, QCoreApplication.translate("MainWindow", "All entities", None))
-        ___qtreewidgetitem2 = self.treeWidget_add_categories.topLevelItem(1)
+        ___qtreewidgetitem2 = self.treeWidget_spawnable_entities_categories.topLevelItem(1)
         ___qtreewidgetitem2.setText(0, QCoreApplication.translate("MainWindow", "Pets", None))
-        ___qtreewidgetitem3 = self.treeWidget_add_categories.topLevelItem(2)
+        ___qtreewidgetitem3 = self.treeWidget_spawnable_entities_categories.topLevelItem(2)
         ___qtreewidgetitem3.setText(0, QCoreApplication.translate("MainWindow", "Objects", None))
-        self.treeWidget_add_categories.setSortingEnabled(__sortingEnabled)
+        self.treeWidget_spawnable_entities_categories.setSortingEnabled(__sortingEnabled)
 
-        self.groupBox_add_entities.setTitle(QCoreApplication.translate("MainWindow", "Entities (%1)", None))
-        self.lineEdit_add_search.setPlaceholderText(QCoreApplication.translate("MainWindow", "🔍 Search entities...", None))
-        self.groupBox_add_entity_details.setTitle(QCoreApplication.translate("MainWindow", "Entity details", None))
-        self.label_add_entity_preview.setText("")
+        self.groupBox_spawnable_entities.setTitle(QCoreApplication.translate("MainWindow", "Entities (%1)", None))
+        self.lineEdit_spawnable_entities_search.setPlaceholderText(QCoreApplication.translate("MainWindow", "🔍 Search entities...", None))
+        self.groupBox_spawnable_entity_details.setTitle(QCoreApplication.translate("MainWindow", "Entity details", None))
+        self.label_spawnable_entity_preview.setText("")
 
-        self.pushButton_add_entity_settings.setToolTip(QCoreApplication.translate("MainWindow", "Mod settings", None))
+        self.pushButton_spawnable_entity_settings.setToolTip(QCoreApplication.translate("MainWindow", "Mod settings", None))
 
-        self.label_add_entity_mod_name_title.setText(QCoreApplication.translate("MainWindow", "Mod name:", None))
-        self.label_add_entity_mod_id_title.setText(QCoreApplication.translate("MainWindow", "Mod ID:", None))
-        self.label_add_entity_id_title.setText(QCoreApplication.translate("MainWindow", "ID:", None))
-        self.pushButton_add_entity.setText(QCoreApplication.translate("MainWindow", "➕ Add to list", None))
-        self.label_add_entity_description.setText(QCoreApplication.translate("MainWindow", "No description available.", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_add), QCoreApplication.translate("MainWindow", "Add", None))
+        self.label_spawnable_entity_mod_name_title.setText(QCoreApplication.translate("MainWindow", "Mod name:", None))
+        self.label_spawnable_entity_mod_id_title.setText(QCoreApplication.translate("MainWindow", "Mod ID:", None))
+        self.label_spawnable_entity_id_title.setText(QCoreApplication.translate("MainWindow", "ID:", None))
+        self.pushButton_add_spawnable_entity.setText(QCoreApplication.translate("MainWindow", "➕ Add to list", None))
+        self.label_spawnable_entity_description.setText(QCoreApplication.translate("MainWindow", "No description available.", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_spawnable_entities), QCoreApplication.translate("MainWindow", "Add", None))
         self.label_app_banner.setText("")
         self.label_app_version.setText(QCoreApplication.translate("MainWindow", "version: %1  •  %2", None))
         self.label_app_description.setText(QCoreApplication.translate("MainWindow", "An interactive desktop pet application featuring physics simulation, a control panel, and sophisticated system window behavior. The application is open-source and anyone can support its development.", None))
         self.label_app_author_title.setText(QCoreApplication.translate("MainWindow", "Author:", None))
         self.label_app_repository_title.setText(QCoreApplication.translate("MainWindow", "Repository:", None))
-        self.label_check_for_updates.setText(QCoreApplication.translate("MainWindow", "The version has not been checked yet", None))
+        self.label_check_for_updates_time.setText(QCoreApplication.translate("MainWindow", "(%1s)", None))
+
+        self.pushButton_update_application.setToolTip(QCoreApplication.translate("MainWindow", "Updates the application to the latest version", None))
+
         self.pushButton_update_application.setText(QCoreApplication.translate("MainWindow", "Update", None))
+
+        self.pushButton_check_for_updates.setToolTip(QCoreApplication.translate("MainWindow", "Checks for the availability of a new version of the application.", None))
+
         self.pushButton_check_for_updates.setText(QCoreApplication.translate("MainWindow", "🔄 Check for updates", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_info), QCoreApplication.translate("MainWindow", "Info", None))
         self.label_version.setText(QCoreApplication.translate("MainWindow", "Version: %1", None))
+
+

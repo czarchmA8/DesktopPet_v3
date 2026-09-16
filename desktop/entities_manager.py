@@ -3,24 +3,33 @@ import time
 import ctypes
 from ctypes import wintypes
 
-import win32gui, win32con
+import win32gui, win32con, win32api
 from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtCore import Qt, QTimer, QCoreApplication
-from PySide6.QtGui import QPainter, QPen
+from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent
 
 import utils_debug
 import logger
-from windows_z_order.watcher import WindowsWatcher, WatchWindow
-from desktop.mods_manager import ModsManager
+from windows_z_order.watcher import WindowsWatcher
+from desktop.mods_manager import ModsManager, MouseButtonEvent, InputState
 
-log = logger.get_logger("desktop")
+log = logger.get_logger("entities_manager")
 
 class TransparentWindow(QWidget):
-    def __init__(self, target_hwnd: int):
+    def __init__(self, target_hwnd: int, mods_manager: ModsManager):
         super().__init__()
+        self.mods_manager: ModsManager = mods_manager
+        
         self.setWindowTitle("TransparentWindow")
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+        vx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+        vy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+        vw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+        vh = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        self.setGeometry(vx, vy, vw, vh)
 
         self.target_hwnd: int = target_hwnd
         self.hwnd_self = int(self.winId())
@@ -29,18 +38,18 @@ class TransparentWindow(QWidget):
 
         self.show()
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         for cmd in self.draw_commands:
             kind = cmd[0]
             if kind == "rect":
-                _, x, y, w, h, color, filled = cmd
+                _, x, y, w, h, color, filled, hit_id = cmd
                 painter.setPen(QPen(color))
                 painter.setBrush(color if filled else Qt.BrushStyle.NoBrush)
                 painter.drawRect(x, y, w, h)
             elif kind == "line":
-                _, x1, y1, x2, y2, color, width = cmd
+                _, x1, y1, x2, y2, color, width, hit_id = cmd
                 painter.setPen(QPen(color, width))
                 painter.drawLine(x1, y1, x2, y2)
             elif kind == "text":
@@ -51,7 +60,7 @@ class TransparentWindow(QWidget):
                 painter.setFont(font)
                 painter.drawText(x, y, text)
             elif kind == "image":
-                _, x, y, w, h, pixmap, opacity = cmd
+                _, x, y, w, h, pixmap, opacity, _alpha_image, hit_id = cmd
                 painter.setOpacity(opacity)
                 if w is not None and h is not None:
                     painter.drawPixmap(x, y, w, h, pixmap)
@@ -68,17 +77,96 @@ class TransparentWindow(QWidget):
                 raise Exception(f"Unknown command \"{cmd}\". This shouldn't have happened!")
         painter.end()
 
-    def keyPressEvent(self, event) -> None:
-        pass
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        pos = event.position()
+        button_name = event.button().name
+        if button_name is None:
+            log.warning(f"Unknown mouse button: \"{button_name}\"")
+            return
+        self.dispatch_click(int(pos.x()), int(pos.y()), button_name, InputState.pressed)
 
-    def mousePressEvent(self, event) -> None:
-        pass
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        pos = event.position()
+        button_name = event.button().name
+        if button_name is None:
+            log.warning(f"Unknown mouse button: \"{button_name}\"")
+            return
+        self.dispatch_click(int(pos.x()), int(pos.y()), button_name, InputState.released)
 
-    def mouseMoveEvent(self, event) -> None:
-        pass
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        self.mods_manager.mouse_scroll.x += event.angleDelta().x()
+        self.mods_manager.mouse_scroll.y += event.angleDelta().y()
 
-    def mouseReleaseEvent(self, event) -> None:
-        pass
+        pos = event.position()
+        x = int(pos.x())
+        y = int(pos.y())
+
+        for cmd in reversed(self.draw_commands):
+            hit_id = cmd[-1]
+            if hit_id is None:
+                continue
+            if self._hit_test(cmd, x, y):
+                self.mods_manager.mouse_scroll.hit_id = hit_id
+                break
+
+    def dispatch_click(self, x: int, y: int, button: str, button_state: InputState) -> None:
+        if button not in self.mods_manager.mouse_events or button_state == InputState.pressed:
+            pressed_at = time.time()
+        else:
+            pressed_at = self.mods_manager.mouse_events[button].pressed_at
+        released_at = time.time() if button_state == InputState.released else None
+        
+        event = MouseButtonEvent(
+            state=button_state,
+            x=x,
+            y=y,
+            pressed_at=pressed_at,
+            released_at=released_at,
+            hit_id=None,
+        )
+        self.mods_manager.mouse_events[button] = event
+        
+        for cmd in reversed(self.draw_commands):
+            hit_id = cmd[-1]
+            if hit_id is None:
+                continue
+            if self._hit_test(cmd, x, y):
+                self.mods_manager.mouse_events[button].hit_id = hit_id
+                break
+
+    @staticmethod
+    def _hit_test(cmd: list, x: int, y: int) -> bool:
+        alpha_hit_threshold = 10
+        kind = cmd[0]
+
+        if kind == "rect":
+            _, rx, ry, rw, rh, color, filled, _hit_id = cmd
+            if not (rx <= x <= rx + rw and ry <= y <= ry + rh):
+                return False
+            if filled and color.alpha() <= alpha_hit_threshold:
+                return False
+            return True
+
+        elif kind == "line":
+            _, x1, y1, x2, y2, color, width, hit_id = cmd
+            return False # TODO: Dodaj sprawdzanie linii
+
+        elif kind == "image":
+            _, ix, iy, iw, ih, pixmap, _opacity, alpha_image, _hit_id = cmd
+            w = iw if iw is not None else pixmap.width()
+            h = ih if ih is not None else pixmap.height()
+            if w <= 0 or h <= 0 or not (ix <= x <= ix + w and iy <= y <= iy + h):
+                return False
+
+            img_x = int((x - ix) / w * alpha_image.width())
+            img_y = int((y - iy) / h * alpha_image.height())
+            img_x = min(max(img_x, 0), alpha_image.width() - 1)
+            img_y = min(max(img_y, 0), alpha_image.height() - 1)
+
+            return alpha_image.pixelColor(img_x, img_y).alpha() > alpha_hit_threshold
+
+        return False
+
 
 class EntitiesManager(QApplication):
     def __init__(self, conn, shared_data):
@@ -127,11 +215,7 @@ class EntitiesManager(QApplication):
         self.process_timer.stop("check IPC")
 
         self.process_timer.start("entities tick")
-        watch_windows: set[WatchWindow] = set()
-        for mod in self.mods_manager.mods:
-            mod.globals().ModAPI._watch_windows.clear()
-            mod.globals().tick()
-            watch_windows.update(mod.globals().ModAPI._watch_windows)
+        watch_windows = self.mods_manager.tick()
         self.process_timer.stop("entities tick")
 
         self.process_timer.start("update z-order")
@@ -154,7 +238,7 @@ class EntitiesManager(QApplication):
                 flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
                 for hwnd, neighbors in self.watcher.watched_windows.items():
                     if hwnd not in self.transparent_windows:
-                        self.transparent_windows[hwnd] = TransparentWindow(hwnd)
+                        self.transparent_windows[hwnd] = TransparentWindow(hwnd, self.mods_manager)
                         title = win32gui.GetWindowText(hwnd)
                         log.debug(f'A new layer has been created on the window {hwnd} ({title})')
 
@@ -174,8 +258,7 @@ class EntitiesManager(QApplication):
         for window in self.transparent_windows.values():
             window.draw_commands.clear()
 
-        for mod in self.mods_manager.mods:
-            mod.globals().paint_tick()
+        self.mods_manager.paint_tick()
 
         for window in self.transparent_windows.values():
             window.repaint()
@@ -183,21 +266,40 @@ class EntitiesManager(QApplication):
 
         self.process_timer.stop("tick")
 
-    def send_ipc_command(self, msg: list[str]):
+    def send_ipc_command(self, msg: list[str]) -> None:
         """Sends message to other processes"""
         log.debug(f"Sent IPC: {msg}")
         self.conn.send(msg)
 
-    def _handle_ipc_commands(self):
+    def _handle_ipc_commands(self) -> None:
         """Checks messages from other processes"""
-        if self.conn.poll():
-            msg = self.conn.recv()
-            log.debug(f"Received IPC: {msg}")
-            if msg[0] == "close_app":
-                self.watcher.stop()
-                QCoreApplication.quit()
+        while True:
+            if self.conn.poll():
+                msg = self.conn.recv()
+                log.debug(f"Received IPC: {msg}")
+                if msg[0] == "close_app":
+                    self.watcher.stop()
+                    QCoreApplication.quit()
+                elif msg[0] == "spawn_entity":
+                    self.mods_manager.spawn_entity(msg[1], msg[2])
+                elif msg[0] == "kill_entity":
+                    self.mods_manager.kill_entity(msg[1])
+                elif msg[0] == "show_entity":
+                    self.mods_manager.show_entity(msg[1])
+                elif msg[0] == "hide_entity":
+                    self.mods_manager.hide_entity(msg[1])
+                elif msg[0] == "teleport_entity":
+                    self.mods_manager.teleport_entity(msg[1])
+                elif msg[0] == "kill_all_entities":
+                    self.mods_manager.kill_all_entities()
+                elif msg[0] == "show_all_entities":
+                    self.mods_manager.show_all_entities()
+                elif msg[0] == "hide_all_entities":
+                    self.mods_manager.hide_all_entities()
+                else:
+                    log.error(f"Unknown command: {msg}")
             else:
-                log.error(f"Unknown command: {msg}")
+                return
 
 def run_app(conn, shared_data, log_queue):
     logger.init_child(log_queue)

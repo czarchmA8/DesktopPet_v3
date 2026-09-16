@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QPainter
 from PySide6.QtWidgets import QLabel, QSizePolicy
 
 class AspectRatioLabel(QLabel):
@@ -38,6 +38,7 @@ class AspectRatioLabel(QLabel):
 
     def _apply_scaled_pixmap(self):
         if self._source_pixmap.isNull():
+            super().clear()
             return
         scaled = self._source_pixmap.scaled(
             self.size(),
@@ -45,3 +46,35 @@ class AspectRatioLabel(QLabel):
             Qt.TransformationMode.SmoothTransformation,
         )
         super().setPixmap(scaled)
+
+class BannerLabel(QLabel):
+    """QLabel with a fixed height that scales its pixmap to that height,
+    centered horizontally — cropping the sides if the scaled image is
+    wider than the label, or leaving it untouched (no upscaling) if narrower."""
+
+    def __init__(self, parent=None, height=200):
+        super().__init__(parent)
+        self._pixmap = QPixmap()
+        self.setFixedHeight(height)
+        self.setMinimumWidth(1)
+
+    def setPixmap(self, pixmap):
+        self._pixmap = pixmap
+        self.update()
+
+    def pixmap(self):
+        return self._pixmap
+
+    def paintEvent(self, event):
+        if self._pixmap.isNull():
+            return super().paintEvent(event)
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+        scaled_pixmap = self._pixmap.scaledToHeight(self.height(), Qt.TransformationMode.SmoothTransformation)
+
+        x = (self.width() - scaled_pixmap.width()) // 2
+        y = (self.height() - scaled_pixmap.height()) // 2
+
+        painter.drawPixmap(x, y, scaled_pixmap)

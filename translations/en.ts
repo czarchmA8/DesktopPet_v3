@@ -126,19 +126,19 @@
     </message>
     <message>
         <source>Kill selected</source>
-        <translation>Kill selected</translation>
+        <translation type="vanished">Kill selected</translation>
     </message>
     <message>
         <source>Show selected</source>
-        <translation>Show selected</translation>
+        <translation type="vanished">Show selected</translation>
     </message>
     <message>
         <source>Hide selected</source>
-        <translation>Hide selected</translation>
+        <translation type="vanished">Hide selected</translation>
     </message>
     <message>
         <source>Teleport selected</source>
-        <translation>Teleport selected</translation>
+        <translation type="vanished">Teleport selected</translation>
     </message>
     <message>
         <source>Opens the built-in hitbox editor for objects</source>
@@ -154,7 +154,7 @@
     </message>
     <message>
         <source>This option does not update the software itself.</source>
-        <translation>This option does not update the software itself.</translation>
+        <translation type="vanished">This option does not update the software itself.</translation>
     </message>
     <message>
         <source>Check for updates</source>
@@ -189,6 +189,78 @@
         <translation>Open the application folder</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation>Appearance</translation>
+    </message>
+    <message>
+        <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
+        <translation>Saves the window&apos;s size and location when closed, and restores them on startup.</translation>
+    </message>
+    <message>
+        <source>Restore window size and position</source>
+        <translation>Restore window size and position</translation>
+    </message>
+    <message>
+        <source>Kill selected entity</source>
+        <translation>Kill selected entity</translation>
+    </message>
+    <message>
+        <source>Show selected entity</source>
+        <translation>Show selected entity</translation>
+    </message>
+    <message>
+        <source>Hide selected entity</source>
+        <translation>Hide selected entity</translation>
+    </message>
+    <message>
+        <source>Teleport selected entity</source>
+        <translation>Teleport selected entity</translation>
+    </message>
+    <message>
+        <source>Checks for updates when the application starts. This option does not update the software itself.</source>
+        <translation>Checks for updates when the application starts. This option does not update the software itself.</translation>
+    </message>
+    <message>
+        <source>Automatically launches applications with the system</source>
+        <translation>Automatically launches applications with the system</translation>
+    </message>
+    <message>
+        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
+        <translation>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</translation>
+    </message>
+    <message>
+        <source>Show window on startup</source>
+        <translation>Show window on startup</translation>
+    </message>
+    <message>
+        <source>General debug mode switch. This option does nothing by itself.</source>
+        <translation>General debug mode switch. This option does nothing by itself.</translation>
+    </message>
+    <message>
+        <source>Shows normally invisible entity hitboxes. Only works for entities that support this option.</source>
+        <translation>Shows normally invisible entity hitboxes. Only works for entities that support this option.</translation>
+    </message>
+    <message>
+        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
+        <translation>Shows a window with general information about the application. For example, FPS and a list of watched windows.</translation>
+    </message>
+    <message>
+        <source>Shows a window displaying the current application logs</source>
+        <translation>Shows a window displaying the current application logs</translation>
+    </message>
+    <message>
+        <source>Show debug console</source>
+        <translation>Show debug console</translation>
+    </message>
+    <message>
+        <source>Open latest log</source>
+        <translation>Open latest log</translation>
+    </message>
+    <message>
+        <source>🔍 Search mods...</source>
+        <translation>🔍 Search mods...</translation>
+    </message>
+    <message>
         <source>Mod details</source>
         <translation>Mod details</translation>
     </message>
@@ -209,6 +281,10 @@
         <translation>No description available.</translation>
     </message>
     <message>
+        <source>Updates the application to the latest version</source>
+        <translation>Undoes changes to the mod list</translation>
+    </message>
+    <message>
         <source>Load mod list</source>
         <translation>Load mod list</translation>
     </message>
@@ -217,8 +293,16 @@
         <translation>Save Mod List</translation>
     </message>
     <message>
+        <source>Undoes changes to the mod list</source>
+        <translation>Saves changes to the mod list and restarts the application</translation>
+    </message>
+    <message>
         <source>Discard changes</source>
         <translation>Discard changes</translation>
+    </message>
+    <message>
+        <source>Saves changes to the mod list and restarts the application</source>
+        <translation>🗑️ Kill entity</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -238,7 +322,7 @@
     </message>
     <message>
         <source> Search entities...</source>
-        <translation> Search entities...</translation>
+        <translation type="vanished"> Search entities...</translation>
     </message>
     <message>
         <source>Entity details</source>
@@ -251,6 +335,10 @@
     <message>
         <source>Mod ID:</source>
         <translation>Mod ID:</translation>
+    </message>
+    <message>
+        <source>🗑️ Kill entity</source>
+        <translation>Updates the application to the latest version</translation>
     </message>
     <message>
         <source>Position:</source>
@@ -323,6 +411,10 @@
     <message>
         <source>Update</source>
         <translation>Update</translation>
+    </message>
+    <message>
+        <source>Checks for the availability of a new version of the application.</source>
+        <translation>Checks for the availability of a new version of the application.</translation>
     </message>
     <message>
         <source>Info</source>
@@ -405,8 +497,46 @@
         <translation>File saving error</translation>
     </message>
     <message>
+        <source>Failed to save settings: %1</source>
+        <translation>Failed to save settings: %1</translation>
+    </message>
+    <message>
+        <source>Assigned &apos;%1&apos;.</source>
+        <translation>Assigned &apos;%1&apos;.</translation>
+    </message>
+    <message>
+        <source>Failed to change autostart setting:
+%1</source>
+        <translation>Failed to change autostart setting:
+%1</translation>
+    </message>
+    <message>
+        <source>EntityName</source>
+        <translation>EntityName</translation>
+    </message>
+    <message>
+        <source>Teleport</source>
+        <translation>Teleport</translation>
+    </message>
+    <message>
+        <source>Entity</source>
+        <translation>Entity</translation>
+    </message>
+    <message>
+        <source>Select an entity first.</source>
+        <translation>Select an entity first.</translation>
+    </message>
+    <message>
+        <source>Entity settings</source>
+        <translation>Entity settings</translation>
+    </message>
+    <message>
+        <source>Select a entity first.</source>
+        <translation>Select a entity first.</translation>
+    </message>
+    <message>
         <source>Failed to save settings: %x</source>
-        <translation>Failed to save settings: %x</translation>
+        <translation type="vanished">Failed to save settings: %x</translation>
     </message>
     <message>
         <source>Success</source>
@@ -414,7 +544,7 @@
     </message>
     <message>
         <source>Assigned &apos;%x&apos;.</source>
-        <translation>Assigned &apos;%x&apos;.</translation>
+        <translation type="vanished">Assigned &apos;%x&apos;.</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -439,7 +569,7 @@
     <message>
         <source>Failed to change autostart setting:
 %x</source>
-        <translation>Failed to change autostart setting:
+        <translation type="vanished">Failed to change autostart setting:
 %x</translation>
     </message>
     <message>

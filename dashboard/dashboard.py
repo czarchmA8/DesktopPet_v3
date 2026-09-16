@@ -62,7 +62,8 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setup_ui(self)
-        self.restore_window_geometry()
+        if self.shared_data.settings["window_geometry"]["restore"]:
+            self.restore_window_geometry()
 
         self.setWindowIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")))
 
@@ -88,7 +89,6 @@ class MainWindow(QMainWindow):
     # Appearance and functionality
     def setup_connections(self) -> None:
         # === Settings ===
-        
         # > Language
         LANG_DIR = config.RESOURCE_DIR / "translations"
         lang_codes = sorted(file.stem for file in LANG_DIR.iterdir() if file.suffix == ".qm")
@@ -105,6 +105,10 @@ class MainWindow(QMainWindow):
         self.ui.horizontalSlider_volume.valueChanged.connect(self._on_slider_volume_changes)
         self.ui.horizontalSlider_volume.sliderReleased.connect(self._on_slider_volume_release)
         self._on_slider_volume_changes(self.shared_data.settings["volume"])
+
+        # > Appearance
+        self.ui.checkBox_restore_window_geometry.toggled.connect(self._on_restore_window_geometry_toggle)
+        self.ui.checkBox_restore_window_geometry.setChecked(self.shared_data.settings["window_geometry"]["restore"])
         
         # > Entities
         self.ui.pushButton_open_objects_editor.clicked.connect(self.open_object_editor)
@@ -124,6 +128,10 @@ class MainWindow(QMainWindow):
         if not is_executable:
             self.ui.checkBox_autostart.setToolTip(self.translate("MainWindow", "Autostart is only available for the packaged application, not for the script being run.", None))
         self.ui.checkBox_autostart.toggled.connect(self._on_autostart_toggle)
+
+        self.ui.checkBox_show_window_on_startup.setChecked(self.shared_data.settings["check_for_updates"])
+        self.ui.checkBox_show_window_on_startup.toggled.connect(self._on_show_window_on_startup_toggle)
+        self.ui.checkBox_show_window_on_startup.setEnabled(self.ui.checkBox_autostart.isChecked())
         
         # > Advanced
         self.ui.checkBox_debug_mode.setChecked(self.shared_data.settings["debug"]["active"])
@@ -135,9 +143,13 @@ class MainWindow(QMainWindow):
         self.ui.checkBox_debug_information_window.setChecked(self.shared_data.settings["debug"]["debug_window"])
         self.ui.checkBox_debug_information_window.toggled.connect(self.update_debug_visibility)
 
+        self.ui.checkBox_debug_console.setChecked(self.shared_data.settings["debug"]["console"])
+        self.ui.checkBox_debug_console.toggled.connect(self.update_debug_visibility)
+
         self.update_debug_check_states()
 
         self.ui.pushButton_open_app_folder.clicked.connect(self.open_app_folder)
+        self.ui.pushButton_open_latest_log.clicked.connect(self.open_latest_log)
         
         # === Mods ===
         self.ui.listWidget_mods.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
@@ -152,10 +164,25 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_discard_mod_changes.clicked.connect(self._on_discard_changes)
         self.ui.pushButton_save_mod_changes.clicked.connect(self._on_save_changes)
         
-        # === Entities ===
-        self.ui.listWidget_add_entities_list.currentItemChanged.connect(self._on_add_entity_selected)
+        # === Displayed entities ===
+        self.ui.listWidget_displayed_entities_list.currentItemChanged.connect(self._on_displayed_entity_selected)
+        self.ui.listWidget_displayed_entities_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.listWidget_displayed_entities_list.customContextMenuRequested.connect(self._on_displayed_entities_list_context_menu)
+        self.ui.toolButton_displayed_entity_browse.clicked.connect(self._on_displayed_entity_browse)
+        self.ui.pushButton_kill_selected_entity.clicked.connect(self.kill_selected_entity)
+        
+        # === Spawnable entities ===
+        self.ui.listWidget_spawnable_entities_list.currentItemChanged.connect(self._on_spawnable_entity_selected)
+        self.ui.pushButton_spawnable_entity_settings.clicked.connect(self._on_spawnable_entity_settings)
+        self.ui.toolButton_spawnable_entity_browse.clicked.connect(self._on_spawnable_entity_browse)
+        self.ui.pushButton_add_spawnable_entity.clicked.connect(self._on_add_spawnable_entity)
+        
+        self.ui.pushButton_kill_all_entities.clicked.connect(self.kill_all_entities)
+        self.ui.pushButton_show_all_entities.clicked.connect(self.show_all_entities)
+        self.ui.pushButton_hide_all_entities.clicked.connect(self.hide_all_entities)
 
         # === Info ===
+        self.ui.label_app_banner.setPixmap(QPixmap(str(config.RESOURCE_DIR / "Assets" / "images" / "banner.png")))
         self.ui.pushButton_check_for_updates.clicked.connect(self._on_check_for_updates)
         self.last_time_checked: float | None = None
         self.update_check_cooldown: int = 0
@@ -206,37 +233,37 @@ class MainWindow(QMainWindow):
                     label_shortcut = self.ui.label_show_all_entities_shortcut_value,
                     button_set = self.ui.pushButton_show_all_entities_shortcut_set,
                     button_remove = self.ui.pushButton_show_all_entities_shortcut_remove,
-                    callback = lambda: self.show_all_entities,
+                    callback = lambda: self.show_all_entities(),
                 ),
                 "hide all": HotkeyBinding(
                     label_shortcut = self.ui.label_hide_all_entities_shortcut_value,
                     button_set = self.ui.pushButton_hide_all_entities_shortcut_set,
                     button_remove = self.ui.pushButton_hide_all_entities_shortcut_remove,
-                    callback = lambda: self.hide_all_entities,
+                    callback = lambda: self.hide_all_entities(),
                 ),
                 "kill": HotkeyBinding(
                     label_shortcut = self.ui.label_kill_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_kill_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_kill_selected_entity_shortcut_remove,
-                    callback = lambda: self.kill_selected_entity,
+                    callback = lambda: self.kill_selected_entity(),
                 ),
                 "show": HotkeyBinding(
                     label_shortcut = self.ui.label_show_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_show_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_show_selected_entity_shortcut_remove,
-                    callback = lambda: self.show_selected_entity,
+                    callback = lambda: self.show_selected_entity(),
                 ),
                 "hide": HotkeyBinding(
                     label_shortcut = self.ui.label_hide_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_hide_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_hide_selected_entity_shortcut_remove,
-                    callback = lambda: self.hide_selected_entity,
+                    callback = lambda: self.hide_selected_entity(),
                 ),
                 "teleport": HotkeyBinding(
                     label_shortcut = self.ui.label_teleport_selected_entity_shortcut_value,
                     button_set = self.ui.pushButton_teleport_selected_entity_shortcut_set,
                     button_remove = self.ui.pushButton_teleport_selected_entity_shortcut_remove,
-                    callback = lambda: self.teleport_selected_entity,
+                    callback = lambda: self.teleport_selected_entity(),
                 ),
             },
         }
@@ -252,7 +279,7 @@ class MainWindow(QMainWindow):
         # }
 
     def retranslate_ui(self) -> None:
-        self.ui.retranslate_static_ui(self)
+        self.ui.retranslate_ui(self)
         # Settings
         for category in self.hotkeys_widgets:
             for key in self.hotkeys_widgets[category]:
@@ -267,9 +294,10 @@ class MainWindow(QMainWindow):
         self._update_mods_group_title()
 
         # List of entities
+        self._update_displayed_entities_group_title()
 
         # Add entity
-        self._update_entities_add_group_title()
+        self._update_spawnable_entities_group_title()
 
         # Info
         self.ui.label_app_version.setText(replace_format(self.translate("MainWindow", "version: %1  \u2022  %2", None), config.APP_VERSION, config.APP_VERSION_DATE))
@@ -301,16 +329,13 @@ class MainWindow(QMainWindow):
     def save_window_geometry(self) -> None:
         screen = self.screen() or QGuiApplication.primaryScreen()
 
-        window_geometry = {
-            "x": self.pos().x(),
-            "y": self.pos().y(),
-            "width": self.size().width(),
-            "height": self.size().height(),
-            "screen_name": screen.name(),
-        }
-
         settings = self.shared_data.settings
-        settings["window_geometry"] = window_geometry
+        window_geometry = settings["window_geometry"]
+        window_geometry["x"] = self.pos().x()
+        window_geometry["y"] = self.pos().y()
+        window_geometry["width"] = self.size().width()
+        window_geometry["height"] = self.size().height()
+        window_geometry["screen_name"] = screen.name()
         self.shared_data.settings = settings
         self.save_settings_state()
 
@@ -363,18 +388,26 @@ class MainWindow(QMainWindow):
 
     def _handle_ipc_commands(self) -> None:
         """Checks messages from other processes"""
-        if self.conn.poll():
-            msg = self.conn.recv()
-            log.debug(f"Received IPC: {msg}")
-            if msg[0] == "Update mod list":
-                log.debug(f"Mods: {self.shared_data.mods}")
-                log.debug(f"Entities: {self.shared_data.entities}")
-                self._active_mods_baseline = list(self.shared_data.settings["active_mods"])
-                self._pending_active_mods = list(self._active_mods_baseline)
-                self._populate_mods_list()
-                self._populate_add_entities_list()
+        while True:
+            if self.conn.poll():
+                msg = self.conn.recv()
+                log.debug(f"Received IPC: {msg}")
+                if msg[0] == "Update_mod_list":
+                    log.debug(f"Mods: {self.shared_data.active_mods}")
+                    self._active_mods_baseline = list(self.shared_data.settings["active_mods"])
+                    self._pending_active_mods = list(self._active_mods_baseline)
+                    self._populate_mods_list()
+                elif msg[0] == "Update_spawnable_entities_list":
+                    log.debug(f"Entities: {self.shared_data.spawnable_entities}")
+                    self._populate_spawnable_entities_list()
+                elif msg[0] == "Update_displayed_entities":
+                    self._populate_displayed_entities_list()
+                elif msg[0] == "entity_clicked":
+                    self._select_displayed_entity(msg[1])
+                else:
+                    log.error(f"Unknown command: {msg}")
             else:
-                log.error(f"Unknown command: {msg}")
+                return
     
     # Closing the application
     def close_app(self, restart=False) -> None:
@@ -393,19 +426,19 @@ class MainWindow(QMainWindow):
     def _populate_mods_list(self) -> None:
         self.ui.listWidget_mods.clear()
 
-        active_ids = [mid for mid in self._pending_active_mods if mid in self.shared_data.mods]
+        active_ids = [mid for mid in self._pending_active_mods if mid in self.shared_data.active_mods]
         active_set = set(active_ids)
         inactive_mods = sorted(
-            (mod for mod in self.shared_data.mods.values() if mod.id not in active_set),
+            (mod for mod in self.shared_data.active_mods.values() if mod.id not in active_set),
             key=lambda m: m.name.lower(),
         )
-        ordered_mods = [self.shared_data.mods[mid] for mid in active_ids] + inactive_mods
+        ordered_mods = [self.shared_data.active_mods[mid] for mid in active_ids] + inactive_mods
 
         for mod in ordered_mods:
             row_widget = Mod_row()
             row_widget.checkBox.setChecked(mod.id in active_set)
             row_widget.label.setText(mod.name)
-            row_widget.checkBox.toggled.connect(lambda checked, m=mod: self._on_mod_toggled(m, row_widget.checkBox))
+            row_widget.checkBox.toggled.connect(lambda checked, mod=mod, checkBox=row_widget.checkBox: self._on_mod_toggled(mod, checkBox))
             row_widget.toolButton.clicked.connect(lambda _=False, m=mod: self._on_mod_menu(m))
 
             item = QListWidgetItem()
@@ -424,24 +457,22 @@ class MainWindow(QMainWindow):
         self._update_mods_group_title()
 
     def _update_mods_group_title(self) -> None:
-        self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.shared_data.mods)))
+        self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.shared_data.active_mods)))
 
     # Selected mod
     def _mod_for_row(self, row: int) -> Mod | None:
         item = self.ui.listWidget_mods.item(row)
         if item is None:
             return None
-        return self.shared_data.mods[item.data(Qt.ItemDataRole.UserRole)]
+        return self.shared_data.active_mods[item.data(Qt.ItemDataRole.UserRole)]
 
     def _on_mod_selected(self, row: int) -> None:
         mod = self._mod_for_row(row)
         if mod is None:
             return
-        if mod.preview_path:
-            pixmap = QPixmap(str(mod.preview_path))
-            self.ui.label_mod_preview.setPixmap(pixmap)
-        else:
-            self.ui.label_mod_preview.setPixmap(QPixmap())
+
+        pixmap = QPixmap(str(mod.preview_path)) if mod.preview_path is not None else QPixmap()
+        self.ui.label_mod_preview.setPixmap(pixmap)
         self.ui.label_mod_name.setText(mod.name)
         self.ui.label_mod_author.setText(mod.author)
         self.ui.label_mod_version.setText(mod.version)
@@ -587,11 +618,11 @@ class MainWindow(QMainWindow):
 
         if result == QDialog.DialogCode.Accepted and dialog.selected_name:
             loaded_ids = saved_lists.get(dialog.selected_name, [])
-            missing = [mid for mid in loaded_ids if mid not in self.shared_data.mods]
+            missing = [mid for mid in loaded_ids if mid not in self.shared_data.active_mods]
             if missing:
                 log.warning(f'[mods] Saved list "{dialog.selected_name}" references missing mods: {missing}')
 
-            self._pending_active_mods = [mid for mid in loaded_ids if mid in self.shared_data.mods]
+            self._pending_active_mods = [mid for mid in loaded_ids if mid in self.shared_data.active_mods]
             log.debug(f'[mods] Loaded mod list "{dialog.selected_name}": {self._pending_active_mods}')
             self._populate_mods_list()
             self._update_mod_changes_ui()
@@ -664,7 +695,7 @@ class MainWindow(QMainWindow):
             with open(config.APP_DIR / "settings.json", "w", encoding="utf-8") as f:
                 json.dump(self.shared_data.settings, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            QMessageBox.warning(self, self.translate("MainWindow", "File saving error", None), self.translate("MainWindow", "Failed to save settings: %x", None).replace("%x", str(e)))
+            QMessageBox.warning(self, self.translate("MainWindow", "File saving error", None), self.translate("MainWindow", "Failed to save settings: %1", None).replace("%1", str(e)))
 
     # Language
     def _on_combobox_language_change(self, index) -> None:
@@ -683,6 +714,13 @@ class MainWindow(QMainWindow):
     def _on_slider_volume_release(self) -> None:
         settings = self.shared_data.settings
         settings["volume"] = self.ui.horizontalSlider_volume.value()
+        self.shared_data.settings = settings
+        self.save_settings_state()
+
+    # Appearance
+    def _on_restore_window_geometry_toggle(self, checked):
+        settings = self.shared_data.settings
+        settings["window_geometry"]["restore"] = checked
         self.shared_data.settings = settings
         self.save_settings_state()
 
@@ -705,7 +743,7 @@ class MainWindow(QMainWindow):
             self.hotkeys_widgets[category][key].label_shortcut.setText(seq)
             self.hotkeys_widgets[category][key].button_remove.setEnabled(True)
             self.save_settings_state()
-            QMessageBox.information(self, self.translate("MainWindow", "Success", None), self.translate("MainWindow", "Assigned '%x'.", None).replace("%x", seq))
+            QMessageBox.information(self, self.translate("MainWindow", "Success", None), self.translate("MainWindow", "Assigned '%1'.", None).replace("%1", seq))
 
     def _remove_hotkey(self, category: str, key) -> None:
         seq = self.shared_data.settings["hotkeys"][category].get(key)
@@ -734,10 +772,12 @@ class MainWindow(QMainWindow):
 
     def _on_autostart_toggle(self, checked) -> None:
         """Toggles application autostart in Windows registry"""
+        self.ui.checkBox_show_window_on_startup.setEnabled(checked)
+        
         key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
         if getattr(sys, 'frozen', False): # Jeśli program jest spakowany do .exe
-            cmd = f'"{sys.executable}"'
+            cmd = f'"{sys.executable}" --autostart'
         else: # Jeśli to surowy skrypt .py
             self.ui.checkBox_autostart.blockSignals(True)
             self.ui.checkBox_autostart.setChecked(False)
@@ -765,15 +805,18 @@ class MainWindow(QMainWindow):
             self.ui.checkBox_autostart.blockSignals(True)
             self.ui.checkBox_autostart.setChecked(not checked)
             self.ui.checkBox_autostart.blockSignals(False)
-            QMessageBox.warning(self, self.translate("MainWindow", "Registry error", None), self.translate("MainWindow", "Failed to change autostart setting:\n%x", None).replace("%x", str(e)))
+            QMessageBox.warning(self, self.translate("MainWindow", "Registry error", None), self.translate("MainWindow", "Failed to change autostart setting:\n%1", None).replace("%1", str(e)))
 
         settings = self.shared_data.settings
         settings["autostart"] = self.ui.checkBox_autostart.isChecked()
         self.shared_data.settings = settings
         self.save_settings_state()
     
-    def open_app_folder(self) -> None:
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(config.APP_DIR)))
+    def _on_show_window_on_startup_toggle(self, checked) -> None:
+        settings = self.shared_data.settings
+        settings["show_on_autostart"] = checked
+        self.shared_data.settings = settings
+        self.save_settings_state()
 
     # Advanced
     def update_debug_check_states(self) -> None:
@@ -781,6 +824,7 @@ class MainWindow(QMainWindow):
         checked = self.ui.checkBox_debug_mode.isChecked()
         self.ui.checkBox_hitboxes_overlay.setEnabled(checked)
         self.ui.checkBox_debug_information_window.setEnabled(checked)
+        self.ui.checkBox_debug_console.setEnabled(checked)
 
     def update_debug_visibility(self, checked: bool | None=None) -> None:
         """Updates visibility of debug overlays"""
@@ -790,10 +834,19 @@ class MainWindow(QMainWindow):
         settings["debug"]["active"] = self.ui.checkBox_debug_mode.isChecked()
         settings["debug"]["hitbox_overlay"] = self.ui.checkBox_hitboxes_overlay.isChecked()
         settings["debug"]["debug_window"] = self.ui.checkBox_debug_information_window.isChecked()
+        settings["debug"]["console"] = self.ui.checkBox_debug_console.isChecked()
         self.shared_data.settings = settings
         self.save_settings_state()
 
         self.send_ipc_command(["toggle_debug"])
+
+    def open_app_folder(self) -> None:
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(config.APP_DIR)))
+
+    def open_latest_log(self) -> None:
+        log_files = sorted((config.APP_DIR / "logs").glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if log_files:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(log_files[0])))
 
     # ================= OBJECTS EDITOR =================
 
@@ -815,8 +868,125 @@ class MainWindow(QMainWindow):
         self.editor_window = None
         self.translator.delete_calls_from_owner("dashboard.object_editor")
 
-    # ================= ENTITIES =================
+    # ================= DISPLAYED ENTITIES LIST =================
+
+    def _populate_displayed_entities_list(self) -> None:
+        list_widget = self.ui.listWidget_displayed_entities_list
+        list_widget.clear()
+
+        icon_size: int = list_widget.iconSize().width()
+
+        for unique_id, entity_id in self.shared_data.displayed_entities.items():
+            entity = self.shared_data.spawnable_entities[entity_id]
+            pixmap = self._make_square_pixmap(entity.preview_path, icon_size)
+
+            item = QListWidgetItem(QIcon(pixmap), entity.name)
+            item.setData(Qt.ItemDataRole.UserRole, unique_id)
+            item.setTextAlignment(Qt.AlignmentFlag.AlignHCenter)
+            item.setSizeHint(QSize(88, 96))
+
+            list_widget.addItem(item)
+
+        if list_widget.count():
+            list_widget.setCurrentRow(0)
+        self._update_displayed_entities_group_title()
+
+    def _update_displayed_entities_group_title(self) -> None:
+        self.ui.groupBox_displayed_entities_list.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.displayed_entities)))
+
+    # Selected entity
+    def _displayed_entity_for_row(self, row: int) -> Entity | None:
+        item = self.ui.listWidget_displayed_entities_list.item(row)
+        if item is None:
+            return None
+        unique_id = item.data(Qt.ItemDataRole.UserRole)
+        entity_id = self.shared_data.displayed_entities[unique_id]
+        return self.shared_data.spawnable_entities[entity_id]
+
+    def _on_displayed_entity_selected(self, current: QListWidgetItem | None, previous: QListWidgetItem | None) -> None:
+        if current is None:
+            return
+        unique_id = current.data(Qt.ItemDataRole.UserRole)
+        entity_id = self.shared_data.displayed_entities.get(unique_id)
+        if entity_id is None:
+            self.ui.label_displayed_entity_preview.setPixmap(QPixmap())
+            self.ui.label_displayed_entity_name.setText(self.translate("MainWindow", "EntityName", None))
+            self.ui.label_displayed_entity_mod_name.setText(self.translate("MainWindow", "unknown", None))
+            self.ui.label_displayed_entity_mod_id.setText(self.translate("MainWindow", "unknown", None))
+            self.ui.label_displayed_entity_id.setText(self.translate("MainWindow", "unknown", None))
+            self.ui.label_displayed_entity_description.setText(self.translate("MainWindow", "No description available.", None))
+        else:
+            entity = self.shared_data.spawnable_entities[entity_id]
+            mod = self.shared_data.active_mods[entity.mod_id]
     
+            pixmap = QPixmap(str(entity.preview_path)) if entity.preview_path is not None else QPixmap()
+            self.ui.label_displayed_entity_preview.setPixmap(pixmap)
+            self.ui.label_displayed_entity_name.setText(entity.name)
+            self.ui.label_displayed_entity_mod_name.setText(mod.name)
+            self.ui.label_displayed_entity_mod_id.setText(entity.mod_id)
+            self.ui.label_displayed_entity_id.setText(entity.id)
+            self.ui.label_displayed_entity_description.setText(entity.description)
+
+    def _on_displayed_entity_menu(self, unique_id: str) -> None:
+        menu = QMenu(self)
+        menu.addAction(self.translate("MainWindow", "Delete", None), lambda: self.kill_entity(unique_id))
+        # TODO: Dodaj akcję / polecenie do pokazywania i ukrywania entity
+        # if True:
+        #     menu.addAction(self.translate("MainWindow", "Show", None), lambda: self.show_entity(unique_id))
+        # else:
+        #     menu.addAction(self.translate("MainWindow", "Hide", None), lambda: self.hide_entity(unique_id))
+        menu.addAction(self.translate("MainWindow", "Teleport", None), lambda: self.teleport_entity(unique_id))
+        menu.exec(self.cursor().pos())
+
+    def _on_displayed_entity_browse(self) -> None:
+        item = self.ui.listWidget_displayed_entities_list.currentItem()
+        if item is None:
+            QMessageBox.information(self, self.translate("MainWindow", "Entity", None), self.translate("MainWindow", "Select an entity first.", None))
+            return
+        self._on_displayed_entity_menu(item.data(Qt.ItemDataRole.UserRole))
+
+    def _on_displayed_entities_list_context_menu(self, pos) -> None:
+        list_widget = self.ui.listWidget_displayed_entities_list
+        item = list_widget.itemAt(pos)
+        if item is None:
+            return
+        list_widget.setCurrentItem(item)
+        self._on_displayed_entity_menu(item.data(Qt.ItemDataRole.UserRole))
+
+    def _current_displayed_entity_id(self) -> str | None:
+        item = self.ui.listWidget_displayed_entities_list.currentItem()
+        return item.data(Qt.ItemDataRole.UserRole) if item is not None else None
+
+    def _select_displayed_entity(self, unique_id: str) -> None:
+        list_widget = self.ui.listWidget_displayed_entities_list
+        for row in range(list_widget.count()):
+            item = list_widget.item(row)
+            if item.data(Qt.ItemDataRole.UserRole) == unique_id:
+                list_widget.setCurrentItem(item)
+                return
+
+    # Selected entity actions
+    def kill_selected_entity(self) -> None:
+        unique_id = self._current_displayed_entity_id()
+        if unique_id is not None:
+            self.kill_entity(unique_id)
+
+    def show_selected_entity(self) -> None:
+        unique_id = self._current_displayed_entity_id()
+        if unique_id is not None:
+            self.show_entity(unique_id)
+
+    def hide_selected_entity(self) -> None:
+        unique_id = self._current_displayed_entity_id()
+        if unique_id is not None:
+            self.hide_entity(unique_id)
+
+    def teleport_selected_entity(self) -> None:
+        unique_id = self._current_displayed_entity_id()
+        if unique_id is not None:
+            self.teleport_entity(unique_id)
+
+    # Selected entity commands
     def kill_all_entities(self) -> None:
         """Removes all spawned entities from the world"""
         self.send_ipc_command(["kill_all_entities"])
@@ -827,23 +997,24 @@ class MainWindow(QMainWindow):
     def hide_all_entities(self):
         self.send_ipc_command(["hide_all_entities"])
 
-    def kill_selected_entity(self):
-        self.send_ipc_command(["kill_selected_entity"])
+    def kill_entity(self, unique_id: str) -> None:
+        """Removes a specific displayed entity"""
+        self.send_ipc_command(["kill_entity", unique_id])
 
-    def show_selected_entity(self):
-        self.send_ipc_command(["show_selected_entity"])
+    def show_entity(self, unique_id: str) -> None:
+        self.send_ipc_command(["show_entity", unique_id])
 
-    def hide_selected_entity(self):
-        self.send_ipc_command(["hide_selected_entity"])
+    def hide_entity(self, unique_id: str) -> None:
+        self.send_ipc_command(["hide_entity", unique_id])
 
-    def teleport_selected_entity(self):
-        self.send_ipc_command(["teleport_selected_entity"])
+    def teleport_entity(self, unique_id: str) -> None:
+        self.send_ipc_command(["teleport_entity", unique_id])
     
-    # ================= ADD ENTITY =================
+    # ================= SPAWNABLE ENTITIES LIST =================
 
     def _make_square_pixmap(self, path: Path | None, size: int) -> QPixmap:
-        """Loads preview.png and crops it to a size x size square (center-crop)."""
-        src = QPixmap(str(path))
+        """Loads image and crops it to a size x size square (center-crop)."""
+        src = QPixmap(str(path)) if path is not None else QPixmap()
         if src.isNull():
             placeholder = QPixmap(size, size)
             placeholder.fill(Qt.GlobalColor.darkGray)
@@ -859,8 +1030,8 @@ class MainWindow(QMainWindow):
         y = (scaled.height() - size) // 2
         return scaled.copy(x, y, size, size)
 
-    def _populate_add_entities_list(self) -> None:
-        list_widget = self.ui.listWidget_add_entities_list
+    def _populate_spawnable_entities_list(self) -> None:
+        list_widget = self.ui.listWidget_spawnable_entities_list
         list_widget.clear()
         list_widget.setUniformItemSizes(False)
         list_widget.setGridSize(QSize())
@@ -870,8 +1041,8 @@ class MainWindow(QMainWindow):
         self._category_header_items.clear()
 
         entities_by_category: dict[str, list[Entity]] = {}
-        for entity in self.shared_data.entities.values():
-            entities_by_category.setdefault(self.shared_data.mods[entity.mod_id].name, []).append(entity)
+        for entity in self.shared_data.spawnable_entities.values():
+            entities_by_category.setdefault(self.shared_data.active_mods[entity.mod_id].name, []).append(entity)
 
         for category, category_entities in entities_by_category.items():
             # category separator
@@ -899,34 +1070,68 @@ class MainWindow(QMainWindow):
                 list_widget.setCurrentItem(item)
                 break
 
-        self._update_entities_add_group_title()
+        self._update_spawnable_entities_group_title()
     
-    def _update_entities_add_group_title(self) -> None:
-        self.ui.groupBox_add_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.entities)))
+    def _update_spawnable_entities_group_title(self) -> None:
+        self.ui.groupBox_spawnable_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.spawnable_entities)))
 
     def _update_category_header_widths(self) -> None:
         """Stretches category separators in the "Add" entity list to the current viewport width"""
-        list_width = self.ui.listWidget_add_entities_list.viewport().width()
+        list_width = self.ui.listWidget_spawnable_entities_list.viewport().width()
         for header_item, header_widget in self._category_header_items:
             header_item.setSizeHint(QSize(list_width, header_widget.sizeHint().height()))
 
-    def _on_add_entity_selected(self, current: QListWidgetItem | None, previous: QListWidgetItem | None) -> None:
+    # Selected entity
+    def _spawnable_entity_for_row(self, row: int) -> Entity | None:
+        item = self.ui.listWidget_spawnable_entities_list.item(row)
+        if item is None:
+            return None
+        return self.shared_data.spawnable_entities[item.data(Qt.ItemDataRole.UserRole)]
+
+    def _on_spawnable_entity_selected(self, current: QListWidgetItem | None, previous: QListWidgetItem | None) -> None:
         if current is None:
             return
         mod_and_entity_id = current.data(Qt.ItemDataRole.UserRole)
         if mod_and_entity_id is None:
             return  # ignore focus on category separator, not an actual entity
 
-        entity = self.shared_data.entities[mod_and_entity_id]
-        mod = self.shared_data.mods[entity.mod_id]
+        entity = self.shared_data.spawnable_entities[mod_and_entity_id]
+        mod = self.shared_data.active_mods[entity.mod_id]
 
-        pixmap = QPixmap(str(entity.preview_path))
-        self.ui.label_add_entity_preview.setPixmap(pixmap)
-        self.ui.label_add_entity_name.setText(entity.name)
-        self.ui.label_add_entity_mod_name.setText(mod.name)
-        self.ui.label_add_entity_mod_id.setText(entity.mod_id)
-        self.ui.label_add_entity_id.setText(entity.id)
-        self.ui.label_add_entity_description.setText(entity.description)
+        pixmap = QPixmap(str(entity.preview_path)) if entity.preview_path is not None else QPixmap()
+        self.ui.label_spawnable_entity_preview.setPixmap(pixmap)
+        self.ui.label_spawnable_entity_name.setText(entity.name)
+        self.ui.label_spawnable_entity_mod_name.setText(mod.name)
+        self.ui.label_spawnable_entity_mod_id.setText(entity.mod_id)
+        self.ui.label_spawnable_entity_id.setText(entity.id)
+        self.ui.label_spawnable_entity_description.setText(entity.description)
+    
+    def _on_spawnable_entity_settings(self):
+        entity = self._spawnable_entity_for_row(self.ui.listWidget_spawnable_entities_list.currentRow())
+        if entity is None:
+            QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
+            return
+        # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
+        QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", entity.name))
+    
+    def _on_spawnable_entity_menu(self, entity: Entity) -> None:
+        menu = QMenu(self)
+
+        menu.exec(self.cursor().pos())
+    
+    def _on_spawnable_entity_browse(self):
+        entity = self._spawnable_entity_for_row(self.ui.listWidget_spawnable_entities_list.currentRow())
+        if entity is None:
+            QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
+            return
+        self._on_spawnable_entity_menu(entity)
+    
+    def _on_add_spawnable_entity(self):
+        entity = self._spawnable_entity_for_row(self.ui.listWidget_spawnable_entities_list.currentRow())
+        if entity is None:
+            QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
+            return
+        self.send_ipc_command(["spawn_entity", entity.mod_id, entity.id])
     
     # ================= INFO =================
 
@@ -1052,7 +1257,7 @@ def run_app(conn, shared_data, log_queue) -> None:
     translator = Translator(shared_data.settings["language"])
 
     window = MainWindow(conn, shared_data, translator)
-    if shared_data.restarted:
+    if shared_data.restarted or not shared_data.args.autostart or (shared_data.args.autostart and shared_data.settings["show_on_autostart"]):
         window.show()
 
     # Creating a tray icon

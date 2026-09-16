@@ -126,19 +126,19 @@
     </message>
     <message>
         <source>Kill selected</source>
-        <translation>Auswahl beenden</translation>
+        <translation type="vanished">Auswahl beenden</translation>
     </message>
     <message>
         <source>Show selected</source>
-        <translation>Auswahl anzeigen</translation>
+        <translation type="vanished">Auswahl anzeigen</translation>
     </message>
     <message>
         <source>Hide selected</source>
-        <translation>Auswahl ausblenden</translation>
+        <translation type="vanished">Auswahl ausblenden</translation>
     </message>
     <message>
         <source>Teleport selected</source>
-        <translation>Auswahl teleportieren</translation>
+        <translation type="vanished">Auswahl teleportieren</translation>
     </message>
     <message>
         <source>Opens the built-in hitbox editor for objects</source>
@@ -154,7 +154,7 @@
     </message>
     <message>
         <source>This option does not update the software itself.</source>
-        <translation>Diese Option aktualisiert die Software selbst nicht.</translation>
+        <translation type="vanished">Diese Option aktualisiert die Software selbst nicht.</translation>
     </message>
     <message>
         <source>Check for updates</source>
@@ -189,6 +189,78 @@
         <translation>Anwendungsordner öffnen</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation>Erscheinungsbild</translation>
+    </message>
+    <message>
+        <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
+        <translation>Speichert die Größe und Position des Fensters beim Schließen und stellt sie beim Start wieder her.</translation>
+    </message>
+    <message>
+        <source>Restore window size and position</source>
+        <translation>Fenstergröße und -position wiederherstellen</translation>
+    </message>
+    <message>
+        <source>Kill selected entity</source>
+        <translation>Ausgewählte Entität beenden</translation>
+    </message>
+    <message>
+        <source>Show selected entity</source>
+        <translation>Ausgewählte Entität anzeigen</translation>
+    </message>
+    <message>
+        <source>Hide selected entity</source>
+        <translation>Ausgewählte Entität ausblenden</translation>
+    </message>
+    <message>
+        <source>Teleport selected entity</source>
+        <translation>Ausgewählte Entität teleportieren</translation>
+    </message>
+    <message>
+        <source>Checks for updates when the application starts. This option does not update the software itself.</source>
+        <translation>Sucht beim Start der Anwendung nach Updates. Diese Option aktualisiert die Software selbst nicht.</translation>
+    </message>
+    <message>
+        <source>Automatically launches applications with the system</source>
+        <translation>Startet Anwendungen automatisch mit dem System</translation>
+    </message>
+    <message>
+        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
+        <translation>Zeigt das Fenster beim Start an, indem es automatisch mit dem System gestartet wird. Diese Option ändert nicht, wie das Fenster beim normalen Start angezeigt wird.</translation>
+    </message>
+    <message>
+        <source>Show window on startup</source>
+        <translation>Fenster beim Start anzeigen</translation>
+    </message>
+    <message>
+        <source>General debug mode switch. This option does nothing by itself.</source>
+        <translation>Allgemeiner Schalter für den Debug-Modus. Diese Option bewirkt für sich allein nichts.</translation>
+    </message>
+    <message>
+        <source>Shows normally invisible entity hitboxes. Only works for entities that support this option.</source>
+        <translation>Zeigt normalerweise unsichtbare Hitboxen von Entitäten an. Funktioniert nur für Entitäten, die diese Option unterstützen.</translation>
+    </message>
+    <message>
+        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
+        <translation>Zeigt ein Fenster mit allgemeinen Informationen über die Anwendung an. Zum Beispiel FPS und eine Liste der überwachten Fenster.</translation>
+    </message>
+    <message>
+        <source>Shows a window displaying the current application logs</source>
+        <translation>Zeigt ein Fenster mit den aktuellen Anwendungsprotokollen an</translation>
+    </message>
+    <message>
+        <source>Show debug console</source>
+        <translation>Debug-Konsole anzeigen</translation>
+    </message>
+    <message>
+        <source>Open latest log</source>
+        <translation>Neuestes Protokoll öffnen</translation>
+    </message>
+    <message>
+        <source>🔍 Search mods...</source>
+        <translation>🔍 Mods suchen...</translation>
+    </message>
+    <message>
         <source>Mod details</source>
         <translation>Mod-Details</translation>
     </message>
@@ -217,8 +289,16 @@
         <translation>Mod-Liste speichern</translation>
     </message>
     <message>
+        <source>Undoes changes to the mod list</source>
+        <translation>Macht Änderungen an der Mod-Liste rückgängig</translation>
+    </message>
+    <message>
         <source>Discard changes</source>
         <translation>Änderungen verwerfen</translation>
+    </message>
+    <message>
+        <source>Saves changes to the mod list and restarts the application</source>
+        <translation>Speichert Änderungen an der Mod-Liste und startet die Anwendung neu</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -234,7 +314,7 @@
     </message>
     <message>
         <source> Search entities...</source>
-        <translation> Entitäten suchen...</translation>
+        <translation type="vanished"> Entitäten suchen...</translation>
     </message>
     <message>
         <source>Entity details</source>
@@ -249,8 +329,20 @@
         <translation>Mod-ID:</translation>
     </message>
     <message>
+        <source>🗑️ Kill entity</source>
+        <translation>🗑️ Entität beenden</translation>
+    </message>
+    <message>
         <source>Position:</source>
         <translation>Position:</translation>
+    </message>
+    <message>
+        <source>Updates the application to the latest version</source>
+        <translation>Aktualisiert die Anwendung auf die neueste Version</translation>
+    </message>
+    <message>
+        <source>Checks for the availability of a new version of the application.</source>
+        <translation>Prüft, ob eine neue Version der Anwendung verfügbar ist.</translation>
     </message>
     <message>
         <source>🔄 Check for updates</source>
@@ -405,8 +497,46 @@
         <translation>Dateispeicherfehler</translation>
     </message>
     <message>
+        <source>Failed to save settings: %1</source>
+        <translation>Einstellungen konnten nicht gespeichert werden: %1</translation>
+    </message>
+    <message>
+        <source>Assigned &apos;%1&apos;.</source>
+        <translation>„%1“ zugewiesen.</translation>
+    </message>
+    <message>
+        <source>Failed to change autostart setting:
+%1</source>
+        <translation>Autostart-Einstellung konnte nicht geändert werden:
+%1</translation>
+    </message>
+    <message>
+        <source>EntityName</source>
+        <translation>Entitätsname</translation>
+    </message>
+    <message>
+        <source>Teleport</source>
+        <translation>Teleportieren</translation>
+    </message>
+    <message>
+        <source>Entity</source>
+        <translation>Entität</translation>
+    </message>
+    <message>
+        <source>Select an entity first.</source>
+        <translation>Wählen Sie zuerst eine Entität aus.</translation>
+    </message>
+    <message>
+        <source>Entity settings</source>
+        <translation>Entitätseinstellungen</translation>
+    </message>
+    <message>
+        <source>Select a entity first.</source>
+        <translation>Wählen Sie zuerst eine Entität aus.</translation>
+    </message>
+    <message>
         <source>Failed to save settings: %x</source>
-        <translation>Einstellungen konnten nicht gespeichert werden: %x</translation>
+        <translation type="vanished">Einstellungen konnten nicht gespeichert werden: %x</translation>
     </message>
     <message>
         <source>Success</source>
@@ -414,7 +544,7 @@
     </message>
     <message>
         <source>Assigned &apos;%x&apos;.</source>
-        <translation>&apos;%x&apos; zugewiesen.</translation>
+        <translation type="vanished">&apos;%x&apos; zugewiesen.</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -439,7 +569,7 @@
     <message>
         <source>Failed to change autostart setting:
 %x</source>
-        <translation>Autostart-Einstellung konnte nicht geändert werden: %x</translation>
+        <translation type="vanished">Autostart-Einstellung konnte nicht geändert werden: %x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

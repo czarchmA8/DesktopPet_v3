@@ -4,32 +4,55 @@ from pathlib import Path
 from datetime import datetime
 import multiprocessing
 import atexit
+import copy
+import hashlib
 
 import config
 
 _log_queue: "multiprocessing.Queue" = multiprocessing.Queue()
 _listener = None
 
+def string_to_ansi(text: str) -> str:
+    hash_digest = hashlib.md5(text.encode("utf-8")).hexdigest()
+
+    r = int(hash_digest[0:2], 16)
+    g = int(hash_digest[2:4], 16)
+    b = int(hash_digest[4:6], 16)
+
+    return f"\033[38;2;{r};{g};{b}m"
+
 class ColorFormatter(logging.Formatter):
     """Formatter with ANSI colors for console"""
 
-    COLORS = {
+    LEVEL_COLORS = {
         'DEBUG': '\033[36m',  # Cyan
         'INFO': '\033[92m',  # Light Green
         'WARNING': '\033[93m',  # Light Yellow
         'ERROR': '\033[91m',  # Light Red
         'CRITICAL': '\033[41m\033[97m',  # Red bg + White text
     }
+    MESSAGE_COLORS = {
+        "DEBUG": "\033[38;5;30m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[93m",  # Light Yellow
+        "ERROR": "\033[91m",  # Light Red
+        "CRITICAL": '\033[91m',  # Light Red
+    }
     RESET = '\033[0m'
 
-    def format(self, record):
-        levelname = record.levelname
-        orig_levelname = record.levelname
-        if levelname in self.COLORS:
-            record.levelname = f"{self.COLORS[levelname]}{f'[{levelname}]':10s}{self.RESET}"
-        result = super().format(record)
-        record.levelname = orig_levelname
+    def format(self, record: logging.LogRecord):
+        record_copy = copy.copy(record)
 
+        if record.levelname in self.LEVEL_COLORS:
+            record_copy.levelname = f"{self.LEVEL_COLORS[record.levelname]}{f'[{record.levelname}]':10s}{self.RESET}"
+        
+        color = string_to_ansi(record.name)
+        record_copy.name = f"{color}{record.name}{self.RESET}"
+
+        if record.levelname in self.MESSAGE_COLORS:
+            record_copy.msg = f"{self.MESSAGE_COLORS[record.levelname]}{record.getMessage()}{self.RESET}"
+        
+        result = super().format(record_copy)
         return result
 
 class PlainFormatter(logging.Formatter):
