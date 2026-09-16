@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 import winreg
-from typing import Callable
+from typing import Callable, Any, Iterable
 import requests
 import time
 from datetime import datetime
@@ -164,6 +164,7 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_save_mod_list.clicked.connect(self._on_save_mod_list)
         self.ui.pushButton_discard_mod_changes.clicked.connect(self._on_discard_changes)
         self.ui.pushButton_save_mod_changes.clicked.connect(self._on_save_changes)
+        self.ui.lineEdit_mods_search.textChanged.connect(lambda: self._populate_mods_list())
         
         # === Displayed entities ===
         self.ui.listWidget_displayed_entities_list.currentItemChanged.connect(self._on_displayed_entity_selected)
@@ -171,13 +172,15 @@ class MainWindow(QMainWindow):
         self.ui.listWidget_displayed_entities_list.customContextMenuRequested.connect(self._on_displayed_entities_list_context_menu)
         self.ui.toolButton_displayed_entity_browse.clicked.connect(self._on_displayed_entity_browse)
         self.ui.pushButton_kill_selected_entity.clicked.connect(self.kill_selected_entity)
-        
+        self.ui.lineEdit_displayed_entity_search.textChanged.connect(lambda: self._populate_displayed_entities_list())
+
         # === Spawnable entities ===
         self.ui.listWidget_spawnable_entities_list.currentItemChanged.connect(self._on_spawnable_entity_selected)
         self.ui.pushButton_spawnable_entity_settings.clicked.connect(self._on_spawnable_entity_settings)
         self.ui.toolButton_spawnable_entity_browse.clicked.connect(self._on_spawnable_entity_browse)
         self.ui.pushButton_add_spawnable_entity.clicked.connect(self._on_add_spawnable_entity)
-        
+        self.ui.lineEdit_spawnable_entities_search.textChanged.connect(lambda: self._populate_spawnable_entities_list())
+
         self.ui.pushButton_kill_all_entities.clicked.connect(self.kill_all_entities)
         self.ui.pushButton_show_all_entities.clicked.connect(self.show_all_entities)
         self.ui.pushButton_hide_all_entities.clicked.connect(self.hide_all_entities)
@@ -201,7 +204,7 @@ class MainWindow(QMainWindow):
                 except Exception as e:
                     log.error(f"[Hotkey] Failed to register '{sequence}': {e}")
             return None
-        
+
         self.hotkeys_widgets = {
             "app": {
                 "show": HotkeyBinding(
@@ -326,7 +329,7 @@ class MainWindow(QMainWindow):
         frame_geo = self.frameGeometry()
         frame_geo.moveCenter(screen_geometry.center())
         self.move(frame_geo.topLeft())
-    
+
     def save_window_geometry(self) -> None:
         screen = self.screen() or QGuiApplication.primaryScreen()
 
@@ -372,9 +375,13 @@ class MainWindow(QMainWindow):
         super().changeEvent(event)
 
     def closeEvent(self, event):
-        """Hides window instead of closing"""
-        event.ignore()
-        self.hide()
+        """Hides window instead of closing, unless Shift is held - then closes the whole app"""
+        if QGuiApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier:
+            event.accept()
+            self.close_app()
+        else:
+            event.ignore()
+            self.hide()
 
     def tick(self) -> None:
         self.shared_data.pull()
@@ -411,7 +418,7 @@ class MainWindow(QMainWindow):
                     log.error(f"Unknown command: {msg}")
             else:
                 return
-    
+
     # Closing the application
     def close_app(self, restart=False) -> None:
         """Sends a command to close the second process and closes the current one"""
@@ -419,7 +426,7 @@ class MainWindow(QMainWindow):
             self.shared_data.restart_requested = True
         self.send_ipc_command(["close_app"])
         QCoreApplication.quit()
-    
+
     def restart_app(self) -> None:
         """Sends a command to close the second process and closes the current one, then restarts the application"""
         self.close_app(restart=True)
@@ -436,6 +443,10 @@ class MainWindow(QMainWindow):
             key=lambda m: m.name.lower(),
         )
         ordered_mods = [self.shared_data.active_mods[mid] for mid in active_ids] + inactive_mods
+
+        search_query = self.ui.lineEdit_mods_search.text().strip()
+        if search_query:
+            ordered_mods = self._filter_and_sort_list_by_search([(mod, (mod.name, mod.id)) for mod in ordered_mods], search_query)
 
         for mod in ordered_mods:
             row_widget = Mod_row()
@@ -458,6 +469,39 @@ class MainWindow(QMainWindow):
         if self.ui.listWidget_mods.count():
             self.ui.listWidget_mods.setCurrentRow(0)
         self._update_mods_group_title()
+
+    @staticmethod
+    def _search_match_score(text: str, query: str) -> float | None:
+        """Returns the match value of `query` in `text` and None if there is no match"""
+        text = str(text)
+        idx = text.lower().find(query)
+        if idx == -1:
+            return None
+
+        score = -idx
+        if idx == 0:
+            score += 1000
+        if text.lower() == query:
+            score += 1000
+        return score
+
+    def _filter_and_sort_list_by_search(self, items: Iterable[tuple[Any, Iterable[str]]], query: str) -> list:
+        """Filters out items that don't contain `query` in any of their criteria, and sorts the rest by
+        match quality: first by the score of the first criterion, then - for items whose first-criterion
+        score ties - by the score of the next criterion, and so on"""
+        query = query.lower()
+
+        scored_items = []
+        for item, criteria in items:
+            scores = [self._search_match_score(text, query) for text in criteria]
+            if all(score is None for score in scores):
+                continue
+
+            sort_key = tuple(score if score is not None else float("-inf") for score in scores)
+            scored_items.append((sort_key, item))
+
+        scored_items.sort(key=lambda entry: entry[0], reverse=True)
+        return [item for _, item in scored_items]
 
     def _update_mods_group_title(self) -> None:
         self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.shared_data.active_mods)))
@@ -543,7 +587,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "Select a mod first.", None))
             return
         self._on_mod_menu(mod)
-    
+
     def _on_mod_settings(self) -> None:
         mod = self._mod_for_row(self.ui.listWidget_mods.currentRow())
         if mod is None:
@@ -776,7 +820,7 @@ class MainWindow(QMainWindow):
     def _on_autostart_toggle(self, checked) -> None:
         """Toggles application autostart in Windows registry"""
         self.ui.checkBox_show_window_on_startup.setEnabled(checked)
-        
+
         key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
         if getattr(sys, 'frozen', False): # Jeśli program jest spakowany do .exe
@@ -814,7 +858,7 @@ class MainWindow(QMainWindow):
         settings["autostart"] = self.ui.checkBox_autostart.isChecked()
         self.shared_data.settings = settings
         self.save_settings_state()
-    
+
     def _on_show_window_on_startup_toggle(self, checked) -> None:
         settings = self.shared_data.settings
         settings["show_on_autostart"] = checked
@@ -879,8 +923,16 @@ class MainWindow(QMainWindow):
 
         icon_size: int = list_widget.iconSize().width()
 
-        for unique_id, entity_id in self.shared_data.displayed_entities.items():
-            entity = self.shared_data.spawnable_entities[entity_id]
+        ordered_entities = [
+            (unique_id, self.shared_data.spawnable_entities[entity_id])
+            for unique_id, entity_id in self.shared_data.displayed_entities.items()
+        ]
+
+        search_query = self.ui.lineEdit_displayed_entity_search.text().strip()
+        if search_query:
+            ordered_entities = self._filter_and_sort_list_by_search([(pair, (pair[1].name, pair[1].id)) for pair in ordered_entities], search_query)
+
+        for unique_id, entity in ordered_entities:
             pixmap = self._make_square_pixmap(entity.preview_path, icon_size)
 
             item = QListWidgetItem(QIcon(pixmap), entity.name)
@@ -921,7 +973,7 @@ class MainWindow(QMainWindow):
         else:
             entity = self.shared_data.spawnable_entities[entity_id]
             mod = self.shared_data.active_mods[entity.mod_id]
-    
+
             pixmap = QPixmap(str(entity.preview_path)) if entity.preview_path is not None else QPixmap()
             self.ui.label_displayed_entity_preview.setPixmap(pixmap)
             self.ui.label_displayed_entity_name.setText(entity.name)
@@ -1012,7 +1064,7 @@ class MainWindow(QMainWindow):
 
     def teleport_entity(self, unique_id: str) -> None:
         self.send_ipc_command(["teleport_entity", unique_id])
-    
+
     # ================= SPAWNABLE ENTITIES LIST =================
 
     def _make_square_pixmap(self, path: Path | None, size: int) -> QPixmap:
@@ -1047,7 +1099,17 @@ class MainWindow(QMainWindow):
         for entity in self.shared_data.spawnable_entities.values():
             entities_by_category.setdefault(self.shared_data.active_mods[entity.mod_id].name, []).append(entity)
 
+        search_query = self.ui.lineEdit_spawnable_entities_search.text().strip()
+
         for category, category_entities in entities_by_category.items():
+            if search_query:
+                category_entities = self._filter_and_sort_list_by_search([
+                    (entity, (entity.name, entity.id, self.shared_data.active_mods[entity.mod_id].name, entity.mod_id))
+                    for entity in category_entities
+                ], search_query)
+                if not category_entities:
+                    continue
+
             # category separator
             header_item = QListWidgetItem()
             header_item.setFlags(Qt.ItemFlag.NoItemFlags)
@@ -1065,7 +1127,10 @@ class MainWindow(QMainWindow):
                 item.setSizeHint(QSize(88, 96))
                 list_widget.addItem(item)
 
-        self._update_category_header_widths()
+        list_width = self.ui.listWidget_spawnable_entities_list.viewport().width()
+        for header_item, header_widget in self._category_header_items:
+            header_item.setSizeHint(QSize(list_width, header_widget.sizeHint().height()))
+        list_widget.doItemsLayout()
 
         for row in range(list_widget.count()):
             item = list_widget.item(row)
@@ -1077,12 +1142,6 @@ class MainWindow(QMainWindow):
     
     def _update_spawnable_entities_group_title(self) -> None:
         self.ui.groupBox_spawnable_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.spawnable_entities)))
-
-    def _update_category_header_widths(self) -> None:
-        """Stretches category separators in the "Add" entity list to the current viewport width"""
-        list_width = self.ui.listWidget_spawnable_entities_list.viewport().width()
-        for header_item, header_widget in self._category_header_items:
-            header_item.setSizeHint(QSize(list_width, header_widget.sizeHint().height()))
 
     # Selected entity
     def _spawnable_entity_for_row(self, row: int) -> Entity | None:
@@ -1108,7 +1167,7 @@ class MainWindow(QMainWindow):
         self.ui.label_spawnable_entity_mod_id.setText(entity.mod_id)
         self.ui.label_spawnable_entity_id.setText(entity.id)
         self.ui.label_spawnable_entity_description.setText(entity.description)
-    
+
     def _on_spawnable_entity_settings(self):
         entity = self._spawnable_entity_for_row(self.ui.listWidget_spawnable_entities_list.currentRow())
         if entity is None:
@@ -1116,26 +1175,26 @@ class MainWindow(QMainWindow):
             return
         # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
         QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", entity.name))
-    
+
     def _on_spawnable_entity_menu(self, entity: Entity) -> None:
         menu = QMenu(self)
 
         menu.exec(self.cursor().pos())
-    
+
     def _on_spawnable_entity_browse(self):
         entity = self._spawnable_entity_for_row(self.ui.listWidget_spawnable_entities_list.currentRow())
         if entity is None:
             QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
             return
         self._on_spawnable_entity_menu(entity)
-    
+
     def _on_add_spawnable_entity(self):
         entity = self._spawnable_entity_for_row(self.ui.listWidget_spawnable_entities_list.currentRow())
         if entity is None:
             QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
             return
         self.send_ipc_command(["spawn_entity", entity.mod_id, entity.id])
-    
+
     # ================= INFO =================
 
     def get_latest_release(self) -> dict | int:
@@ -1192,7 +1251,7 @@ class MainWindow(QMainWindow):
                 self.ui.label_check_for_updates.setText(self.translate("MainWindow", "Checking for updates...", None))
         else:
             raise Exception("This shouldn't have happened!")
-        
+
         # button "Check for updates"
         if not self.ui.pushButton_check_for_updates.isEnabled() and (self.last_time_checked is None or now > self.last_time_checked + self.update_check_cooldown):
             self.ui.pushButton_check_for_updates.setEnabled(True)
@@ -1265,16 +1324,16 @@ def run_app(conn, shared_data: SharedState, log_queue) -> None:
 
     # Creating a tray icon
     tray = QSystemTrayIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")), app)
-    
+
     def _show_info_tab() -> None:
         window.show_and_focus_window()
         window.ui.tabWidget.setCurrentWidget(window.ui.tab_info)
-    
+
     menu = QMenu()
     show_action = menu.addAction("Show Panel")
     translator.tr(lambda: show_action.setText(QCoreApplication.translate("tray-icon", "Show Panel", None)))
     show_action.triggered.connect(window.show_and_focus_window)
-    
+
     menu.addSeparator()
     about_action = menu.addAction("About")
     translator.tr(lambda: about_action.setText(QCoreApplication.translate("tray-icon", "About", None)))

@@ -402,12 +402,16 @@ class ModsManager:
         watch_windows: set[WatchWindow] = set()
         for mod in self.mod_runtimes:
             mod.globals().ModAPI._watch_windows.clear()
-            mod.globals().tick()
-            watch_windows.update(mod.globals().ModAPI._watch_windows)
+            if "tick" in mod.globals():
+                mod.globals().tick()
 
         # instances (entities) tick
         for entity_data in self.displayed_entities.values():
-            entity_data.tick_func()
+            if entity_data.tick_func:
+                entity_data.tick_func()
+
+        for mod in self.mod_runtimes:
+            watch_windows.update(mod.globals().ModAPI._watch_windows)
 
         # Updating the mouse button state: pressed -> holding and released -> remove
         for button, event in dict(self.mouse_events).items():
@@ -431,10 +435,12 @@ class ModsManager:
     
     def paint_tick(self) -> None:
         for mod in self.mod_runtimes:
-            mod.globals().paint_tick()
+            if "paint_tick" in mod.globals():
+                mod.globals().paint_tick()
 
         for entity_data in self.displayed_entities.values():
-            entity_data.paint_tick_func()
+            if entity_data.paint_tick_func:
+                entity_data.paint_tick_func()
 
     def spawn_entity(self, mod_id: str, entity_id: str) -> str | None:
         key = f"{mod_id}:{entity_id}"

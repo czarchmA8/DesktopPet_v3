@@ -60,16 +60,17 @@
    winget install --id=astral-sh.uv -e
    ```
 
-3. **Install dependencies and create the environment**
-   ```bash
-   uv sync
-   ```
-   Additional libraries for developer scripts:
+3. **Install dependencies**
    ```bash
    uv sync --group dev
    ```
 
 ## ▶️ Running the Application
+
+### Generating compiled `.qm` translation files from `.ts` files
+```bash
+uv run tools/update_languages.py
+```
 
 ### Normal Launch
 
@@ -81,9 +82,10 @@ uv run main.py
 
 The application supports the following command-line parameters:
 
-| Argument  | Short | Type  | Description              | Default |
-|-----------|-------|-------|--------------------------|---------|
-| `--debug` | `-D`  | `int` | Debug level (0-2)        | `0`     |
+| Argument      | Short | Type         | Description                                 | Default |
+|---------------|-------|--------------|---------------------------------------------|---------|
+| `--debug`     | `-D`  | `int`        | Debug level (0-2)                           | `0`     |
+| `--autostart` |       | `store_true` | Indicates the app was launched by autostart | `False` |
 
 ```bash
 uv run main.py --debug 0
@@ -100,6 +102,68 @@ uv run tools/create_exe.py
 ## ⚙️ Configuration
 
 All application settings are located in the `settings.json` file, with only some configurable through the control panel. It is recommended to change settings via the control panel to avoid errors. Some settings must be changed through the control panel to work correctly (e.g., `autostart`).
+
+---
+
+## Modding
+
+Mods extend the application with custom entities and behavior through a sandboxed `ModAPI`, exposed to a Lua runtime (Python-based mods are planned but not yet supported).
+
+### Mods structure
+
+Each mod is a subfolder inside `Mods/` — the folder name is used as the mod's ID — and contains:
+
+| File          | Description                                                               |
+|:--------------|:--------------------------------------------------------------------------|
+| `about.json`  | Mod metadata: `name`, `author`, `version`, `description`, `dependencies`. |
+| `preview.png` | Preview image shown in the control panel.                                 |
+| `main.lua`    | The mod's entry point script.                                             |
+
+A mod script can define two optional global functions, `tick()` and `paint_tick()`, called every frame, and register spawnable entities via `ModAPI.register_entity(...)`. `ModAPI` also provides drawing (`draw_rect`, `draw_line`, `draw_text`, `draw_image`), mouse input (`ModAPI.Mouse`), logging (`ModAPI.Logger`), and window watching for z-order updates.
+
+### First mod
+
+A mod that registers a spawnable entity — an image bouncing around the screen like a DVD logo:
+
+```lua
+window_hwnd = ModAPI.get_foreground_window_hwnd()
+ModAPI.Logger.debug("Window title: " .. ModAPI.get_window_title(window_hwnd))
+
+function create_entity(instance_id)
+    local x, y = 0, 0
+    local add_to_x, add_to_y = 1, 1
+    local visible = true
+
+    local screen_width = 1920
+    local screen_height = 1080
+    local image_width = 300
+    local image_height = 150
+
+    return {
+        delete_func = function() end,
+        show_func = function() visible = true end,
+        hide_func = function() visible = false end,
+        teleport_func = function() x, y = 0, 0 end,
+        get_info_func = function() end,
+        tick_func = function()
+            ModAPI.watch_window(window_hwnd)
+            x = x + add_to_x
+            if x >= screen_width - image_width or x <= 0 then add_to_x = -add_to_x end
+            y = y + add_to_y
+            if y >= screen_height - image_height or y <= 0 then add_to_y = -add_to_y end
+        end,
+        paint_tick_func = function()
+            if visible then
+                ModAPI.draw_image(window_hwnd, x, y, "preview.png", image_width, image_height, nil, instance_id)
+            end
+        end,
+    }
+end
+
+ModAPI.register_entity("first-entity", "First entity", "preview.png", "Bounces off the screen edges", create_entity)
+```
+
+`register_entity` makes the entity spawnable from the control panel; each spawned instance gets its own `instance_id` and the set of callback functions returned above. Detailed `ModAPI` reference and a full modding guide are planned as separate documentation.
 
 ---
 
@@ -123,6 +187,7 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`main.py`**                      | **Starting point.** Launches `dashboard.py` and `desktop/app.py` as separate processes.                                                                                                 |
 | **`config.py`**                    | **Configuration.** Stores and initializes variables for the application.                                                                                                                |
 | **`logger.py`**                    | **Log management.** Handles message logging, file saving, and automatic cleanup of old log files.                                                                                       |
+| **`shared_state.py`**              | **Interprocess communication.** Stores a local copy of data and updates it when reading its value and calling the `pull()` function                                                     |
 | **`utils_debug.py`**               | **Debugging utilities.** Debug info window, hitbox rendering, and general helper functions.                                                                                             |
 | **`windows_z_order/neighbors.py`** | **Window layering (Z-order).** Retrieves windows directly above and below a specified window handle (`hwnd`).                                                                           |
 | **`windows_z_order/watcher.py`**   | **Window layering (Z-order).** Listens to window events and then updates the z-order list that can be used                                                                              |
