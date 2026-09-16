@@ -9,11 +9,11 @@
     </message>
     <message>
         <source>Cannot delete - hitbox requires at least 3 vertices.</source>
-        <translation>Nie można usunąć - hitbox wymaga przynajmniej 3 wierzchołków</translation>
+        <translation>Nie można usunąć - hitbox wymaga przynajmniej 3 wierzchołków.</translation>
     </message>
     <message>
         <source>No image loaded. Ctrl+O to open one.</source>
-        <translation>Nie załadowano obrazu. Ctrl+O aby otworzyć jeden</translation>
+        <translation>Nie załadowano obrazu. Ctrl+O aby otworzyć jeden.</translation>
     </message>
     <message>
         <source>Zoom:</source>
@@ -66,7 +66,7 @@
     <name>MainWindow</name>
     <message>
         <source>Language</source>
-        <translation>Tłumaczenie</translation>
+        <translation>Język</translation>
     </message>
     <message>
         <source>Sound</source>
@@ -82,7 +82,7 @@
     </message>
     <message>
         <source>Show application</source>
-        <translation>Pokaż aplikacje</translation>
+        <translation>Pokaż aplikację</translation>
     </message>
     <message>
         <source>No keyboard shortcut</source>
@@ -102,11 +102,11 @@
     </message>
     <message>
         <source>Hide application</source>
-        <translation>Ukryj aplikacje</translation>
+        <translation>Ukryj aplikację</translation>
     </message>
     <message>
         <source>Close application</source>
-        <translation>Zamknij aplikacje</translation>
+        <translation>Zamknij aplikację</translation>
     </message>
     <message>
         <source>Entities</source>
@@ -282,7 +282,7 @@
     </message>
     <message>
         <source>Updates the application to the latest version</source>
-        <translation>Cofa zmiany na liście modów</translation>
+        <translation>Aktualizuje aplikację do najnowszej wersji</translation>
     </message>
     <message>
         <source>Load mod list</source>
@@ -294,7 +294,7 @@
     </message>
     <message>
         <source>Undoes changes to the mod list</source>
-        <translation>Zapisuje zmiany na liście modów i uruchamia aplikację ponownie</translation>
+        <translation>Cofa zmiany na liście modów</translation>
     </message>
     <message>
         <source>Discard changes</source>
@@ -302,7 +302,7 @@
     </message>
     <message>
         <source>Saves changes to the mod list and restarts the application</source>
-        <translation>🗑️ Usuń byt</translation>
+        <translation>Zapisuje zmiany na liście modów i uruchamia aplikację ponownie</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -338,7 +338,7 @@
     </message>
     <message>
         <source>🗑️ Kill entity</source>
-        <translation>Aktualizuje aplikację do najnowszej wersji</translation>
+        <translation>🗑️ Usuń byt</translation>
     </message>
     <message>
         <source>Position:</source>
@@ -358,7 +358,7 @@
     </message>
     <message>
         <source>unknown</source>
-        <translation>nie znany</translation>
+        <translation>nieznany</translation>
     </message>
     <message>
         <source>List</source>
@@ -402,7 +402,7 @@
     </message>
     <message>
         <source>Repository:</source>
-        <translation>Rezpozytorium:</translation>
+        <translation>Repozytorium:</translation>
     </message>
     <message>
         <source>The version has not been checked yet</source>
@@ -458,7 +458,7 @@
     </message>
     <message>
         <source>Select a mod first.</source>
-        <translation>Narpiew zaznacz moda.</translation>
+        <translation>Najpierw zaznacz moda.</translation>
     </message>
     <message>
         <source>TODO: settings for %1</source>
@@ -466,7 +466,7 @@
     </message>
     <message>
         <source>No saved mod lists yet.</source>
-        <translation>Brak zapisanych listy modów.</translation>
+        <translation>Brak zapisanych list modów.</translation>
     </message>
     <message>
         <source>Save mod list</source>
@@ -548,7 +548,7 @@
     </message>
     <message>
         <source>Shortcut removed.</source>
-        <translation>Skrót klawiszowy usunięty</translation>
+        <translation>Skrót klawiszowy usunięty.</translation>
     </message>
     <message>
         <source>Information</source>
@@ -581,7 +581,7 @@
     </message>
     <message>
         <source>Repository not found or no versions published.</source>
-        <translation>Rezpozytorium nie znalezione lub brak opublikowanych wersji</translation>
+        <translation>Repozytorium nie znalezione lub brak opublikowanych wersji.</translation>
     </message>
     <message>
         <source>Network error. Check your internet connection.</source>
@@ -632,11 +632,11 @@
     </message>
     <message>
         <source>Undo</source>
-        <translation>Poprzednia zmiana</translation>
+        <translation>Cofnij</translation>
     </message>
     <message>
         <source>Redo</source>
-        <translation>Następna zmiana</translation>
+        <translation>Ponów</translation>
     </message>
     <message>
         <source>Generate hitbox from image</source>
@@ -668,7 +668,7 @@
     </message>
     <message>
         <source>Recompute hull</source>
-        <translation>Przelicz wierzchołki</translation>
+        <translation>Przelicz otoczkę</translation>
     </message>
     <message>
         <source>Radius:</source>
@@ -720,7 +720,7 @@
     </message>
     <message>
         <source>No image loaded.</source>
-        <translation>Brak załadowanego obrazu</translation>
+        <translation>Brak załadowanego obrazu.</translation>
     </message>
     <message>
         <source>Unsaved changes</source>
@@ -762,7 +762,7 @@
     </message>
     <message>
         <source>Open an image first to edit its hitbox.</source>
-        <translation>Najpierw otwórz obraz, aby edytować hitbox</translation>
+        <translation>Najpierw otwórz obraz, aby edytować hitbox.</translation>
     </message>
     <message>
         <source>Loaded hitbox: %1</source>
@@ -770,7 +770,7 @@
     </message>
     <message>
         <source>Open an image first.</source>
-        <translation>Narpiew otwórz obraz.</translation>
+        <translation>Najpierw otwórz obraz.</translation>
     </message>
     <message>
         <source>No vertices to save.</source>
@@ -850,7 +850,7 @@ Zostanie automatycznie uproszczony podczas użycia, co może zmienić jego kszta
     </message>
     <message>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A new version %1 from %2 is available.&lt;br/&gt;Would you like to update the app?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Nowa wersja %1 z %2 jest dostępna.&lt;br/&gt;Czy chcesz zaktualizować aplikacje?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Nowa wersja %1 z %2 jest dostępna.&lt;br/&gt;Czy chcesz zaktualizować aplikację?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <source>The version will be updated from &quot;%1&quot; to &quot;%2&quot;</source>

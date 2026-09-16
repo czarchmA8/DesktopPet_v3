@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt, QUrl
 
 import config
 import logger
+from shared_state import SharedState
 from desktop.entities_manager import run_app as run_app_desktop
 from dashboard.dashboard import run_app as run_app_dashboard
 
@@ -91,7 +92,7 @@ def load_settings() -> dict:
 
         return settings
 
-def run_processes(shared_data, error_queue, log_queue) -> str | None:
+def run_processes(shared_data: SharedState, error_queue, log_queue) -> str | None:
     """Starts the PET and DASHBOARD processes and monitors them until both terminate. Returns an error message (if any) or None."""
     log = logger.get_logger("main")
     conn1, conn2 = Pipe()
@@ -174,23 +175,24 @@ def main() -> None:
     error_msg: str | None = None
 
     with Manager() as manager:
-        shared_data = manager.Namespace()
-        shared_data.args = args # application startup arguments
-        shared_data.settings = settings # settings from `settings.json`
-        shared_data.restarted = False # stores information whether the application has already been restarted
+        shared_data = SharedState(manager)
+        shared_data.args = args
+        shared_data.settings = settings
+        shared_data.restarted = False
 
         log_queue = logger.get_queue()
 
         while True:
-            shared_data.active_mods = {} # dict[str, Mod]
-            shared_data.spawnable_entities = {} # dict[str, Entity]
-            shared_data.displayed_entities = {} # dict[str, str] "unique-id": "entity-id"
-            shared_data.restart_requested = False  # stores information about whether the application should be restarted instead of closed
-            shared_data.selected_entity = None # "unique-id"
-            shared_data.entity_details = {} # dict[str, str]
+            shared_data.active_mods = {}
+            shared_data.spawnable_entities = {}
+            shared_data.displayed_entities = {}
+            shared_data.restart_requested = False
+            shared_data.selected_entity = None
+            shared_data.entity_details = {}
 
             error_msg = run_processes(shared_data, error_queue, log_queue)
 
+            shared_data.pull() # Update changes
             if error_msg is not None or not shared_data.restart_requested:
                 break
 

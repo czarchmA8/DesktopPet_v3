@@ -21,7 +21,7 @@
     </message>
     <message>
         <source>Radius:</source>
-        <translation>Rayon:</translation>
+        <translation>Rayon&#xa0;:</translation>
     </message>
     <message>
         <source>Vertices:</source>
@@ -446,7 +446,7 @@
     </message>
     <message>
         <source>Revoke trust</source>
-        <translation>Révóquer la confiance</translation>
+        <translation>Révoquer la confiance</translation>
     </message>
     <message>
         <source>Trust</source>
@@ -672,7 +672,7 @@
     </message>
     <message>
         <source>Radius:</source>
-        <translation>Rayon:</translation>
+        <translation>Rayon&#xa0;:</translation>
     </message>
     <message>
         <source>Show pixel grid</source>
@@ -688,7 +688,7 @@
     </message>
     <message>
         <source>Hitbox shape:</source>
-        <translation>Forme de la hitbox:</translation>
+        <translation>Forme de la hitbox&#xa0;:</translation>
     </message>
     <message>
         <source>Convex polygon</source>
@@ -712,11 +712,11 @@
     </message>
     <message>
         <source>Angular damping:</source>
-        <translation>Amortissement angulaire:</translation>
+        <translation>Amortissement angulaire&#xa0;:</translation>
     </message>
     <message>
         <source>Linear damping:</source>
-        <translation>Amortissement linéaire:</translation>
+        <translation>Amortissement linéaire&#xa0;:</translation>
     </message>
     <message>
         <source>No image loaded.</source>

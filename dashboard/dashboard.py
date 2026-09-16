@@ -25,6 +25,7 @@ from PySide6.QtGui import QIcon, QPixmap, QDesktopServices, QGuiApplication
 
 import config
 import logger
+from shared_state import SharedState
 from desktop.mods_manager import Mod, Entity
 from dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from dashboard.translator import Translator, replace_format
@@ -53,11 +54,11 @@ class MainWindow(QMainWindow):
     exit_requested = Signal() # Used only for keyboard shortcuts, so I don't get the "Terminating process DASHBOARD..." message
     translate = QCoreApplication.translate
 
-    def __init__(self, conn, shared_data, translator):
+    def __init__(self, conn, shared_data: SharedState, translator):
         super().__init__()
         
         self.conn = conn
-        self.shared_data = shared_data
+        self.shared_data: SharedState = shared_data
         self.translator = translator
 
         self.ui = Ui_MainWindow()
@@ -84,7 +85,7 @@ class MainWindow(QMainWindow):
         # Timer
         self.refresh_timer = QTimer(self)
         self.refresh_timer.timeout.connect(self.tick)
-        self.refresh_timer.start(1000)
+        self.refresh_timer.start(500)
 
     # Appearance and functionality
     def setup_connections(self) -> None:
@@ -376,6 +377,8 @@ class MainWindow(QMainWindow):
         self.hide()
 
     def tick(self) -> None:
+        self.shared_data.pull()
+
         self._handle_ipc_commands()
 
         self.update_label_check_for_updates()
@@ -1247,7 +1250,7 @@ class MainWindow(QMainWindow):
         else:
             log.debug("[UpdateDialog] The user selected 'No' or closed the window.")
 
-def run_app(conn, shared_data, log_queue) -> None:
+def run_app(conn, shared_data: SharedState, log_queue) -> None:
     """Entry point for the dashboard process"""
     logger.init_child(log_queue)
     log.info("Starting the DASHBOARD process...")

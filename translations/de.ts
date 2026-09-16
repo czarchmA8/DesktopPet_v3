@@ -835,11 +835,11 @@ Sie wird bei Verwendung automatisch vereinfacht, was ihre Form verändern kann. 
     </message>
     <message>
         <source>This mod &quot;%1&quot; may contain malware. Are you sure you want to trust it?</source>
-        <translation>Mod „%1“ könnte Schadsoftware enthalten. Sind Sie sicher, dass Sie dieser Mod vertrauen möchten?</translation>
+        <translation>Mod „%1“ könnte Schadsoftware enthalten. Sind Sie sicher, dass Sie diesem Mod vertrauen möchten?</translation>
     </message>
     <message>
         <source>Don&apos;t ask me again for this mod</source>
-        <translation>ür diese Mod nicht mehr fragen</translation>
+        <translation>Für diesen Mod nicht mehr fragen</translation>
     </message>
 </context>
 <context>

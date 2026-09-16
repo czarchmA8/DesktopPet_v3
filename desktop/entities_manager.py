@@ -10,6 +10,7 @@ from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent
 
 import utils_debug
 import logger
+from shared_state import SharedState
 from windows_z_order.watcher import WindowsWatcher
 from desktop.mods_manager import ModsManager, MouseButtonEvent, InputState
 
@@ -169,11 +170,11 @@ class TransparentWindow(QWidget):
 
 
 class EntitiesManager(QApplication):
-    def __init__(self, conn, shared_data):
+    def __init__(self, conn, shared_data: SharedState):
         super().__init__(sys.argv)
 
         self.conn = conn
-        self.shared_data = shared_data
+        self.shared_data: SharedState = shared_data
 
         self.watcher = WindowsWatcher()
         self.watcher.start()
@@ -204,6 +205,7 @@ class EntitiesManager(QApplication):
         self.mods_manager.run_mods()
 
     def tick(self):
+        self.shared_data.pull()
         self.process_timer.start("tick")
         # --- Obliczenie Delta Time ---
         now = time.perf_counter()
@@ -301,7 +303,7 @@ class EntitiesManager(QApplication):
             else:
                 return
 
-def run_app(conn, shared_data, log_queue):
+def run_app(conn, shared_data: SharedState, log_queue):
     logger.init_child(log_queue)
     log.info("Starting the DESKTOP process...")
     app = EntitiesManager(conn, shared_data)

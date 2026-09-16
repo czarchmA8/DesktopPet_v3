@@ -7,10 +7,11 @@ import uuid
 
 import win32gui
 from PySide6.QtGui import QImageReader, QColor, QPixmap, QImage, QCursor
-from lupa import LuaRuntime
+from lupa.lua54 import LuaRuntime
 
 import config
 import logger
+from shared_state import SharedState
 from windows_z_order.watcher import WatchWindow
 
 log = logger.get_logger("mods_manager")
@@ -270,9 +271,9 @@ def filter_attribute_access(obj, attr_name, is_setting):
     raise AttributeError("access denied")
 
 class ModsManager:
-    def __init__(self, conn, shared_data, entities_manager):
+    def __init__(self, conn, shared_data: SharedState, entities_manager):
         self.conn = conn
-        self.shared_data = shared_data
+        self.shared_data: SharedState = shared_data
         self.entities_manager = entities_manager
 
         self.displayed_entities: dict[str, EntityData] = {}
