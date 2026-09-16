@@ -334,7 +334,7 @@
     </message>
     <message>
         <source>Position:</source>
-        <translation>Position :</translation>
+        <translation type="vanished">Position :</translation>
     </message>
     <message>
         <source>Updates the application to the latest version</source>
@@ -350,15 +350,15 @@
     </message>
     <message>
         <source>Rotation:</source>
-        <translation>Rotation :</translation>
+        <translation type="vanished">Rotation :</translation>
     </message>
     <message>
         <source>Velocity:</source>
-        <translation>Vitesse :</translation>
+        <translation type="vanished">Vitesse :</translation>
     </message>
     <message>
         <source>HWND:</source>
-        <translation>HWND :</translation>
+        <translation type="vanished">HWND :</translation>
     </message>
     <message>
         <source>unknown</source>

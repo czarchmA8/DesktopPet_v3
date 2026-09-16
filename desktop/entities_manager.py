@@ -84,7 +84,7 @@ class TransparentWindow(QWidget):
         if button_name is None:
             log.warning(f"Unknown mouse button: \"{button_name}\"")
             return
-        self.dispatch_click(int(pos.x()), int(pos.y()), button_name, InputState.pressed)
+        self.on_mouse_button_event(int(pos.x()), int(pos.y()), button_name, InputState.pressed)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         pos = event.position()
@@ -92,7 +92,7 @@ class TransparentWindow(QWidget):
         if button_name is None:
             log.warning(f"Unknown mouse button: \"{button_name}\"")
             return
-        self.dispatch_click(int(pos.x()), int(pos.y()), button_name, InputState.released)
+        self.on_mouse_button_event(int(pos.x()), int(pos.y()), button_name, InputState.released)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         self.mods_manager.mouse_scroll.x += event.angleDelta().x()
@@ -110,7 +110,7 @@ class TransparentWindow(QWidget):
                 self.mods_manager.mouse_scroll.hit_id = hit_id
                 break
 
-    def dispatch_click(self, x: int, y: int, button: str, button_state: InputState) -> None:
+    def on_mouse_button_event(self, x: int, y: int, button: str, button_state: InputState) -> None:
         if button not in self.mods_manager.mouse_events or button_state == InputState.pressed:
             pressed_at = time.time()
         else:
@@ -133,6 +133,8 @@ class TransparentWindow(QWidget):
                 continue
             if self._hit_test(cmd, x, y):
                 self.mods_manager.mouse_events[button].hit_id = hit_id
+                if button_state == InputState.pressed:
+                    self.mods_manager.select_entity(hit_id)
                 break
 
     @staticmethod

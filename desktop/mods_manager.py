@@ -224,8 +224,14 @@ class ModAPI:
             else:
                 return 0
 
-    def is_focused(self, instance_id: str) -> bool:
-        return NotImplemented # TODO: Dodaj funkcję zwracającą czy dane entity jest wybrane
+    def is_entity_focused(self, instance_id: str) -> bool:
+        return self._mods_manager.shared_data.selected_entity == instance_id
+
+    def is_window_focused(self, hwnd: int) -> bool:
+        return self._mods_manager.entities_manager.transparent_windows[hwnd].isActiveWindow()
+
+    def is_focused(self, hwnd: int, instance_id: str):
+        return self.is_window_focused(hwnd) and self.is_entity_focused(instance_id)
 
     def kill_entity(self, instance_id: str) -> None:
         self._mods_manager.kill_entity(instance_id)
@@ -407,11 +413,17 @@ class ModsManager:
 
         # instances (entities) tick
         for entity_data in self.displayed_entities.values():
-            if entity_data.tick_func:
+            if entity_data.tick_func is not None:
                 entity_data.tick_func()
 
         for mod in self.mod_runtimes:
             watch_windows.update(mod.globals().ModAPI._watch_windows)
+
+        # Retrieving detailed information about the selected entity
+        selected = self.shared_data.selected_entity
+        entity = self.displayed_entities.get(selected) if selected is not None else None
+        if entity and entity.get_info_func is not None:
+            self.shared_data.entity_details = dict(entity.get_info_func())
 
         # Updating the mouse button state: pressed -> holding and released -> remove
         for button, event in dict(self.mouse_events).items():
@@ -439,7 +451,7 @@ class ModsManager:
                 mod.globals().paint_tick()
 
         for entity_data in self.displayed_entities.values():
-            if entity_data.paint_tick_func:
+            if entity_data.paint_tick_func is not None:
                 entity_data.paint_tick_func()
 
     def spawn_entity(self, mod_id: str, entity_id: str) -> str | None:
@@ -515,3 +527,8 @@ class ModsManager:
     def hide_all_entities(self):
         for entity_data in self.displayed_entities.values():
             entity_data.hide_func()
+    
+    def select_entity(self, instance_id: str) -> None:
+        self.shared_data.selected_entity = instance_id
+        if self.shared_data.selected_entity in self.shared_data.displayed_entities:
+            self.send_ipc_command(["select_entity", instance_id])

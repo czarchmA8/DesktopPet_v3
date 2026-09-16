@@ -35,7 +35,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>742</width>
+             <width>341</width>
              <height>1328</height>
             </rect>
            </property>
@@ -1482,8 +1482,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>243</width>
-                 <height>390</height>
+                 <width>140</width>
+                 <height>406</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_20">
@@ -1848,7 +1848,7 @@
                <property name="geometry">
                 <rect>
                  <x>0</x>
-                 <y>0</y>
+                 <y>-152</y>
                  <width>263</width>
                  <height>534</height>
                 </rect>
@@ -2093,7 +2093,7 @@
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
                      <property name="text">
-                      <string>Position:</string>
+                      <string notr="true">Position:</string>
                      </property>
                     </widget>
                    </item>
@@ -2110,7 +2110,7 @@
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
                      <property name="text">
-                      <string>Rotation:</string>
+                      <string notr="true">Rotation:</string>
                      </property>
                     </widget>
                    </item>
@@ -2127,7 +2127,7 @@
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
                      <property name="text">
-                      <string>Velocity:</string>
+                      <string notr="true">Velocity:</string>
                      </property>
                     </widget>
                    </item>
@@ -2144,7 +2144,7 @@
                       <string notr="true">color: #aaa; font-style: italic;</string>
                      </property>
                      <property name="text">
-                      <string>HWND:</string>
+                      <string notr="true">HWND:</string>
                      </property>
                     </widget>
                    </item>

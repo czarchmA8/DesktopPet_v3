@@ -1133,6 +1133,7 @@ class Ui_MainWindow(object):
         self.label_entity_position_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_position_title.setObjectName("label_entity_position_title")
         self.label_entity_position_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_entity_position_title.setText("Position:")
 
         self.formLayout_mod_info_4.setWidget(1, QFormLayout.ItemRole.LabelRole, self.label_entity_position_title)
 
@@ -1145,6 +1146,7 @@ class Ui_MainWindow(object):
         self.label_entity_rotation_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_rotation_title.setObjectName("label_entity_rotation_title")
         self.label_entity_rotation_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_entity_rotation_title.setText("Rotation:")
 
         self.formLayout_mod_info_4.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_entity_rotation_title)
 
@@ -1157,6 +1159,7 @@ class Ui_MainWindow(object):
         self.label_entity_velocity_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_velocity_title.setObjectName("label_entity_velocity_title")
         self.label_entity_velocity_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_entity_velocity_title.setText("Velocity:")
 
         self.formLayout_mod_info_4.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_entity_velocity_title)
 
@@ -1169,6 +1172,7 @@ class Ui_MainWindow(object):
         self.label_entity_hwnd_title = QLabel(self.frame_displayed_entity_debug)
         self.label_entity_hwnd_title.setObjectName("label_entity_hwnd_title")
         self.label_entity_hwnd_title.setStyleSheet("color: #aaa; font-style: italic;")
+        self.label_entity_hwnd_title.setText("HWND:")
 
         self.formLayout_mod_info_4.setWidget(0, QFormLayout.ItemRole.LabelRole, self.label_entity_hwnd_title)
 
@@ -1746,10 +1750,6 @@ class Ui_MainWindow(object):
         self.label_displayed_entity_id_title.setText(QCoreApplication.translate("MainWindow", "ID:", None))
         self.pushButton_kill_selected_entity.setText(QCoreApplication.translate("MainWindow", "🗑️ Kill entity", None))
         self.label_displayed_entity_description.setText(QCoreApplication.translate("MainWindow", "No description available.", None))
-        self.label_entity_position_title.setText(QCoreApplication.translate("MainWindow", "Position:", None))
-        self.label_entity_rotation_title.setText(QCoreApplication.translate("MainWindow", "Rotation:", None))
-        self.label_entity_velocity_title.setText(QCoreApplication.translate("MainWindow", "Velocity:", None))
-        self.label_entity_hwnd_title.setText(QCoreApplication.translate("MainWindow", "HWND:", None))
         self.pushButton_kill_all_entities.setText(QCoreApplication.translate("MainWindow", "Kill all entities", None))
         self.pushButton_show_all_entities.setText(QCoreApplication.translate("MainWindow", "Show all entities", None))
         self.pushButton_hide_all_entities.setText(QCoreApplication.translate("MainWindow", "Hide all entities", None))

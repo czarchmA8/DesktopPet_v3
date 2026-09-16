@@ -29,6 +29,7 @@
             "Shell_TrayWnd"
         ]
     },
+    "dashboard_refresh_ms": 500,
     "window_geometry": {
         "restore": true,
         "x": null,

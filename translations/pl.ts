@@ -342,19 +342,19 @@
     </message>
     <message>
         <source>Position:</source>
-        <translation>Pozycja:</translation>
+        <translation type="vanished">Pozycja:</translation>
     </message>
     <message>
         <source>Rotation:</source>
-        <translation>Rotacja:</translation>
+        <translation type="vanished">Rotacja:</translation>
     </message>
     <message>
         <source>Velocity:</source>
-        <translation>Prędkość:</translation>
+        <translation type="vanished">Prędkość:</translation>
     </message>
     <message>
         <source>HWND:</source>
-        <translation>HWND:</translation>
+        <translation type="vanished">HWND:</translation>
     </message>
     <message>
         <source>unknown</source>
