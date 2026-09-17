@@ -1,3 +1,6 @@
+import sys
+import ctypes
+from ctypes import wintypes
 import logging
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
@@ -11,6 +14,53 @@ import config
 
 _log_queue: "multiprocessing.Queue" = multiprocessing.Queue()
 _listener = None
+_console_allocated = False
+
+def _allocate_console(initially_visible: bool) -> None:
+    """Allocates a Windows console and redirects stdout/stderr to it."""
+    global _console_allocated
+    if _console_allocated:
+        return
+
+    _STD_OUTPUT_HANDLE = -11
+    _ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+
+    if getattr(sys, "frozen", False):
+        kernel32 = ctypes.windll.kernel32
+        if kernel32.GetConsoleWindow() == 0:
+            kernel32.AllocConsole()
+        sys.stdout = open("CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1)
+        sys.stderr = open("CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1)
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(_STD_OUTPUT_HANDLE)
+        mode = wintypes.DWORD()
+        if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            kernel32.SetConsoleMode(handle, mode.value | _ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+        
+        kernel32.SetConsoleTitleW(f"{config.APP_NAME} - Debug Console")
+
+    _console_allocated = True
+    if not initially_visible:
+        hide_console()
+
+def show_console() -> None:
+    """Shows the debug console window."""
+    if not getattr(sys, "frozen", False):
+        return
+    _SW_SHOW = 5
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if hwnd:
+        ctypes.windll.user32.ShowWindow(hwnd, _SW_SHOW)
+
+def hide_console() -> None:
+    """Hides the debug console window."""
+    if not getattr(sys, "frozen", False):
+        return
+    _SW_HIDE = 0
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if hwnd:
+        ctypes.windll.user32.ShowWindow(hwnd, _SW_HIDE)
 
 def string_to_ansi(text: str) -> str:
     hash_digest = hashlib.md5(text.encode("utf-8")).hexdigest()
@@ -45,13 +95,13 @@ class ColorFormatter(logging.Formatter):
 
         if record.levelname in self.LEVEL_COLORS:
             record_copy.levelname = f"{self.LEVEL_COLORS[record.levelname]}{f'[{record.levelname}]':10s}{self.RESET}"
-        
+
         color = string_to_ansi(record.name)
         record_copy.name = f"{color}{record.name}{self.RESET}"
 
         if record.levelname in self.MESSAGE_COLORS:
             record_copy.msg = f"{self.MESSAGE_COLORS[record.levelname]}{record.getMessage()}{self.RESET}"
-        
+
         result = super().format(record_copy)
         return result
 
@@ -89,10 +139,12 @@ def stop():
         _listener.stop()
         _listener = None
 
-def init(file_name: str="main", debug=False, max_old_logs: int=3) -> None:
+def init(file_name: str = "main", console_visible: bool = False, max_old_logs: int = 3) -> None:
     global _listener
     if _listener is not None:
         return
+
+    _allocate_console(initially_visible=console_visible)
 
     logs_folder = config.APP_DIR / "logs"
     logs_folder.mkdir(exist_ok=True)
@@ -100,8 +152,8 @@ def init(file_name: str="main", debug=False, max_old_logs: int=3) -> None:
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     file_path = logs_folder / f"{file_name}_{now}.log"
 
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
     console_handler.setFormatter(ColorFormatter(fmt="%(levelname)s [%(name)s]: %(message)s"))
 
     file_handler = logging.FileHandler(file_path, mode="w", encoding="utf-8")

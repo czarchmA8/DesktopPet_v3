@@ -101,6 +101,7 @@ def run_processes(shared_data: SharedState, error_queue, log_queue) -> str | Non
     p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", conn2, shared_data, error_queue, log_queue), name="DASHBOARD")
     processes = [p1, p2]
     error_msg: str | None = None
+    last_console_visible = shared_data.settings["debug"]["active"] and shared_data.settings["debug"]["console"]
 
     try:
         p1.start()
@@ -108,6 +109,15 @@ def run_processes(shared_data: SharedState, error_queue, log_queue) -> str | Non
         log.info("[✅] Both processes started")
 
         while True:
+            shared_data.pull()
+            console_visible = shared_data.settings["debug"]["active"] and shared_data.settings["debug"]["console"]
+            if console_visible != last_console_visible:
+                if console_visible:
+                    logger.show_console()
+                else:
+                    logger.hide_console()
+                last_console_visible = console_visible
+            
             if not error_queue.empty():
                 error_msg = error_queue.get()
                 log.critical(f"\n[❌] {error_msg}\n")
@@ -163,7 +173,11 @@ def main() -> None:
     parser.add_argument("--autostart", action="store_true", help="Indicates the app was launched by autostart", required=False)
     args = parser.parse_args()
 
-    logger.init(file_name="main", debug=False if args.debug == 0 else True, max_old_logs=settings["debug"]["delete_logs_older_than"])
+    logger.init(
+        file_name="main",
+        console_visible=args.debug == 2 or (settings["debug"]["active"] and settings["debug"]["console"]),
+        max_old_logs=settings["debug"]["delete_logs_older_than"]
+    )
     log = logger.get_logger("main")
     log.debug(f"Args: {args}")
     log.info(f"APP_NAME: \"{config.APP_NAME}\"")

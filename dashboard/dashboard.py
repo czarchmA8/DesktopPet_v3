@@ -893,8 +893,6 @@ class MainWindow(QMainWindow):
         self.shared_data.settings = settings
         self.save_settings_state()
 
-        self.send_ipc_command(["toggle_debug"])
-
     def open_app_folder(self) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(config.APP_DIR)))
 
