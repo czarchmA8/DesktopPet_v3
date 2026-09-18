@@ -393,10 +393,7 @@ class MainWindow(QMainWindow):
 
         self.update_label_check_for_updates()
 
-        if self.shared_data.selected_entity == self._current_displayed_entity_id():
-            self._update_entity_debug_details(self.shared_data.entity_details)
-        else:
-            self._update_entity_debug_details({})
+        self._update_entity_debug_details(self.shared_data.entity_details)
 
     # IPC commands
     def send_ipc_command(self, msg: list[str]) -> None:
@@ -1066,7 +1063,7 @@ class MainWindow(QMainWindow):
             form.addRow(title_label, value_label)
             self._entity_debug_labels[key] = value_label
 
-        frame.setVisible(bool(details))
+        frame.setVisible(bool(details) and self.shared_data.selected_entity == self._current_displayed_entity_id())
 
     # Selected entity actions
     def kill_selected_entity(self) -> None:

@@ -302,7 +302,7 @@
     </message>
     <message>
         <source>Saves changes to the mod list and restarts the application</source>
-        <translation>🗑️ Kill entity</translation>
+        <translation>Updates the application to the latest version</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -338,7 +338,7 @@
     </message>
     <message>
         <source>🗑️ Kill entity</source>
-        <translation>Updates the application to the latest version</translation>
+        <translation>🗑️ Kill entity</translation>
     </message>
     <message>
         <source>Position:</source>

@@ -3,6 +3,8 @@ import types
 import typing
 from pathlib import Path
 
+import config
+
 TYPE_MAP = {
     int: "integer",
     float: "number",
@@ -11,6 +13,7 @@ TYPE_MAP = {
     bytes: "string",
     type(None): "nil",
 }
+OUT_PATH: Path = config.APP_DIR / "tools" / "output" / "stubs" / "mod_api.lua"
 
 def lua_type(annotation) -> str:
     if annotation is inspect.Parameter.empty or annotation is None:
@@ -98,13 +101,12 @@ def generate_class_stub(cls, lines: list[str], is_global: bool = False) -> None:
         if member.__qualname__.startswith(cls.__qualname__ + "."):
             generate_class_stub(member, lines)
 
-def write_stub(cls, out_path: str) -> None:
+def write_stub(cls, out_path: Path=OUT_PATH) -> None:
     lines: list[str] = ["---@meta", ""]
     generate_class_stub(cls, lines, is_global=True)
-    path = (Path("output") / out_path)
-    path.parent.mkdir(exist_ok=True)
-    path.write_text("\n".join(lines), encoding="utf-8")
+    out_path.parent.mkdir(exist_ok=True)
+    out_path.write_text("\n".join(lines), encoding="utf-8")
 
 if __name__ == "__main__":
-    from desktop.mods_manager import ModAPI
-    write_stub(ModAPI, "stubs/mod_api.lua")
+    from desktop.mod_api import ModAPI
+    write_stub(ModAPI)

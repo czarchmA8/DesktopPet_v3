@@ -1,240 +1,20 @@
 from dataclasses import dataclass
 from pathlib import Path
 import json
-from enum import StrEnum, Enum, auto
+from enum import StrEnum, auto
 from typing import Callable
 import uuid
 
-import win32gui
-from PySide6.QtGui import QImageReader, QColor, QPixmap, QImage, QCursor
+from PySide6.QtGui import QImageReader, QCursor
 from lupa.lua54 import LuaRuntime
 
 import config
 import logger
 from shared_state import SharedState
-from windows_z_order.watcher import WatchWindow
+from desktop.input_events import InputState, MouseButtonEvent, MouseScroll
 
 log = logger.get_logger("mods_manager")
 MODS_DIR = config.APP_DIR / "Mods"
-
-class InputState(Enum):
-    pressed = auto()
-    holding = auto()
-    released = auto()
-
-class MouseButtonName(StrEnum):
-    left = "LeftButton"
-    middle = "MiddleButton"
-    right = "RightButton"
-    forward = "ForwardButton"
-    back = "BackButton"
-
-@dataclass
-class MouseButtonEvent:
-    state: InputState
-    x: int
-    y: int
-    pressed_at: float
-    released_at: float | None = None
-    hit_id: str | None = None
-
-@dataclass
-class MouseScroll:
-    x: int = 0
-    y: int = 0
-    hit_id: str | None = None
-
-class ModAPI:
-    def __init__(self, mods_manager: "ModsManager", mod_id: str) -> None:
-        self._mods_manager = mods_manager
-        self._mod_id: str = mod_id
-        self._watch_windows: set[WatchWindow] = set()
-        self._image_cache: dict[Path, tuple[QPixmap, QImage]] = {}
-
-        self.Logger = self._Logger(self._mod_id)
-        self.Mouse = self._Mouse(self._mods_manager)
-    
-    def _print(self, *args, sep: str=" ") -> None:
-        self.Logger.debug(sep.join(args))
-    
-    def register_entity(self, entity_id: str, name: str, preview_path: str | None, description: str | None, create_func) -> None:
-        key = f"{self._mod_id}:{entity_id}"
-        self._mods_manager.spawnable_entities[f"{self._mod_id}:{entity_id}"] = Entity(
-            id=entity_id,
-            name=name,
-            mod_id=self._mod_id,
-            preview_path=(config.APP_DIR / "Mods" / self._mod_id / preview_path) if preview_path else None,
-            description=description if description else "No description available."
-        )
-        self._mods_manager.entity_factories[key] = create_func
-        self._mods_manager.spawnable_entities_dirty = True
-    
-    def get_foreground_window_hwnd(self) -> int:
-        return win32gui.GetForegroundWindow()
-
-    def get_window_title(self, hwnd) -> str:
-        return win32gui.GetWindowText(hwnd)
-    
-    def watch_window(self, hwnd: int, *args: bool) -> None:
-        self._watch_windows.add(WatchWindow(hwnd, *args))
-    
-    def stop_watching_window(self, hwnd: int, *args: bool) -> None:
-        self._watch_windows.remove(WatchWindow(hwnd, *args))
-
-    def clear_windows_watchlist(self) -> None:
-        self._watch_windows.clear()
-
-    def get_windows_watchlist(self) -> set[WatchWindow]:
-        return self._watch_windows.copy()
-
-    def get_watched_windows_info(self):
-        return self._mods_manager.entities_manager.watcher.watched_windows.copy()
-
-    @staticmethod
-    def _normalize_color(color) -> QColor:
-        if hasattr(color, "values"):
-            color = QColor(*(int(x) for x in color.values()))
-        else:
-            color = QColor(color)
-        return color
-
-    def draw_rect(self, hwnd: int, x: int, y: int, width: int, height: int, color: str | tuple[int, int, int] | tuple[int, int, int, int]="#ff0000", filled: bool=True, hit_id: str | None = None):
-        qcolor = self._normalize_color(color)
-        cmd = ("rect", x, y, width, height, qcolor, filled, hit_id)
-        self._mods_manager.entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
-
-    def draw_line(self, hwnd: int, x1: int, y1: int, x2: int, y2: int, color: str="#ffffff", width: int=1, hit_id: str | None = None):
-        qcolor = self._normalize_color(color)
-        cmd = ("line", x1, y1, x2, y2, qcolor, width, hit_id)
-        self._mods_manager.entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
-
-    def draw_text(self, hwnd: int, x: int, y: int, text: str, color: str="#ffffff", size: int=12):
-        qcolor = self._normalize_color(color)
-        cmd = ("text", x, y, str(text), qcolor, size)
-        self._mods_manager.entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
-
-    def _resolve_mod_path(self, relative_path: str) -> Path:
-        """Resolves a path a mod supplies against the mod's own folder."""
-        mod_dir = (config.APP_DIR / "Mods" / self._mod_id).resolve()
-        resolved = (mod_dir / relative_path).resolve()
-        if not resolved.is_relative_to(mod_dir):
-            raise ValueError(f'Path "{relative_path}" escapes the mod\'s own folder')
-        return resolved
-
-    def draw_image(self, hwnd: int, x: int, y: int, path: str, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None):
-        """Draws an image from a file inside the mod's own folder."""
-        opacity = 1.0 if opacity is None else float(opacity)
-        
-        image_path = self._resolve_mod_path(path)
-        cached = self._image_cache.get(image_path)
-        if cached is None:
-            pixmap = QPixmap(str(image_path))
-            if pixmap.isNull():
-                log.warning(f'draw_image: could not load image "{image_path}"')
-                return
-            alpha_image = pixmap.toImage().convertToFormat(QImage.Format.Format_ARGB32)
-            cached = (pixmap, alpha_image)
-            self._image_cache[image_path] = cached
-
-        pixmap, alpha_image = cached
-        cmd = ("image", x, y, width, height, pixmap, opacity, alpha_image, hit_id)
-        self._mods_manager.entities_manager.transparent_windows[hwnd].draw_commands.append(cmd)
-
-    class _Logger:
-        def __init__(self, mod_id: str) -> None:
-            self._mod_id = mod_id
-            self._log = logger.get_logger(mod_id)
-
-        def debug(self, text: str) -> None:
-            self._log.debug(text)
-
-        def info(self, text: str) -> None:
-            self._log.info(text)
-
-        def warning(self, text: str) -> None:
-            self._log.warning(text)
-
-        def error(self, text: str) -> None:
-            self._log.error(text)
-
-        def critical(self, text: str) -> None:
-            self._log.critical(text)
-    
-    class _Mouse:
-        def __init__(self, mods_manager: "ModsManager"):
-            self._mods_manager = mods_manager
-
-        def _get_button_name(self, button: str):
-            for element in MouseButtonName:
-                if button.lower() == element.name:
-                    button = element.value
-                    break
-            return button
-
-        def get_button_event(self, button: str) -> MouseButtonEvent | None:
-            return self._mods_manager.mouse_events.get(button, None)
-
-        def is_entity_clicked(self, hit_id: str) -> bool:
-            event = self.get_button_event(MouseButtonName.left)
-            if event:
-                return event.state == InputState.pressed and event.hit_id == hit_id
-            else:
-                return False
-
-        def is_entity_pressed(self, button: str, hit_id: str) -> bool:
-            button = self._get_button_name(button)
-            event = self.get_button_event(button)
-            if event:
-                return event.state == InputState.pressed and event.hit_id == hit_id
-            else:
-                return False
-
-        def is_entity_holding(self, button: str, hit_id: str) -> bool:
-            button = self._get_button_name(button)
-            event = self.get_button_event(button)
-            if event:
-                return event.state == InputState.holding and event.hit_id == hit_id
-            else:
-                return False
-
-        def is_entity_released(self, button: str, hit_id: str) -> bool:
-            button = self._get_button_name(button)
-            event = self.get_button_event(button)
-            if event:
-                return event.state == InputState.released and event.hit_id == hit_id
-            else:
-                return False
-
-        def get_pos(self) -> tuple[int, int]:
-            pos = QCursor.pos()
-            return pos.x(), pos.y()
-
-        def get_scroll(self) -> MouseScroll:
-            return self._mods_manager.mouse_scroll
-
-        def get_entity_scroll(self, hit_id: str) -> int:
-            if self._mods_manager.mouse_scroll.hit_id == hit_id:
-                return self._mods_manager.mouse_scroll.y
-            else:
-                return 0
-
-        def get_entity_scroll_x(self, hit_id: str) -> int:
-            if self._mods_manager.mouse_scroll.hit_id == hit_id:
-                return self._mods_manager.mouse_scroll.x
-            else:
-                return 0
-
-    def is_entity_focused(self, instance_id: str) -> bool:
-        return self._mods_manager.shared_data.selected_entity == instance_id
-
-    def is_window_focused(self, hwnd: int) -> bool:
-        return self._mods_manager.entities_manager.transparent_windows[hwnd].isActiveWindow()
-
-    def is_focused(self, hwnd: int, instance_id: str):
-        return self.is_window_focused(hwnd) and self.is_entity_focused(instance_id)
-
-    def kill_entity(self, instance_id: str) -> None:
-        self._mods_manager.kill_entity(instance_id)
 
 class ScriptLanguage(StrEnum):
     python = auto()
@@ -260,6 +40,10 @@ class Entity:
     preview_path: Path | None
     description: str
 
+def _noop(*args, **kwargs) -> None:
+    """An empty function that does nothing."""
+    pass
+
 @dataclass
 class EntityData:
     """Functions of a specific spawned instance"""
@@ -269,7 +53,6 @@ class EntityData:
     teleport_func: Callable
     get_info_func: Callable
     tick_func: Callable
-    paint_tick_func: Callable
 
 def filter_attribute_access(obj, attr_name, is_setting):
     if isinstance(attr_name, str) and not attr_name.startswith("_"):
@@ -277,10 +60,10 @@ def filter_attribute_access(obj, attr_name, is_setting):
     raise AttributeError("access denied")
 
 class ModsManager:
-    def __init__(self, conn, shared_data: SharedState, entities_manager):
+    def __init__(self, conn, shared_data: SharedState, overlay_manager):
         self.conn = conn
         self.shared_data: SharedState = shared_data
-        self.entities_manager = entities_manager
+        self.overlay_manager = overlay_manager
 
         self.displayed_entities: dict[str, EntityData] = {}
         self.entity_factories: dict[str, Callable] = {}
@@ -354,6 +137,8 @@ class ModsManager:
         )
 
     def run_mods(self) -> None:
+        from desktop.mod_api import ModAPI
+
         settings = self.shared_data.settings
         settings["active_mods"] = [mod_id for mod_id in settings["active_mods"] if mod_id in self.shared_data.active_mods]
         self.shared_data.settings = settings
@@ -403,27 +188,28 @@ class ModsManager:
             else:
                 log.warning(f"Mod \"{mod_id}\" has no script")
     
-    def tick(self) -> set[WatchWindow]:
+    def tick(self) -> None:
+        hitbox_overlay = self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["hitbox_overlay"]
         # global mod tick
-        watch_windows: set[WatchWindow] = set()
         for mod in self.mod_runtimes:
-            mod.globals().ModAPI._watch_windows.clear()
             if "tick" in mod.globals():
-                mod.globals().tick()
+                mod.globals().tick(hitbox_overlay)
 
         # instances (entities) tick
         for entity_data in self.displayed_entities.values():
-            if entity_data.tick_func is not None:
-                entity_data.tick_func()
-
-        for mod in self.mod_runtimes:
-            watch_windows.update(mod.globals().ModAPI._watch_windows)
+            entity_data.tick_func(hitbox_overlay)
 
         # Retrieving detailed information about the selected entity
         selected = self.shared_data.selected_entity
-        entity = self.displayed_entities.get(selected) if selected is not None else None
-        if entity and entity.get_info_func is not None:
-            self.shared_data.entity_details = dict(entity.get_info_func())
+        entity = self.displayed_entities.get(selected, None) if selected is not None else None
+        if entity is not None:
+            data = entity.get_info_func()
+            if data is not None:
+                self.shared_data.entity_details = dict(data)
+            else:
+                self.shared_data.entity_details = {}
+        else:
+            self.shared_data.entity_details = {}
 
         # Updating the mouse button state: pressed -> holding and released -> remove
         for button, event in dict(self.mouse_events).items():
@@ -440,19 +226,8 @@ class ModsManager:
         # updating the list of entities in the dashboard
         if self.spawnable_entities_dirty:
             self.spawnable_entities_dirty = False
-            self.entities_manager.shared_data.spawnable_entities = self.spawnable_entities
-            self.entities_manager.send_ipc_command(["Update_spawnable_entities_list"])
-        
-        return watch_windows
-    
-    def paint_tick(self) -> None:
-        for mod in self.mod_runtimes:
-            if "paint_tick" in mod.globals():
-                mod.globals().paint_tick()
-
-        for entity_data in self.displayed_entities.values():
-            if entity_data.paint_tick_func is not None:
-                entity_data.paint_tick_func()
+            self.overlay_manager.shared_data.spawnable_entities = self.spawnable_entities
+            self.overlay_manager.send_ipc_command(["Update_spawnable_entities_list"])
 
     def spawn_entity(self, mod_id: str, entity_id: str) -> str | None:
         key = f"{mod_id}:{entity_id}"
@@ -464,19 +239,18 @@ class ModsManager:
         instance_id = str(uuid.uuid4())
         funcs = create_func(instance_id)
         self.displayed_entities[instance_id] = EntityData(
-            delete_func=funcs["delete_func"],
-            show_func=funcs["show_func"],
-            hide_func=funcs["hide_func"],
-            teleport_func=funcs["teleport_func"],
-            get_info_func=funcs["get_info_func"],
-            tick_func=funcs["tick_func"],
-            paint_tick_func=funcs["paint_tick_func"],
+            delete_func=funcs["delete_func"] if "delete_func" in funcs else _noop,
+            show_func=funcs["show_func"] if "show_func" in funcs else _noop,
+            hide_func=funcs["hide_func"] if "hide_func" in funcs else _noop,
+            teleport_func=funcs["teleport_func"] if "teleport_func" in funcs else _noop,
+            get_info_func=funcs["get_info_func"] if "get_info_func" in funcs else _noop,
+            tick_func=funcs["tick_func"] if "tick_func" in funcs else _noop,
         )
 
-        displayed = self.entities_manager.shared_data.displayed_entities
+        displayed = self.overlay_manager.shared_data.displayed_entities
         displayed[instance_id] = key
-        self.entities_manager.shared_data.displayed_entities = displayed
-        self.entities_manager.send_ipc_command(["Update_displayed_entities"])
+        self.overlay_manager.shared_data.displayed_entities = displayed
+        self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
 
         return instance_id
 
@@ -487,10 +261,10 @@ class ModsManager:
             return
         entity_data.delete_func()
 
-        displayed = dict(self.entities_manager.shared_data.displayed_entities)
+        displayed = dict(self.overlay_manager.shared_data.displayed_entities)
         displayed.pop(instance_id, None)
-        self.entities_manager.shared_data.displayed_entities = displayed
-        self.entities_manager.send_ipc_command(["Update_displayed_entities"])
+        self.overlay_manager.shared_data.displayed_entities = displayed
+        self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
     
     def show_entity(self, instance_id: str) -> None:
         entity_data = self.displayed_entities.get(instance_id, None)
@@ -517,8 +291,8 @@ class ModsManager:
         for entity_data in self.displayed_entities.values():
             entity_data.delete_func()
         self.displayed_entities.clear()
-        self.entities_manager.shared_data.displayed_entities = {}
-        self.entities_manager.send_ipc_command(["Update_displayed_entities"])
+        self.overlay_manager.shared_data.displayed_entities = {}
+        self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
     
     def show_all_entities(self):
         for entity_data in self.displayed_entities.values():

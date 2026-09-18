@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt, QUrl
 import config
 import logger
 from shared_state import SharedState
-from desktop.entities_manager import run_app as run_app_desktop
+from desktop.overlay_manager import run_app as run_app_desktop
 from dashboard.dashboard import run_app as run_app_dashboard
 
 def except_hook(cls, exception, traceback_obj) -> None:

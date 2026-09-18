@@ -119,16 +119,18 @@ Each mod is a subfolder inside `Mods/` — the folder name is used as the mod's 
 | `preview.png` | Preview image shown in the control panel.                                 |
 | `main.lua`    | The mod's entry point script.                                             |
 
-A mod script can define two optional global functions, `tick()` and `paint_tick()`, called every frame, and register spawnable entities via `ModAPI.register_entity(...)`. `ModAPI` also provides drawing (`draw_rect`, `draw_line`, `draw_text`, `draw_image`), mouse input (`ModAPI.Mouse`), logging (`ModAPI.Logger`), and window watching for z-order updates.
+A mod script can define one optional global function `tick()` called every frame, and register spawnable entities via `ModAPI.register_entity(...)`. `ModAPI` also provides drawing (`draw_rect`, `draw_line`, `draw_text`, `draw_image`), mouse input (`ModAPI.Mouse`), logging (`ModAPI.Logger`), and window watching for z-order updates.
 
 ### First mod
 
 A mod that registers a spawnable entity — an image bouncing around the screen like a DVD logo:
 
 ```lua
+-- Get the handle of the active window to render over it
 window_hwnd = ModAPI.get_foreground_window_hwnd()
 ModAPI.Logger.debug("Window title: " .. ModAPI.get_window_title(window_hwnd))
 
+-- Creates a single entity instance
 function create_entity(instance_id)
     local x, y = 0, 0
     local add_to_x, add_to_y = 1, 1
@@ -139,27 +141,38 @@ function create_entity(instance_id)
     local image_width = 300
     local image_height = 150
 
+    -- Return entity callbacks used by the main application
     return {
-        delete_func = function() end,
+        -- Action callbacks
+        delete_func = nil,
         show_func = function() visible = true end,
         hide_func = function() visible = false end,
         teleport_func = function() x, y = 0, 0 end,
-        get_info_func = function() end,
-        tick_func = function()
-            ModAPI.watch_window(window_hwnd)
+        -- Return detailed entity info displayed in the control panel
+        get_info_func = function() return {
+            visible = visible,
+            pos = string.format("%s, %s", x, y),
+        } end,
+        tick_func = function(hitbox_overlay)
+            -- Bounce logic for screen edges
             x = x + add_to_x
             if x >= screen_width - image_width or x <= 0 then add_to_x = -add_to_x end
             y = y + add_to_y
             if y >= screen_height - image_height or y <= 0 then add_to_y = -add_to_y end
-        end,
-        paint_tick_func = function()
+
             if visible then
                 ModAPI.draw_image(window_hwnd, x, y, "preview.png", image_width, image_height, nil, instance_id)
+            end
+
+            -- Draw border if hitbox debug overlay is enabled
+            if hitbox_overlay then
+                ModAPI.draw_rect(window_hwnd, x, y, image_width, image_height, { 255, 0, 0 }, false)
             end
         end,
     }
 end
 
+-- Register entity to make it available in the control panel
 ModAPI.register_entity("first-entity", "First entity", "preview.png", "Bounces off the screen edges", create_entity)
 ```
 
@@ -196,9 +209,11 @@ Communication between processes occurs via a structured JSON protocol sent throu
 | **`dashboard/translator.py`**      | **Translation System.** Manages dynamic, on-the-fly language switching within the application using registration callbacks.                                                             |
 | **`dashboard/ui/`**                | **Generated UI layout.** Qt Designer-generated main window layout files.                                                                                                                |
 | **`dashboard/widgets/`**           | **Custom widgets.** Reusable UI components used across the dashboard (dialogs, list rows, custom controls, etc.).                                                                       |
-| **`desktop/entities_manager.py`**  | **Desktop manager.** Launches and manages entities.                                                                                                                                     |
+| **`desktop/overlay_manager.py`**   | **Desktop manager.** Launches and manages overlay windows on which mods can draw.                                                                                                       |
 | **`desktop/mods_manager.py`**      | **Mods manager.** Loads, manages and runs mods.                                                                                                                                         |
-| **`desktop/app.py`**               | **(Not used)** Legacy pet and world objects manager implementation — replaced by `entities_manager.py`.                                                                                 |
+| **`desktop/mod_api.py`**           | **Mod API.** Functions and classes shared with mods.                                                                                                                                    |
+| **`desktop/input_events.py`**      | **Input events & data types.** Defines input structures, enums, and dataclasses (mouse states, clicks, scroll) used by overlay and mod API.                                             |
+| **`desktop/app.py`**               | **(Not used)** Legacy pet and world objects manager implementation — replaced by `overlay_manager.py`.                                                                                  |
 | **`desktop/pet.py`**               | **(Not used, pending update)** Legacy virtual pet implementation — to be reworked for the mod system.                                                                                   |
 | **`desktop/world_objects.py`**     | **(Not used, pending update)** Legacy interactive world objects — to be reworked for the mod system.                                                                                    |
 | **`desktop/physics_utils.py`**     | **Physics utilities.** Helper module providing custom collision detection, data structures for shapes, Box2D unit conversions, and geometry simplification utilities.                   |

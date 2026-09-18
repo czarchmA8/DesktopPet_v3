@@ -1,0 +1,207 @@
+from pathlib import Path
+
+from PySide6.QtGui import QColor, QPixmap, QImage, QCursor
+
+from desktop.input_events import InputState, MouseButtonName, MouseButtonEvent, MouseScroll
+from desktop.mods_manager import ModsManager, Entity
+import config
+import logger
+
+class ModAPI:
+    def __init__(self, mods_manager: ModsManager, mod_id: str) -> None:
+        self._mods_manager: ModsManager = mods_manager
+        self._mod_id: str = mod_id
+        self._image_cache: dict[Path, tuple[QPixmap, QImage]] = {}
+
+        self.Logger = self._Logger(self._mod_id)
+        self.Mouse = self._Mouse(self._mods_manager)
+
+    def _print(self, *args, sep: str=" ") -> None:
+        self.Logger.debug(sep.join(str(arg) for arg in args))
+
+    def register_entity(self, entity_id: str, name: str, preview_path: str | None, description: str | None, create_func) -> None:
+        key = f"{self._mod_id}:{entity_id}"
+        self._mods_manager.spawnable_entities[f"{self._mod_id}:{entity_id}"] = Entity(
+            id=entity_id,
+            name=name,
+            mod_id=self._mod_id,
+            preview_path=(config.APP_DIR / "Mods" / self._mod_id / preview_path) if preview_path else None,
+            description=description if description else "No description available."
+        )
+        self._mods_manager.entity_factories[key] = create_func
+        self._mods_manager.spawnable_entities_dirty = True
+
+    def get_real_window_above(self, hwnd: int) -> tuple[int | None, int | None]:
+        return self._mods_manager.overlay_manager.watcher.get_real_window_above(hwnd)
+
+    def get_window_above(self, hwnd: int) -> int | None:
+        return self._mods_manager.overlay_manager.watcher.get_window_above(hwnd)
+
+    def get_real_window_below(self, hwnd: int) -> tuple[int | None, int | None]:
+        return self._mods_manager.overlay_manager.watcher.get_real_window_below(hwnd)
+
+    def get_window_below(self, hwnd: int) -> int | None:
+        return self._mods_manager.overlay_manager.watcher.get_window_below(hwnd)
+
+    def get_window_rect(self, hwnd: int) -> tuple[int, int, int, int]:
+        return self._mods_manager.overlay_manager.watcher.get_window_rect(hwnd).as_tuple
+
+    def get_foreground_window_hwnd(self) -> int:
+        return self._mods_manager.overlay_manager.watcher.get_foreground_window_hwnd()
+
+    def get_window_title(self, hwnd: int) -> str:
+        return self._mods_manager.overlay_manager.watcher.get_window_title(hwnd)
+
+    @staticmethod
+    def _normalize_color(color) -> QColor:
+        if hasattr(color, "values"):
+            color = QColor(*(int(x) for x in color.values()))
+        else:
+            color = QColor(color)
+        return color
+
+    def draw_rect(self, hwnd: int, x: int, y: int, width: int, height: int, color: str | tuple[int, int, int] | tuple[int, int, int, int]="#ff0000", filled: bool=True, hit_id: str | None = None) -> None:
+        qcolor = self._normalize_color(color)
+        cmd = ("rect", x, y, width, height, qcolor, filled, hit_id)
+        self._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+    def draw_line(self, hwnd: int, x1: int, y1: int, x2: int, y2: int, color: str="#ffffff", width: int=1, hit_id: str | None = None) -> None:
+        qcolor = self._normalize_color(color)
+        cmd = ("line", x1, y1, x2, y2, qcolor, width, hit_id)
+        self._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+    def draw_text(self, hwnd: int, x: int, y: int, text: str, color: str="#ffffff", size: int=12) -> None:
+        qcolor = self._normalize_color(color)
+        cmd = ("text", x, y, str(text), qcolor, size)
+        self._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+    def _resolve_mod_path(self, relative_path: str) -> Path:
+        """Resolves a path a mod supplies against the mod's own folder."""
+        mod_dir = (config.APP_DIR / "Mods" / self._mod_id).resolve()
+        resolved = (mod_dir / relative_path).resolve()
+        if not resolved.is_relative_to(mod_dir):
+            raise ValueError(f'Path "{relative_path}" escapes the mod\'s own folder')
+        return resolved
+
+    def draw_image(self, hwnd: int, x: int, y: int, path: str, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None) -> None:
+        """Draws an image from a file inside the mod's own folder."""
+        opacity = 1.0 if opacity is None else float(opacity)
+
+        image_path = self._resolve_mod_path(path)
+        cached = self._image_cache.get(image_path)
+        if cached is None:
+            pixmap = QPixmap(str(image_path))
+            if pixmap.isNull():
+                self.Logger._log.warning(f'draw_image: could not load image "{image_path}"')
+                return
+            alpha_image = pixmap.toImage().convertToFormat(QImage.Format.Format_ARGB32)
+            cached = (pixmap, alpha_image)
+            self._image_cache[image_path] = cached
+
+        pixmap, alpha_image = cached
+        cmd = ("image", x, y, width, height, pixmap, opacity, alpha_image, hit_id)
+        self._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+    class _Logger:
+        def __init__(self, mod_id: str) -> None:
+            self._mod_id: str = mod_id
+            self._log = logger.get_logger(mod_id)
+
+        def debug(self, text: str) -> None:
+            self._log.debug(text)
+
+        def info(self, text: str) -> None:
+            self._log.info(text)
+
+        def warning(self, text: str) -> None:
+            self._log.warning(text)
+
+        def error(self, text: str) -> None:
+            self._log.error(text)
+
+        def critical(self, text: str) -> None:
+            self._log.critical(text)
+
+    class _Mouse:
+        def __init__(self, mods_manager: ModsManager) -> None:
+            self._mods_manager = mods_manager
+
+        def _get_button_name(self, button: str) -> str:
+            for element in MouseButtonName:
+                if button.lower() == element.name:
+                    button = element.value
+                    break
+            return button
+
+        def get_button_event(self, button: str) -> MouseButtonEvent | None:
+            return self._mods_manager.mouse_events.get(button, None)
+
+        def is_entity_clicked(self, hit_id: str) -> bool:
+            event = self.get_button_event(MouseButtonName.left)
+            if event:
+                return event.state == InputState.pressed and event.hit_id == hit_id
+            else:
+                return False
+
+        def is_entity_pressed(self, button: str, hit_id: str) -> bool:
+            button = self._get_button_name(button)
+            event = self.get_button_event(button)
+            if event:
+                return event.state == InputState.pressed and event.hit_id == hit_id
+            else:
+                return False
+
+        def is_entity_holding(self, button: str, hit_id: str) -> bool:
+            button = self._get_button_name(button)
+            event = self.get_button_event(button)
+            if event:
+                return event.state == InputState.holding and event.hit_id == hit_id
+            else:
+                return False
+
+        def is_entity_released(self, button: str, hit_id: str) -> bool:
+            button = self._get_button_name(button)
+            event = self.get_button_event(button)
+            if event:
+                return event.state == InputState.released and event.hit_id == hit_id
+            else:
+                return False
+
+        def get_pos(self) -> tuple[int, int]:
+            pos = QCursor.pos()
+            return pos.x(), pos.y()
+
+        def get_scroll(self) -> MouseScroll:
+            return self._mods_manager.mouse_scroll
+
+        def get_entity_scroll(self, hit_id: str) -> int:
+            if self._mods_manager.mouse_scroll.hit_id == hit_id:
+                return self._mods_manager.mouse_scroll.y
+            else:
+                return 0
+
+        def get_entity_scroll_x(self, hit_id: str) -> int:
+            if self._mods_manager.mouse_scroll.hit_id == hit_id:
+                return self._mods_manager.mouse_scroll.x
+            else:
+                return 0
+
+    def is_entity_focused(self, instance_id: str) -> bool:
+        return self._mods_manager.shared_data.selected_entity == instance_id
+
+    def is_window_focused(self, hwnd: int) -> bool | None:
+        window = self._mods_manager.overlay_manager.transparent_windows.get(hwnd, None)
+        if window:
+            return window.isActiveWindow()
+        else:
+            return None
+
+    def is_focused(self, hwnd: int, instance_id: str) -> bool:
+        return bool(self.is_window_focused(hwnd)) and self.is_entity_focused(instance_id)
+
+    def kill_entity(self, instance_id: str) -> None:
+        self._mods_manager.kill_entity(instance_id)
+
+if __name__ == "__main__":
+    from tools.generate_lua_stubs import write_stub
+    write_stub(ModAPI)
