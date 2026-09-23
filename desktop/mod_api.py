@@ -3,7 +3,7 @@ from pathlib import Path
 from PySide6.QtGui import QColor, QPixmap, QImage, QCursor
 
 from desktop.input_events import InputState, MouseButtonName, MouseButtonEvent, MouseScroll
-from desktop.mods_manager import ModsManager, Entity
+from desktop.mods_manager import ModsManager, Entity, Mod
 import config
 import logger
 
@@ -13,8 +13,9 @@ class ModAPI:
         self._mod_id: str = mod_id
         self._image_cache: dict[Path, tuple[QPixmap, QImage]] = {}
 
-        self.Logger = self._Logger(self._mod_id)
-        self.Mouse = self._Mouse(self._mods_manager)
+        self.Mod: Mod = self._mods_manager.shared_data.active_mods[self._mod_id]
+        self.Logger: ModAPI._Logger = self._Logger(self.Mod.id)
+        self.Mouse: ModAPI._Mouse = self._Mouse(self._mods_manager)
 
     def _print(self, *args, sep: str=" ") -> None:
         self.Logger.debug(sep.join(str(arg) for arg in args))
@@ -55,10 +56,10 @@ class ModAPI:
     @staticmethod
     def _normalize_color(color) -> QColor:
         if hasattr(color, "values"):
-            color = QColor(*(int(x) for x in color.values()))
-        else:
-            color = QColor(color)
-        return color
+            return QColor(*(int(x) for x in color.values()))
+        if isinstance(color, (tuple, list)):
+            return QColor(*color)
+        return QColor(color)
 
     def draw_rect(self, hwnd: int, x: int, y: int, width: int, height: int, color: str | tuple[int, int, int] | tuple[int, int, int, int]="#ff0000", filled: bool=True, hit_id: str | None = None) -> None:
         qcolor = self._normalize_color(color)
@@ -203,5 +204,7 @@ class ModAPI:
         self._mods_manager.kill_entity(instance_id)
 
 if __name__ == "__main__":
-    from tools.generate_lua_stubs import write_stub
-    write_stub(ModAPI)
+    from tools.generate_lua_stubs import write_stub as write_lua_stub
+    from tools.generate_python_stubs import write_stub as write_python_stub
+    write_lua_stub()
+    write_python_stub()

@@ -1,11 +1,39 @@
 # Code of Conduct
 
-Online or off, Number Zero is a harassment-free environment for everyone, regardless of gender, gender identity and expression, sexual orientation, disability, physical appearance, body size, race, age or religion or technical skill level. We do not tolerate harassment of participants in any form.
+## Our Pledge
 
-Harassment includes verbal comments that reinforce social structures of domination related to gender, gender identity and expression, sexual orientation, disability, physical appearance, body size, race, age, religion, sexual images in public spaces, deliberate intimidation, stalking, following, harassing photography or recording, sustained disruption of talks or other events, inappropriate physical contact, and unwelcome sexual attention. Participants asked to stop any harassing behavior are expected to comply immediately.
+We as members, contributors, and maintainers pledge to make participation in our community a welcoming, respectful, and harassment-free experience for everyone.
 
-If a participant engages in harassing behaviour, the organizers may take any action they deem appropriate, including warning the offender or expulsion from events and online forums.
+We are committed to providing a positive environment regardless of gender, gender identity and expression, sexual orientation, disability, physical appearance, body size, race, age, religion, nationality, or technical skill level.
 
-If you are being harassed, notice that someone else is being harassed, or have any other concerns, please contact a member of the organizing team immediately.
+## Expected Behavior
 
-This document is based on a similar code from [EDGI](https://envirodatagov.org/) and [Civic Tech Toronto](http://civictech.ca/about-us/), itself derived from the [Recurse Center’s Social Rules](https://www.recurse.com/manual#sec-environment), and the [anti-harassment policy from the Geek Feminism Wiki](http://geekfeminism.wikia.com/wiki/Conference_anti-harassment/Policy).
+All community members are expected to:
+
+* Treat others with respect and consideration.
+* Communicate in a constructive and professional manner.
+* Respect different opinions, experiences, and backgrounds.
+* Avoid harassment, discrimination, personal attacks, and other inappropriate behavior.
+* Contribute to an environment where everyone can participate comfortably.
+
+## Unacceptable Behavior
+
+Harassment, discrimination, intimidation, personal attacks, hateful conduct, sexual harassment, and other behavior that negatively affects the safety or well-being of community members are not tolerated.
+
+## Enforcement
+
+Community maintainers may take appropriate action in response to behavior that violates this Code of Conduct, including warnings, removal of content, or restricting participation in the community.
+
+## Reporting
+
+If you experience or witness inappropriate behavior, or have any other concerns regarding this Code of Conduct, please contact the project maintainers.
+
+We will make reasonable efforts to handle reports respectfully and appropriately.
+
+## Scope
+
+This Code of Conduct applies to all community spaces associated with the project, including online discussions, issue trackers, pull requests, and other project-related activities.
+
+## Attribution
+
+This Code of Conduct is based on the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/), version 2.1.

@@ -278,7 +278,7 @@ class WindowsWatcher:
     def get_foreground_window_hwnd(self) -> int:
         return win32gui.GetForegroundWindow()
 
-def main():
+def main() -> None:
     hwnd_input: str = input("Enter window hwnd: ")
     if hwnd_input == "":
         target_hwnd: int = win32gui.GetForegroundWindow()
@@ -290,15 +290,13 @@ def main():
 
     watcher = WindowsWatcher()
     watcher.start()
-    previous_windows = (None, None, None, None)
+    previous_windows: tuple[int | None, int | None, int | None, int | None] = (None, None, None, None)
     try:
         while True:
             watcher.clear_cache()
 
-            above = watcher.get_window_above(target_hwnd)
-            below = watcher.get_window_below(target_hwnd)
-            real_above = watcher.get_real_window_above(target_hwnd)
-            real_below = watcher.get_real_window_below(target_hwnd)
+            real_above, above = watcher.get_real_window_above(target_hwnd)
+            real_below, below = watcher.get_real_window_below(target_hwnd)
             current_windows = (above, below, real_above, real_below)
 
             width: int = 40

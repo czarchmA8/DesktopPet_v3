@@ -1,22 +1,15 @@
 import ast
+import sys
 from pathlib import Path
 
 import config
 
 DESKTOP_DIR = config.APP_DIR / "desktop"
 SOURCES = [DESKTOP_DIR / "mod_api.py", DESKTOP_DIR / "mods_manager.py", DESKTOP_DIR / "input_events.py"]
-OUT_PATH: Path = config.APP_DIR / "tools" / "output" / "stubs" / "mod_api.lua"
+OUT_PATH: Path = config.APP_DIR / "tools" / "output" / "stubs" / "mod_api.pyi"
 ROOT = "ModAPI"
 
-TYPE_MAP = {
-    "int": "integer",
-    "float": "number",
-    "str": "string",
-    "bool": "boolean",
-    "bytes": "string",
-}
-
-# ---- Reading the sources (identical in generate_python_stubs.py) ----
+# ---- Reading the sources (identical in generate_lua_stubs.py) ----
 
 def collect_classes() -> dict[str, ast.ClassDef]:
     """Top-level classes from SOURCES by name (nested classes stay inside their parent)."""
@@ -70,85 +63,56 @@ def collect_used_classes(classes: dict[str, ast.ClassDef]) -> list[ast.ClassDef]
         queue += [n.id for a in annotations(classes[name]) for n in ast.walk(a) if isinstance(n, ast.Name)]
     return list(used.values())
 
-# ---- Lua specific ----
+# ---- Python specific ----
 
-def flatten_union(annotation: ast.expr) -> list[ast.expr]:
-    if isinstance(annotation, ast.BinOp) and isinstance(annotation.op, ast.BitOr):
-        return flatten_union(annotation.left) + flatten_union(annotation.right)
-    return [annotation]
+def is_stdlib(module: str | None) -> bool:
+    return module is not None and module.split(".")[0] in sys.stdlib_module_names
 
-def subscript_args(annotation: ast.Subscript) -> list[ast.expr]:
-    """`tuple[int, str]` -> [int, str], `list[int]` -> [int]."""
-    return annotation.slice.elts if isinstance(annotation.slice, ast.Tuple) else [annotation.slice]
+def collect_imports() -> list[str]:
+    """Stdlib imports from SOURCES (annotations like `Path | None` need them)."""
+    imports: list[str] = []
+    for path in SOURCES:
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            if isinstance(node, ast.ImportFrom) and node.level == 0 and is_stdlib(node.module):
+                imports.append(ast.unparse(node))
+            elif isinstance(node, ast.Import) and all(is_stdlib(a.name) for a in node.names):
+                imports.append(ast.unparse(node))
+    return list(dict.fromkeys(imports))
 
-def lua_type(annotation: ast.expr | None) -> str:
-    if annotation is None:
-        return "any"
-    if isinstance(annotation, ast.Constant):
-        return "nil" if annotation.value is None else "any"
-    if isinstance(annotation, ast.Name):
-        return TYPE_MAP.get(annotation.id, annotation.id)
-    if isinstance(annotation, ast.Attribute):
-        return annotation.attr
-    if isinstance(annotation, ast.BinOp):
-        parts = list(dict.fromkeys(lua_type(a) for a in flatten_union(annotation)))
-        return "|".join(sorted(parts, key=lambda p: p == "nil"))
-    if isinstance(annotation, ast.Subscript):
-        kind = ast.unparse(annotation.value)
-        args = subscript_args(annotation)
-        if kind in ("list", "set", "frozenset"):
-            return f"{lua_type(args[0])}[]"
-        if kind == "dict" and len(args) == 2:
-            return f"table<{lua_type(args[0])}, {lua_type(args[1])}>"
-        return "table"
-    return "any"
+def python_source(node: ast.AST) -> str:
+    return ast.unparse(node).replace(f"{ROOT}.", "")
 
-def lua_returns(returns: ast.expr | None) -> list[str]:
-    if returns is None or (isinstance(returns, ast.Constant) and returns.value is None):
-        return []
-    if isinstance(returns, ast.Subscript) and ast.unparse(returns.value) == "tuple":
-        return [lua_type(a) for a in subscript_args(returns)]
-    return [lua_type(returns)]
-
-def generate_method_stub(cls: ast.ClassDef, method: ast.FunctionDef) -> list[str]:
-    lines: list[str] = []
+def generate_method_stub(method: ast.FunctionDef) -> list[str]:
+    returns = f" -> {python_source(method.returns)}" if method.returns else ""
+    lines = [f"    def {method.name}({python_source(method.args)}){returns}:"]
     doc = ast.get_docstring(method)
     if doc:
-        lines += [f"---{line}" for line in doc.splitlines()]
-
-    args = method.args.args
-    first_default = len(args) - len(method.args.defaults)
-    arg_names: list[str] = []
-    for i, arg in enumerate(args[1:], start=1):
-        arg_names.append(arg.arg)
-        optional = "?" if i >= first_default else ""
-        lines.append(f"---@param {arg.arg}{optional} {lua_type(arg.annotation)}")
-    if method.args.vararg:
-        arg_names.append("...")
-        lines.append(f"---@param ... {lua_type(method.args.vararg.annotation)}")
-
-    lines += [f"---@return {ret}" for ret in lua_returns(method.returns)]
-    lines.append(f"function {cls.name}.{method.name}({', '.join(arg_names)}) end")
+        lines.append(f'        """{doc}"""')
+    lines.append("        ...")
     lines.append("")
     return lines
 
 def generate_class_stub(cls: ast.ClassDef, lines: list[str]) -> None:
-    lines.append(f"---@class {cls.name}")
-    for name, annotation in public_fields(cls):
-        lines.append(f"---@field {name} {lua_type(annotation)}")
-    prefix = "" if cls.name == ROOT else "local "
-    lines.append(f"{prefix}{cls.name} = {{}}")
+    name = f"_{cls.name}" if cls.name == ROOT else cls.name
+    bases = ", ".join(python_source(b) for b in cls.bases)
+    lines.append(f"class {name}({bases}):" if bases else f"class {name}:")
+    body_start = len(lines)
+    for field, annotation in public_fields(cls):
+        lines.append(f"    {field}: {python_source(annotation)}" if annotation else f"    {field} = ...")
     lines.append("")
 
     for method in public_methods(cls):
-        lines.extend(generate_method_stub(cls, method))
+        lines.extend(generate_method_stub(method))
+    if len(lines) == body_start + 1:
+        lines.insert(body_start, "    ...")
     for nested in nested_classes(cls):
         generate_class_stub(nested, lines)
 
 def write_stub(out_path: Path = OUT_PATH) -> None:
-    lines: list[str] = ["---@meta", "-- Auto-generated by tools/generate_lua_stubs.py. Do not edit.", ""]
+    lines: list[str] = ["# Auto-generated by tools/generate_python_stubs.py. Do not edit.", *collect_imports(), ""]
     for cls in collect_used_classes(collect_classes()):
         generate_class_stub(cls, lines)
+    lines += [f"{ROOT}: _{ROOT}", ""]
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
 

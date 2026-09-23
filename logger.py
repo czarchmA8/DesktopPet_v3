@@ -16,6 +16,10 @@ _log_queue: "multiprocessing.Queue" = multiprocessing.Queue()
 _listener = None
 _console_allocated = False
 
+_SC_CLOSE = 0xF060
+_MF_BYCOMMAND = 0x00000000
+_MF_GRAYED = 0x00000001
+
 def _allocate_console(initially_visible: bool) -> None:
     """Allocates a Windows console and redirects stdout/stderr to it."""
     global _console_allocated
@@ -29,6 +33,13 @@ def _allocate_console(initially_visible: bool) -> None:
         kernel32 = ctypes.windll.kernel32
         if kernel32.GetConsoleWindow() == 0:
             kernel32.AllocConsole()
+
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd:
+            h_menu = ctypes.windll.user32.GetSystemMenu(hwnd, False)
+            if h_menu:
+                ctypes.windll.user32.EnableMenuItem(h_menu, _SC_CLOSE, _MF_BYCOMMAND | _MF_GRAYED)
+        
         sys.stdout = open("CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1)
         sys.stderr = open("CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1)
 

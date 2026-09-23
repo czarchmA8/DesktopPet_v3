@@ -4,6 +4,9 @@ import json
 from enum import StrEnum, auto
 from typing import Callable
 import uuid
+import importlib.util
+import sys
+from types import ModuleType
 
 from PySide6.QtGui import QImageReader, QCursor
 from lupa.lua54 import LuaRuntime
@@ -20,7 +23,7 @@ class ScriptLanguage(StrEnum):
     python = auto()
     lua = auto()
 
-@dataclass
+@dataclass(frozen=True)
 class Mod:
     id: str
     name: str
@@ -31,7 +34,7 @@ class Mod:
     preview_path: Path | None
     script_language: ScriptLanguage
 
-@dataclass
+@dataclass(frozen=True)
 class Entity:
     """Entity metadata goes to shared_data (dashboard reads it)."""
     id: str
@@ -44,7 +47,7 @@ def _noop(*args, **kwargs) -> None:
     """An empty function that does nothing."""
     pass
 
-@dataclass
+@dataclass(frozen=True)
 class EntityData:
     """Functions of a specific spawned instance"""
     delete_func: Callable
@@ -53,6 +56,11 @@ class EntityData:
     teleport_func: Callable
     get_info_func: Callable
     tick_func: Callable
+
+@dataclass
+class ModInstance:
+    script_language: ScriptLanguage
+    runtime: LuaRuntime | ModuleType
 
 def filter_attribute_access(obj, attr_name, is_setting):
     if isinstance(attr_name, str) and not attr_name.startswith("_"):
@@ -73,7 +81,7 @@ class ModsManager:
         self.mouse_events: dict[str, MouseButtonEvent] = {}
         self.mouse_scroll: MouseScroll = MouseScroll()
 
-        self.mod_runtimes: list[LuaRuntime] = []
+        self.loaded_mods: list[ModInstance] = []
         
         self.load_mods()
 
@@ -136,9 +144,68 @@ class ModsManager:
             script_language=script_language
         )
 
-    def run_mods(self) -> None:
+    def _run_python_mod(self, mod_id: str, script_path: Path) -> None:
         from desktop.mod_api import ModAPI
 
+        module_name = f"mod_{mod_id}"
+        spec = importlib.util.spec_from_file_location(module_name, script_path)
+        if spec is None or spec.loader is None:
+            log.warning(f'Error loading mod "{mod_id}": cannot create module spec')
+            return
+
+        module = importlib.util.module_from_spec(spec)
+        mod_api = ModAPI(self, mod_id)
+        module.__dict__.update(ModAPI=mod_api, print=mod_api._print)
+
+        sys.modules[module_name] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception as e:
+            sys.modules.pop(module_name, None)
+            log.warning(f'Error in mod code "{mod_id}": {e}')
+            return
+
+        self.loaded_mods.append(ModInstance(ScriptLanguage.python, module))
+        log.info(f'Mod "{mod_id}" launched')
+    
+    def _run_lua_mod(self, mod_id: str, script_path: Path) -> None:
+        from desktop.mod_api import ModAPI
+
+        lua = LuaRuntime(
+            unpack_returned_tuples=True,
+            register_eval=False,
+            register_builtins=False,
+            attribute_filter=filter_attribute_access,
+        )
+
+        lua.execute("""
+            os = nil
+            io = nil
+            file = nil
+            dofile = nil
+            loadfile = nil
+            debug = nil
+            require = nil
+            package = nil
+            load = nil
+            python = nil
+        """)
+
+        # Sharing the program API in a mod
+        mod_api = ModAPI(self, mod_id)
+        lua.globals().ModAPI = mod_api
+        lua.globals().print = mod_api._print
+
+        # Running the mod code
+        code = script_path.read_text(encoding="utf-8")
+        try:
+            lua.execute(code)
+            self.loaded_mods.append(ModInstance(ScriptLanguage.lua, lua))
+            log.info(f"Mod \"{mod_id}\" launched")
+        except Exception as e:
+            log.warning(f"Error in mod code \"{mod_id}\": {e}")
+    
+    def run_mods(self) -> None:
         settings = self.shared_data.settings
         settings["active_mods"] = [mod_id for mod_id in settings["active_mods"] if mod_id in self.shared_data.active_mods]
         self.shared_data.settings = settings
@@ -150,50 +217,25 @@ class ModsManager:
             mod_lua_script_path = MODS_DIR / mod_id / "main.lua"
 
             if mod_python_script_path.exists():
-                pass # TODO: Dodaj obsługę modów napisanych w python
+                self._run_python_mod(mod_id, mod_python_script_path)
             elif mod_lua_script_path.exists():
-                lua = LuaRuntime(
-                    unpack_returned_tuples=True,
-                    register_eval=False,
-                    register_builtins=False,
-                    attribute_filter=filter_attribute_access,
-                )
-
-                lua.execute("""
-                    os = nil
-                    io = nil
-                    file = nil
-                    dofile = nil
-                    loadfile = nil
-                    debug = nil
-                    require = nil
-                    package = nil
-                    load = nil
-                    python = nil
-                """)
-
-                # Sharing the program API in a mod
-                mod_api = ModAPI(self, mod_id)
-                lua.globals().ModAPI = mod_api
-                lua.globals().print = mod_api._print
-
-                # Running the mod code
-                code = mod_lua_script_path.read_text(encoding="utf-8")
-                try:
-                    lua.execute(code)
-                    self.mod_runtimes.append(lua)
-                    log.info(f"Mod \"{mod_id}\" launched")
-                except Exception as e:
-                    log.warning(f"Error in mod code \"{mod_id}\": {e}")
+                self._run_lua_mod(mod_id, mod_lua_script_path)
             else:
                 log.warning(f"Mod \"{mod_id}\" has no script")
     
     def tick(self) -> None:
         hitbox_overlay = self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["hitbox_overlay"]
         # global mod tick
-        for mod in self.mod_runtimes:
-            if "tick" in mod.globals():
-                mod.globals().tick(hitbox_overlay)
+        for mod in self.loaded_mods:
+            if mod.script_language == ScriptLanguage.python:
+                tick_func = getattr(mod.runtime, "tick", None)
+                if tick_func is not None:
+                    tick_func(hitbox_overlay)
+            elif mod.script_language == ScriptLanguage.lua:
+                if "tick" in mod.runtime.globals():
+                    mod.runtime.globals().tick(hitbox_overlay)
+            else:
+                raise Exception("Unknown script language")
 
         # instances (entities) tick
         for entity_data in self.displayed_entities.values():
