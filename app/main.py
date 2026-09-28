@@ -3,13 +3,13 @@ import sys
 import traceback
 import json
 import argparse
-import shutil
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtCore import Qt, QUrl
 
 import app.config as config
+from app.settings import load_settings
 import app.logger as logger
 from app.shared_state import SharedState
 from app.desktop.overlay_manager import run_app as run_app_desktop
@@ -63,34 +63,6 @@ def show_error_msg_box(error_msg) -> None:
     if msg_box.clickedButton() == open_folder_btn:
         log_dir = str(config.APP_DIR / "logs")
         QDesktopServices.openUrl(QUrl.fromLocalFile(log_dir))
-
-def deep_fill_defaults(settings: dict, default_settings: dict) -> dict:
-    for key, value in default_settings.items():
-        if key not in settings:
-            settings[key] = value
-        elif isinstance(settings[key], dict) and isinstance(value, dict):
-            deep_fill_defaults(settings[key], value)
-    return settings
-
-def load_settings() -> dict:
-    settings_file = config.APP_DIR / "settings.json"
-    default_settings_file = config.RESOURCE_DIR / "settings.default.json"
-    if settings_file.exists():
-        with open(default_settings_file, "r", encoding="utf-8") as f:
-            default_settings = json.load(f)
-
-        with open(settings_file, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-
-        return deep_fill_defaults(settings, default_settings)
-    else:
-        shutil.copy(default_settings_file, settings_file)
-        print("🔄 Created a local \"settings.json\" file from the defaults.")
-
-        with open(settings_file, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-
-        return settings
 
 def run_processes(shared_data: SharedState, error_queue, log_queue) -> str | None:
     """Starts the PET and DASHBOARD processes and monitors them until both terminate. Returns an error message (if any) or None."""

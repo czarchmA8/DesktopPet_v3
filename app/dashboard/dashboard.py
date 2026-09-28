@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 import winreg
-from typing import Callable, Any, Iterable
+from typing import Callable, Any, Iterable, cast
 import requests
 import time
 from datetime import datetime
@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
     exit_requested = Signal() # Used only for keyboard shortcuts, so I don't get the "Terminating process DASHBOARD..." message
     translate = QCoreApplication.translate
 
-    def __init__(self, conn, shared_data: SharedState, translator):
+    def __init__(self, conn, shared_data: SharedState, translator) -> None:
         super().__init__()
 
         self.conn = conn
@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_update_application.clicked.connect(self.on_click_update)
 
     def _setup_hotkeys(self) -> None:
-        def _add_hotkey(sequence, callback):
+        def _add_hotkey(sequence, callback) ->  Any | None:
             """Registers hotkey if sequence is not None/empty, otherwise returns None."""
             if sequence:
                 try:
@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
                     log.error(f"[Hotkey] Failed to register '{sequence}': {e}")
             return None
 
-        self.hotkeys_widgets = {
+        self.hotkeys_widgets: dict[str, dict[str, HotkeyBinding]] = {
             "app": {
                 "show": HotkeyBinding(
                     label_shortcut = self.ui.label_show_shortcut_value,
@@ -274,16 +274,14 @@ class MainWindow(QMainWindow):
                 ),
             },
         }
-        hotkeys_settings: dict = self.shared_data.settings["hotkeys"]
-        self.hotkeys: dict[str, dict] = {}
+        hotkeys_settings = self.shared_data.settings["hotkeys"]
+        self.hotkeys: dict[str, dict[str, Any | None]] = {}
         for category in self.hotkeys_widgets:
             for key in self.hotkeys_widgets[category]:
                 self.hotkeys.setdefault(category, {})[key] = _add_hotkey(hotkeys_settings[category][key], self.hotkeys_widgets[category][key].callback)
-        # self.hotkeys["objects"]["create"] = {
-        #     name: _add_hotkey(hotkeys_settings["objects"]["create"][name], lambda name=name: conn.send(["spawn_object", name]))
-        #     for name in hotkeys_settings["objects"].get("create", {})
-        #     if Path("Assets", "Objects", name).exists()
-        # }
+
+    def _hotkeys_settings(self) -> dict[str, dict[str, str | None]]:
+        return cast(dict[str, dict[str, str | None]], self.shared_data.settings["hotkeys"])
 
     def retranslate_ui(self) -> None:
         self.ui.retranslate_ui(self)
@@ -347,15 +345,17 @@ class MainWindow(QMainWindow):
         self.save_settings_state()
 
     def restore_window_geometry(self) -> None:
-        window_geometry = self.shared_data.settings["window_geometry"]
-        if not all([window_geometry["width"], window_geometry["height"], window_geometry["x"], window_geometry["y"], window_geometry["screen_name"]]):
+        geo = self.shared_data.settings["window_geometry"]
+        width, height, x, y = geo["width"], geo["height"], geo["x"], geo["y"]
+        target_screen_name = geo["screen_name"]
+
+        if width is None or height is None or x is None or y is None or not target_screen_name:
             self.reset_geometry()
             return
 
-        self.resize(window_geometry["width"], window_geometry["height"])
-        self.move(window_geometry["x"], window_geometry["y"])
+        self.resize(width, height)
+        self.move(x, y)
 
-        target_screen_name = window_geometry["screen_name"]
         screens = QGuiApplication.screens()
         target_screen = next((s for s in screens if s.name() == target_screen_name), None)
         if target_screen is None:
@@ -364,20 +364,20 @@ class MainWindow(QMainWindow):
         self.setScreen(target_screen)
 
     # Window events
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         self.save_window_geometry()
         super().resizeEvent(event)
 
-    def moveEvent(self, event):
+    def moveEvent(self, event) -> None:
         self.save_window_geometry()
         super().moveEvent(event)
 
-    def changeEvent(self, event):
+    def changeEvent(self, event) -> None:
         if event.type() == QEvent.Type.LanguageChange:
             self.retranslate_ui()
         super().changeEvent(event)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         """Hides window instead of closing, unless Shift is held - then closes the whole app"""
         if QGuiApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier:
             event.accept()

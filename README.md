@@ -134,7 +134,7 @@ Mods add new entities and behavior to the application. They are written in Lua o
 
 - **Logs** are written to the `logs/` folder.
 - **A mod does not show up**. The reason should be written in the log (e.g. `Error loading mod "id": ...`).
-- **Reset settings**: close the application and delete `settings.json`, it is recreated from `settings.default.json`.
+- **Reset settings**: close the application and delete `settings.json`, it is recreated from `settings.py` automatically.
 - **Something else?** [Open an issue](https://github.com/czarchmA8/DesktopPet_v3/issues) and attach the latest log file.
 
 ## Contributing

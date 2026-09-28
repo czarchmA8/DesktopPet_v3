@@ -18,7 +18,7 @@ from app.desktop.input_events import InputState, MouseButtonEvent
 log = logger.get_logger("overlay_manager")
 
 class TransparentWindow(QWidget):
-    def __init__(self, target_hwnd: int, mods_manager: ModsManager):
+    def __init__(self, target_hwnd: int, mods_manager: ModsManager) -> None:
         super().__init__()
         self.mods_manager: ModsManager = mods_manager
         
@@ -172,7 +172,7 @@ class TransparentWindow(QWidget):
         return False
 
 class OverlayManager(QApplication):
-    def __init__(self, conn, shared_data: SharedState):
+    def __init__(self, conn, shared_data: SharedState) -> None:
         super().__init__(sys.argv)
 
         self.conn = conn
@@ -207,7 +207,7 @@ class OverlayManager(QApplication):
 
         self.mods_manager.run_mods()
 
-    def tick(self):
+    def tick(self) -> None:
         self.shared_data.pull()
         self.process_timer.start("tick")
         # --- Obliczenie Delta Time ---

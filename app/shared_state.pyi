@@ -1,13 +1,15 @@
 """file created only for automatic code completion in application"""
 from multiprocessing.managers import SyncManager
 from argparse import Namespace
-from desktop.mods_manager import Mod, Entity
+
+from app.desktop.mods_manager import Mod, Entity
+from app.settings import AppConfig
 
 class SharedState:
     args: Namespace
     """Stores application startup arguments"""
 
-    settings: dict
+    settings: AppConfig
     """Stores settings from `settings.json`"""
 
     restarted: bool

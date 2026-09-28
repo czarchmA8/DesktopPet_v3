@@ -75,7 +75,7 @@ app/
   icon.ico
   logger.py                 Multi-process logging, log files, automatic cleanup
   main.py                   Launcher: starts the DASHBOARD and DESKTOP processes
-  settings.default.json     Defaults used to create settings.json
+  settings.py               Settings management: defines default values, loads runtime config, and creates settings.json
   shared_state.py           SharedState: cross-process data with pull()
   shared_state.pyi
   utils_debug.py            Debug window, hitbox rendering, helpers
