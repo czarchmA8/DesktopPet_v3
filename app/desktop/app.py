@@ -4,11 +4,11 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from Box2D import b2CircleShape, b2PolygonShape
 import win32gui
 
-import utils_debug
-import logger
-from desktop.pet import PetWidget
-from desktop.world_objects import WorldObjectsManager
-from desktop.physics_utils import m_to_px
+import app.utils_debug as utils_debug
+import app.logger as logger
+from app.desktop.pet import PetWidget
+from app.desktop.world_objects import WorldObjectsManager
+from app.desktop.physics_utils import m_to_px
 
 log = logger.get_logger("desktop")
 

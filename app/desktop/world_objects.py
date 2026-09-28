@@ -17,17 +17,17 @@ from Box2D import (
     b2ContactListener,
 )
 
-import config
+import app.config as config
 from windows_z_order.neighbors import get_immediate_neighbors_above_and_below, get_real_window_above, get_real_window_below, get_window_above, get_window_below # noqa: F401
-import logger
-from desktop.physics_utils import (
+import app.logger as logger
+from app.desktop.physics_utils import (
     XYXY_Rectangle, CollisionTypes, 
     px_to_m, px_to_m_vec, m_to_px_vec, 
     polygon_area, simplify_convex_polygon,
     DEFAULT_FRICTION, DEFAULT_ELASTICITY, DEFAULT_MASS, DEFAULT_ANGULAR_DAMPING, DEFAULT_LINEAR_DAMPING,
     HitboxShapes,
 )
-from dashboard.objects_editor import generate_hull_vertices
+from app.dashboard.objects_editor import generate_hull_vertices
 
 log = logger.get_logger("world_objects")
 

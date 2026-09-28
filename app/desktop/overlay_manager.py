@@ -8,12 +8,12 @@ from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtCore import Qt, QTimer, QCoreApplication
 from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent
 
-import utils_debug
-import logger
-from shared_state import SharedState
-from windows_z_order.watcher import WindowsWatcher, WindowNeighbors
-from desktop.mods_manager import ModsManager
-from desktop.input_events import InputState, MouseButtonEvent
+import app.utils_debug as utils_debug
+import app.logger as logger
+from app.shared_state import SharedState
+from app.windows_z_order.watcher import WindowsWatcher, WindowNeighbors
+from app.desktop.mods_manager import ModsManager
+from app.desktop.input_events import InputState, MouseButtonEvent
 
 log = logger.get_logger("overlay_manager")
 

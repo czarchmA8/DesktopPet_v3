@@ -44,7 +44,7 @@ body:
       placeholder: |
         List any files or components you think are related to this bug, e.g.:
         - README.md
-        - dashboard/dashboard.py
+        - app/dashboard/dashboard.py
   - type: dropdown
     id: assign
     attributes:

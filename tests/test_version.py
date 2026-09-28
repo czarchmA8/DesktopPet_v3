@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 import re
 
-from config import APP_VERSION, APP_VERSION_DATE
+import app.config as config
 
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:\.dev\d+)?$")
 DATE_FORMAT = "%Y.%m.%d, %H:%M"
@@ -21,7 +21,7 @@ def is_valid_date(date_str: str) -> bool:
 @pytest.mark.parametrize(
     "version_str, expected",
     [
-        (APP_VERSION, True),
+        (config.APP_VERSION, True),
         ("1.2.3", True),
         ("0.0.1", True),
         ("10.20.30", True),
@@ -40,7 +40,7 @@ def test_version_format(version_str: str, expected: bool) -> None:
 @pytest.mark.parametrize(
     "date_str, expected",
     [
-        (APP_VERSION_DATE, True),
+        (config.APP_VERSION_DATE, True),
         ("2026.08.27, 10:48", True),
         ("2024.01.01, 00:00", True),
         ("2026.8.27, 10:48", False),

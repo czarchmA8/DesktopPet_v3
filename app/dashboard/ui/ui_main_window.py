@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox,
     QToolButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
     QWidget)
 
-from dashboard.widgets.custom_labels import (AspectRatioLabel, BannerLabel)
+from app.dashboard.widgets.custom_labels import (AspectRatioLabel, BannerLabel)
 
 class Ui_MainWindow(object):
     def setup_ui(self, MainWindow):

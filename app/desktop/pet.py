@@ -5,10 +5,10 @@ import win32gui, win32con
 import math
 from dataclasses import dataclass
 
-import config
+import app.config as config
 from windows_z_order.neighbors import get_immediate_neighbors_above_and_below, is_real_window, get_real_window_above, get_real_window_below, get_window_above, get_window_below # noqa: F401
-import logger
-from desktop.physics_utils import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
+import app.logger as logger
+from app.desktop.physics_utils import XYXY_Rectangle, XYWH_Rectangle, CustomHitboxCollisions
 
 log = logger.get_logger("pet")
 

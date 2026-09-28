@@ -31,7 +31,7 @@ body:
       placeholder: |
         List any files you think will need to be added or modified, e.g.:
         - README.md
-        - dashboard/ui/ui_main_window.py
+        - app/dashboard/ui/ui_main_window.py
   - type: dropdown
     id: assign
     attributes:

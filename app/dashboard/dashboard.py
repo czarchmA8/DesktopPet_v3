@@ -23,18 +23,18 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QIcon, QPixmap, QDesktopServices, QGuiApplication
 
-import config
-import logger
-from shared_state import SharedState
-from desktop.mods_manager import Mod, Entity
-from dashboard.objects_editor import MainWindow as ObjectsEditorWindow
-from dashboard.translator import Translator, replace_format
-from dashboard.ui.ui_main_window import Ui_MainWindow
-from dashboard.widgets.shortcut_edit import HotkeyDialog
-from dashboard.widgets.mod_row import Mod_row
-from dashboard.widgets.update_dialog import UpdateDialog
-from dashboard.widgets.category_sep import CategorySeparator
-from dashboard.widgets.saved_mods_dialog import SavedModsListDialog
+import app.config as config
+import app.logger as logger
+from app.shared_state import SharedState
+from app.desktop.mods_manager import Mod, Entity
+from app.dashboard.objects_editor import MainWindow as ObjectsEditorWindow
+from app.dashboard.translator import Translator, replace_format
+from app.dashboard.ui.ui_main_window import Ui_MainWindow
+from app.dashboard.widgets.shortcut_edit import HotkeyDialog
+from app.dashboard.widgets.mod_row import Mod_row
+from app.dashboard.widgets.update_dialog import UpdateDialog
+from app.dashboard.widgets.category_sep import CategorySeparator
+from app.dashboard.widgets.saved_mods_dialog import SavedModsListDialog
 
 MODS_DIR = config.APP_DIR / "Mods"
 

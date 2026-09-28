@@ -51,22 +51,37 @@ Mods talk to the application only through [`ModAPI`](modding/api-reference.md) (
 
 ```text
 .github/                    Issue and pull request templates, CI workflows
-Assets/                     Sounds, animations, object images
-dashboard/                  Dashboard process
-  dashboard.py              Control panel
-  objects_editor.py         Editor of object hitboxes and physics properties
-  translator.py             Runtime language switching
-  ui/                       Qt Designer generated layouts
-  widgets/                  Reusable widgets
-desktop/                    Desktop process
-  overlay_manager.py        Overlay layers and the frame loop
-  mods_manager.py           Loading and running mods
-  mod_api.py                ModAPI given to mods
-  input_events.py           Input data types (input states, key names, clicks, scroll)
-  physics_utils.py          Collision detection, shapes, Box2D conversions, geometry helpers
+app/
+  Assets/                   Sounds, animations, object images
+  dashboard/                Dashboard process
+    dashboard.py            Control panel
+    objects_editor.py       Editor of object hitboxes and physics properties
+    translator.py           Runtime language switching
+    ui/                     Qt Designer generated layouts
+    widgets/                Reusable widgets
+  desktop/                  Desktop process
+    overlay_manager.py      Overlay layers and the frame loop
+    mods_manager.py         Loading and running mods
+    mod_api.py              ModAPI given to mods
+    input_events.py         Input data types (input states, key names, clicks, scroll)
+    physics_utils.py        Collision detection, shapes, Box2D conversions, geometry helpers
+  logs/                     User debug logs
+  Mods/                     User mods
+  translations/             Qt translation sources (.ts); compiled .qm files are generated locally
+  windows_z_order/
+    neighbors.py            Windows directly above and below a given hwnd
+    watcher.py              Window event listener keeping the z-order list up to date
+  config.py                 Paths and application constants
+  icon.ico
+  logger.py                 Multi-process logging, log files, automatic cleanup
+  main.py                   Launcher: starts the DASHBOARD and DESKTOP processes
+  settings.default.json     Defaults used to create settings.json
+  shared_state.py           SharedState: cross-process data with pull()
+  shared_state.pyi
+  utils_debug.py            Debug window, hitbox rendering, helpers
+  version.json              Version and its date
+
 docs/                       Project documentation
-logs/                       User debug logs
-Mods/                       User mods
 tests/                      Automated tests
 tools/                      Developer scripts
   create_exe.py             Executable builder. Packages the application into a standalone `.exe` using PyInstaller.
@@ -74,29 +89,16 @@ tools/                      Developer scripts
   update_languages.py       Translation updater. Automates the Qt translation workflow — regenerates `.ts` files from the source code and compiles them into `.qm` files.
   generate_lua_stubs.py     Lua definitions updater. Generates a `mod_api.lua` file used to add autocomplete and better code formatting in mod scripts.
   generate_python_stubs.py  Python definitions updater. Generates a `mod_api.pyi` file used to add autocomplete and better code formatting in mod scripts.
-translations/               Qt translation sources (.ts); compiled .qm files are generated locally
-windows_z_order/
-  neighbors.py              Windows directly above and below a given hwnd
-  watcher.py                Window event listener keeping the z-order list up to date
 .gitignore
 .luarc.json
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md
 LICENSE.txt
-README.md
-config.py                   Paths and application constants
-icon.ico
-logger.py                   Multi-process logging, log files, automatic cleanup
-main.py                     Launcher: starts the DASHBOARD and DESKTOP processes
 pyproject.toml              Dependencies (uv)
-settings.default.json       Defaults used to create settings.json
-shared_state.py             SharedState: cross-process data with pull()
-shared_state.pyi
-utils_debug.py              Debug window, hitbox rendering, helpers
+README.md
+SECURITY.md
 uv.lock                     lockfile (do not edit by hand)
-version.json                Version and its date
 ```
-
 
 ### Legacy modules
 

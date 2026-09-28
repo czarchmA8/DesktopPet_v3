@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 import pathspec
 
-import config
+import app.config as config
 
 QM_DIR: Path = config.APP_DIR / "translations"
 TS_DIR: Path = config.APP_DIR / "translations"

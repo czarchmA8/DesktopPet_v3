@@ -10,8 +10,8 @@ import win32api
 import win32con
 import win32gui
 
-from windows_z_order.neighbors import get_real_window_above, get_real_window_below, get_window_above, get_window_below
-from desktop.physics_utils import XYXY_Rectangle
+from app.windows_z_order.neighbors import get_real_window_above, get_real_window_below, get_window_above, get_window_below
+from app.desktop.physics_utils import XYXY_Rectangle
 
 # ---------------------------------------------------------------------------
 # Constants WinEvent (winuser.h)

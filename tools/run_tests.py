@@ -22,7 +22,7 @@ import mypy # noqa: F401
 import ruff # noqa: F401
 import pipreqs # noqa: F401
 
-import config
+from tools import PROJECT_DIR
 
 TOOLS = ("ruff", "mypy", "pipreqs", "pytest")
 
@@ -39,15 +39,15 @@ def get_ignored_dirs() -> list[str]:
     """Returns a list of ignored top-level folders based on `.gitignore` and `.git/info/exclude`."""
     gitignore_lines: list[str] = []
 
-    for gitignore_file in (config.APP_DIR / ".gitignore", config.APP_DIR / ".git" / "info" / "exclude"):
+    for gitignore_file in (PROJECT_DIR / ".gitignore", PROJECT_DIR / ".git" / "info" / "exclude"):
         if gitignore_file.is_file():
             gitignore_lines.extend(gitignore_file.read_text(encoding="utf-8").splitlines())
     spec = pathspec.GitIgnoreSpec.from_lines(gitignore_lines)
 
     ignored_dirs: set[str] = set()
-    for entry in config.APP_DIR.iterdir():
+    for entry in PROJECT_DIR.iterdir():
         if entry.is_dir():
-            rel_path = entry.relative_to(config.APP_DIR).as_posix()
+            rel_path = entry.relative_to(PROJECT_DIR).as_posix()
             if spec.match_file(f"{rel_path}/"):
                 ignored_dirs.add(rel_path)
 
@@ -63,7 +63,7 @@ def run_mypy() -> None:
     )
 
 def run_pipreqs(ignored_dirs: list[str]) -> None:
-    requirements_path = config.APP_DIR / "tools" / "output" / "requirements.txt"
+    requirements_path = PROJECT_DIR / "tools" / "output" / "requirements.txt"
     requirements_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = ["uv", "run", "pipreqs", ".", "--mode", "no-pin", "--savepath", str(requirements_path), "--force", "--encoding=utf-8"]
 
@@ -71,7 +71,7 @@ def run_pipreqs(ignored_dirs: list[str]) -> None:
         cmd += ["--ignore", ",".join(ignored_dirs)]
     run_command(cmd, "Library dependencies (Pipreqs)")
 
-    print(f"{requirements_path.relative_to(config.APP_DIR)}:")
+    print(f"{requirements_path.relative_to(PROJECT_DIR)}:")
     print(requirements_path.read_text("utf-8"))
 
 def run_pytest() -> None:
@@ -79,7 +79,7 @@ def run_pytest() -> None:
 
 def run_tests() -> None:
     """Runs the quality-check pipeline."""
-    os.chdir(config.APP_DIR)
+    os.chdir(PROJECT_DIR)
     for tool in TOOLS:
         print(f"{tool}=={importlib.metadata.version(tool)}")
 

@@ -3,7 +3,7 @@ import inspect
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTranslator
 
-from config import RESOURCE_DIR
+from app.config import RESOURCE_DIR
 
 def replace_format(string: str, *args) -> str:
     """Replaces all %1, %2, ... with the given strings one by one"""

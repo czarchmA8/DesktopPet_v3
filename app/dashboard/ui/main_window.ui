@@ -2925,12 +2925,12 @@
   <customwidget>
    <class>AspectRatioLabel</class>
    <extends>QLabel</extends>
-   <header>dashboard.widgets.custom_labels</header>
+   <header>app.dashboard.widgets.custom_labels</header>
   </customwidget>
   <customwidget>
    <class>BannerLabel</class>
    <extends>QLabel</extends>
-   <header>dashboard.widgets.custom_labels</header>
+   <header>app.dashboard.widgets.custom_labels</header>
   </customwidget>
  </customwidgets>
  <resources/>

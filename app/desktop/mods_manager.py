@@ -11,10 +11,10 @@ from types import ModuleType
 from PySide6.QtGui import QImageReader, QCursor
 from lupa.lua54 import LuaRuntime
 
-import config
-import logger
-from shared_state import SharedState
-from desktop.input_events import InputState, MouseButtonEvent, MouseScroll
+import app.config as config
+import app.logger as logger
+from app.shared_state import SharedState
+from app.desktop.input_events import InputState, MouseButtonEvent, MouseScroll
 
 log = logger.get_logger("mods_manager")
 MODS_DIR = config.APP_DIR / "Mods"
@@ -145,7 +145,7 @@ class ModsManager:
         )
 
     def _run_python_mod(self, mod_id: str, script_path: Path) -> None:
-        from desktop.mod_api import ModAPI
+        from app.desktop.mod_api import ModAPI
 
         module_name = f"mod_{mod_id}"
         spec = importlib.util.spec_from_file_location(module_name, script_path)
@@ -169,7 +169,7 @@ class ModsManager:
         log.info(f'Mod "{mod_id}" launched')
     
     def _run_lua_mod(self, mod_id: str, script_path: Path) -> None:
-        from desktop.mod_api import ModAPI
+        from app.desktop.mod_api import ModAPI
 
         lua = LuaRuntime(
             unpack_returned_tuples=True,

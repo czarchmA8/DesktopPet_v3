@@ -10,7 +10,7 @@ import atexit
 import copy
 import hashlib
 
-import config
+import app.config
 
 _log_queue: "multiprocessing.Queue" = multiprocessing.Queue()
 _listener = None
@@ -49,7 +49,7 @@ def _allocate_console(initially_visible: bool) -> None:
         if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
             kernel32.SetConsoleMode(handle, mode.value | _ENABLE_VIRTUAL_TERMINAL_PROCESSING)
         
-        kernel32.SetConsoleTitleW(f"{config.APP_NAME} - Debug Console")
+        kernel32.SetConsoleTitleW(f"{app.config.APP_NAME} - Debug Console")
 
     _console_allocated = True
     if not initially_visible:
@@ -157,7 +157,7 @@ def init(file_name: str = "main", console_visible: bool = False, max_old_logs: i
 
     _allocate_console(initially_visible=console_visible)
 
-    logs_folder = config.APP_DIR / "logs"
+    logs_folder = app.config.APP_DIR / "logs"
     logs_folder.mkdir(exist_ok=True)
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

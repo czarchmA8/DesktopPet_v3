@@ -2,10 +2,10 @@ from pathlib import Path
 
 from PySide6.QtGui import QColor, QPixmap, QImage, QCursor
 
-from desktop.input_events import InputState, MouseButtonName, MouseButtonEvent, MouseScroll
-from desktop.mods_manager import ModsManager, Entity, Mod
-import config
-import logger
+from app.desktop.input_events import InputState, MouseButtonName, MouseButtonEvent, MouseScroll
+from app.desktop.mods_manager import ModsManager, Entity, Mod
+import app.config as config
+import app.logger as logger
 
 class ModAPI:
     """The API object injected into every mod script; the interface between a mod and the application."""
@@ -248,7 +248,5 @@ class ModAPI:
         self._mods_manager.kill_entity(instance_id)
 
 if __name__ == "__main__":
-    from tools.generate_lua_stubs import write_stub as write_lua_stub
-    from tools.generate_python_stubs import write_stub as write_python_stub
-    write_lua_stub()
-    write_python_stub()
+    from tools.stub_common import main
+    main()

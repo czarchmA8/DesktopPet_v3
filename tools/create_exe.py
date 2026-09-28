@@ -6,7 +6,8 @@ from pathlib import Path
 
 import PyInstaller.__main__
 
-import config
+import app.config as config
+from tools import PROJECT_DIR
 
 # Resources packed inside .exe (read-only)
 RESOURCES_TO_INCLUDE = [
@@ -63,7 +64,7 @@ def get_option(question: str, default_option: str | None=None):
 def main() -> None:
     """Builds the executable and optionally bundle resources."""
     print(f"App name: {config.APP_NAME}")
-    print(f"Project root: {config.APP_DIR}")
+    print(f"Project root: {PROJECT_DIR}")
     
     option_update_translations = get_option("Update translations?", "y")
     option_run_tests = get_option("Run tests?", "y")
@@ -85,7 +86,7 @@ def main() -> None:
     main_file_path = config.APP_DIR / "main.py"
     icon_file_path = config.APP_DIR / "icon.ico"
 
-    dist_dir_path = config.APP_DIR / "tools" / "output" / "Build"
+    dist_dir_path = PROJECT_DIR / "tools" / "output" / "Build"
     spec_file_path = dist_dir_path / f"{config.APP_NAME}.spec"
     work_dir_path = dist_dir_path / "Temp"
 
@@ -124,6 +125,7 @@ def main() -> None:
     PyInstaller.__main__.run(
         [
             str(main_file_path),
+            f"--paths={PROJECT_DIR}",
             "--onedir",
             "--windowed",
             f"--icon={icon_file_path}",

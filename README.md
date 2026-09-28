@@ -84,7 +84,7 @@ defined by mods written in Python or Lua.
 
 5. **Run application**
     ```bash
-    uv run main.py
+    uv run python -m app.main
     ```
 
 ### Launch Options with Arguments
@@ -97,7 +97,7 @@ The application supports the following command-line parameters:
 | `--autostart` |       | Flag used internally by the autostart entry, you don't need to pass it | off     |
 
 ```bash
-uv run main.py --debug 2
+uv run python -m app.main --debug 2
 ```
 
 ### Creating an .exe file (Windows)

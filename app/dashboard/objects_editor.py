@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QStackedWidget
 )
 
-from dashboard.translator import Translator
-from desktop.physics_utils import (
+from app.dashboard.translator import Translator
+from app.desktop.physics_utils import (
     HitboxShapes, MAX_POLYGON_VERTICES,
     DEFAULT_MASS, DEFAULT_ELASTICITY, DEFAULT_FRICTION, DEFAULT_ANGULAR_DAMPING, DEFAULT_LINEAR_DAMPING,
 )

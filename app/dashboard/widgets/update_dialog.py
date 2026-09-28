@@ -6,8 +6,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QFont
 
-import config
-from dashboard.translator import replace_format
+import app.config as config
+from app.dashboard.translator import replace_format
 
 class UpdateDialog(QDialog):
     def __init__(self, new_version, new_version_date, parent=None):

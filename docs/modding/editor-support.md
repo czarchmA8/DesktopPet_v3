@@ -12,7 +12,7 @@ editor shows in hover and completion popups. That makes the stubs the practical 
 Generate (or regenerate after changing `ModAPI`) with:
 
 ```bash
-uv run desktop/mod_api.py
+uv run app/desktop/mod_api.py
 ```
 
 ## Lua

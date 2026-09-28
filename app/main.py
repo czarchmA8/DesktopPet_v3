@@ -9,11 +9,11 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtCore import Qt, QUrl
 
-import config
-import logger
-from shared_state import SharedState
-from desktop.overlay_manager import run_app as run_app_desktop
-from dashboard.dashboard import run_app as run_app_dashboard
+import app.config as config
+import app.logger as logger
+from app.shared_state import SharedState
+from app.desktop.overlay_manager import run_app as run_app_desktop
+from app.dashboard.dashboard import run_app as run_app_dashboard
 
 def except_hook(cls, exception, traceback_obj) -> None:
     """Global exception hook for uncaught exceptions"""

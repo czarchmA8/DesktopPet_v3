@@ -3,7 +3,7 @@ from pathlib import Path
 from types import ModuleType
 import shutil
 
-from config import APP_DIR
+from tools import PROJECT_DIR
 
 def _load_update_languages_module() -> ModuleType:
     """
@@ -19,7 +19,7 @@ def _load_update_languages_module() -> ModuleType:
 update_languages = _load_update_languages_module()
 TS_DIR: Path = update_languages.TS_DIR
 QM_DIR: Path = update_languages.QM_DIR
-TEMP_DIR: Path = APP_DIR / "tools" / "output" / "temp_tests"
+TEMP_DIR: Path = PROJECT_DIR / "tools" / "output" / "temp_tests"
 SOURCE_FILES: list[Path] = update_languages.SOURCE_FILES
 LANG_CODES_TS: list[str] = update_languages.LANG_CODES
 
@@ -48,7 +48,7 @@ def test_translations_up_to_date() -> None:
 
 def test_the_translation_works_correctly() -> None:
     """Tests the runtime translation mechanism to ensure text dynamically switches between languages as expected."""
-    from dashboard.translator import Translator
+    from app.dashboard.translator import Translator
     from PySide6 import QtCore, QtWidgets
 
     update_languages.update_qm_files(TS_DIR, QM_DIR, LANG_CODES_TS)
