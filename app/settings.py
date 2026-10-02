@@ -98,12 +98,14 @@ DEFAULT_SETTINGS: AppConfig = {
     "saved_mods_list": {}
 }
 
-def deep_fill_defaults(settings: dict) -> dict:
-    for key, value in DEFAULT_SETTINGS.items():
+def deep_fill_defaults(settings: dict, defaults: dict | None = None) -> dict:
+    if defaults is None:
+        defaults = DEFAULT_SETTINGS
+    for key, value in defaults.items():
         if key not in settings:
-            settings[key] = value
+            settings[key] = copy.deepcopy(value)
         elif isinstance(settings[key], dict) and isinstance(value, dict):
-            deep_fill_defaults(settings[key])
+            deep_fill_defaults(settings[key], value)
     return settings
 
 def load_settings() -> AppConfig:

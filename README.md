@@ -23,7 +23,7 @@ defined by mods written in Python or Lua.
 > [!WARNING]
 > Development is still in progress. Bugs may occur and the mod API may still change.
 
-## 📸 Preview
+## Preview
 
 <div align="center">
   <img width="800" height="450" alt="2026-06-22 18-40-51" src="https://github.com/user-attachments/assets/74f2b2ec-055e-4af8-a9c6-826a366df9b3" />
@@ -110,7 +110,7 @@ uv run tools/create_exe.py
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 All application settings are located in the `settings.json` file, with only some configurable through the control panel.
 It is recommended to change settings via the control panel to avoid errors. Some settings must be changed through the
