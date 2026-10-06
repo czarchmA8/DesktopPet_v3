@@ -1,10 +1,10 @@
-"""Local/CI code-quality pipeline runner.
+"""Local code-quality pipeline runner.
 
-Runs the quality-check pipeline used both locally and in CI:
+Runs the quality checks:
     1. Ruff - static lint check.
     2. MyPy - static type checking across the project.
-    3. Pipreqs - regenerates `tools/output/requirements.txt` from actual imports,
-       used as a sanity check that `requirements.txt` stays in sync with the code.
+    3. Pipreqs - regenerates `tools/output/requirements.txt` from actual imports and
+       prints it, to compare with the dependencies in `pyproject.toml` (it never fails the pipeline).
     4. Pytest - runs the automated test suite in `tests/`.
 
 Any step that fails (non-zero exit code) stops the pipeline immediately and

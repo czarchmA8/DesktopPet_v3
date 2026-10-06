@@ -98,7 +98,7 @@ DEFAULT_SETTINGS: AppConfig = {
     "saved_mods_list": {}
 }
 
-def deep_fill_defaults(settings: dict, defaults: dict | None = None) -> dict:
+def deep_fill_defaults(settings: dict, defaults: dict | AppConfig | None = None) -> dict:
     if defaults is None:
         defaults = DEFAULT_SETTINGS
     for key, value in defaults.items():

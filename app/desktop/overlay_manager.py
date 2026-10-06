@@ -5,8 +5,8 @@ from ctypes import wintypes
 
 import win32gui, win32con, win32api
 from PySide6.QtWidgets import QWidget, QApplication
-from PySide6.QtCore import Qt, QTimer, QCoreApplication
-from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent
+from PySide6.QtCore import Qt, QTimer, QCoreApplication, QPointF, QRectF
+from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent, QPainterPath, QPainterPathStroker
 
 import app.utils_debug as utils_debug
 import app.logger as logger
@@ -32,6 +32,7 @@ class TransparentWindow(QWidget):
         vw = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
         vh = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
         self.setGeometry(vx, vy, vw, vh)
+        self.origin_x, self.origin_y = vx, vy
 
         self.target_hwnd: int = target_hwnd
         self.hwnd_self = int(self.winId())
@@ -43,11 +44,14 @@ class TransparentWindow(QWidget):
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.translate(-self.origin_x, -self.origin_y)
         for cmd in self.draw_commands:
             kind = cmd[0]
             if kind == "rect":
-                _, x, y, w, h, color, filled, hit_id = cmd
-                painter.setPen(QPen(color))
+                _, x, y, w, h, color, filled, stroke_width, hit_id = cmd
+                pen = QPen(color)
+                pen.setWidth(stroke_width)
+                painter.setPen(pen)
                 painter.setBrush(color if filled else Qt.BrushStyle.NoBrush)
                 painter.drawRect(x, y, w, h)
             elif kind == "line":
@@ -85,7 +89,7 @@ class TransparentWindow(QWidget):
         if button_name is None:
             log.warning(f"Unknown mouse button: \"{button_name}\"")
             return
-        self.on_mouse_button_event(int(pos.x()), int(pos.y()), button_name, InputState.pressed)
+        self.on_mouse_button_event(int(pos.x()) + self.origin_x, int(pos.y()) + self.origin_y, button_name, InputState.pressed)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         pos = event.position()
@@ -93,23 +97,19 @@ class TransparentWindow(QWidget):
         if button_name is None:
             log.warning(f"Unknown mouse button: \"{button_name}\"")
             return
-        self.on_mouse_button_event(int(pos.x()), int(pos.y()), button_name, InputState.released)
+        self.on_mouse_button_event(int(pos.x()) + self.origin_x, int(pos.y()) + self.origin_y, button_name, InputState.released)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         self.mods_manager.mouse_scroll.x += event.angleDelta().x()
         self.mods_manager.mouse_scroll.y += event.angleDelta().y()
 
         pos = event.position()
-        x = int(pos.x())
-        y = int(pos.y())
+        x = int(pos.x()) + self.origin_x
+        y = int(pos.y()) + self.origin_y
 
-        for cmd in reversed(self.draw_commands):
-            hit_id = cmd[-1]
-            if hit_id is None:
-                continue
-            if self._hit_test(cmd, x, y):
-                self.mods_manager.mouse_scroll.hit_id = hit_id
-                break
+        hit_id = self._hit_test(x, y)
+        if hit_id is not None:
+            self.mods_manager.mouse_scroll.hit_id = hit_id
 
     def on_mouse_button_event(self, x: int, y: int, button: str, button_state: InputState) -> None:
         if button not in self.mods_manager.mouse_events or button_state == InputState.pressed:
@@ -127,49 +127,77 @@ class TransparentWindow(QWidget):
             hit_id=None,
         )
         self.mods_manager.mouse_events[button] = event
-        
-        for cmd in reversed(self.draw_commands):
-            hit_id = cmd[-1]
-            if hit_id is None:
-                continue
-            if self._hit_test(cmd, x, y):
-                self.mods_manager.mouse_events[button].hit_id = hit_id
-                if button_state == InputState.pressed:
-                    self.mods_manager.select_entity(hit_id)
-                break
 
-    @staticmethod
-    def _hit_test(cmd: list, x: int, y: int) -> bool:
+        hit_id = self._hit_test(x, y)
+        if hit_id is not None:
+            self.mods_manager.mouse_events[button].hit_id = hit_id
+            if button_state == InputState.pressed:
+                self.mods_manager.select_entity(hit_id)
+
+    def _hit_test(self, x: int, y: int) -> str | None:
         alpha_hit_threshold = 10
-        kind = cmd[0]
 
-        if kind == "rect":
-            _, rx, ry, rw, rh, color, filled, _hit_id = cmd
-            if not (rx <= x <= rx + rw and ry <= y <= ry + rh):
-                return False
-            if filled and color.alpha() <= alpha_hit_threshold:
-                return False
-            return True
-
-        elif kind == "line":
-            _, x1, y1, x2, y2, color, width, hit_id = cmd
-            return False # TODO: Dodaj sprawdzanie linii
-
-        elif kind == "image":
-            _, ix, iy, iw, ih, pixmap, _opacity, alpha_image, _hit_id = cmd
-            w = iw if iw is not None else pixmap.width()
-            h = ih if ih is not None else pixmap.height()
-            if w <= 0 or h <= 0 or not (ix <= x <= ix + w and iy <= y <= iy + h):
-                return False
-
-            img_x = int((x - ix) / w * alpha_image.width())
-            img_y = int((y - iy) / h * alpha_image.height())
-            img_x = min(max(img_x, 0), alpha_image.width() - 1)
-            img_y = min(max(img_y, 0), alpha_image.height() - 1)
-
-            return alpha_image.pixelColor(img_x, img_y).alpha() > alpha_hit_threshold
-
-        return False
+        for cmd in reversed(self.draw_commands):
+            kind = cmd[0]
+            if kind == "rect":
+                _, rx, ry, rw, rh, color, filled, stroke_width, _hit_id = cmd
+    
+                if filled:
+                    if not (rx <= x <= rx + rw and ry <= y <= ry + rh):
+                        continue
+                    if color.alpha() <= alpha_hit_threshold:
+                        continue
+                    return _hit_id
+                else:
+                    rect_path = QPainterPath()
+                    rect_path.addRect(QRectF(rx, ry, rw, rh))
+    
+                    stroker = QPainterPathStroker()
+                    stroker.setWidth(max(stroke_width, 1))
+    
+                    stroke_path = stroker.createStroke(rect_path)
+                    if stroke_path.contains(QPointF(x, y)):
+                        return _hit_id
+                    else:
+                        continue
+    
+            elif kind == "line":
+                _, x1, y1, x2, y2, color, width, hit_id = cmd
+    
+                if color.alpha() <= alpha_hit_threshold:
+                    continue
+    
+                line_path = QPainterPath()
+                line_path.moveTo(x1, y1)
+                line_path.lineTo(x2, y2)
+    
+                stroker = QPainterPathStroker()
+                stroker.setWidth(max(width, 1))
+    
+                stroke_path = stroker.createStroke(line_path)
+                if stroke_path.contains(QPointF(x, y)):
+                    return hit_id
+                else:
+                    continue
+    
+            elif kind == "image":
+                _, ix, iy, iw, ih, pixmap, _opacity, alpha_image, _hit_id = cmd
+                w = iw if iw is not None else pixmap.width()
+                h = ih if ih is not None else pixmap.height()
+                if w <= 0 or h <= 0 or not (ix <= x <= ix + w and iy <= y <= iy + h):
+                    continue
+    
+                img_x = int((x - ix) / w * alpha_image.width())
+                img_y = int((y - iy) / h * alpha_image.height())
+                img_x = min(max(img_x, 0), alpha_image.width() - 1)
+                img_y = min(max(img_y, 0), alpha_image.height() - 1)
+    
+                if alpha_image.pixelColor(img_x, img_y).alpha() > alpha_hit_threshold:
+                    return _hit_id
+                else:
+                    continue
+    
+        return None
 
 class OverlayManager(QApplication):
     def __init__(self, conn, shared_data: SharedState) -> None:
@@ -178,7 +206,7 @@ class OverlayManager(QApplication):
         self.conn = conn
         self.shared_data: SharedState = shared_data
 
-        self.watcher = WindowsWatcher()
+        self.watcher: WindowsWatcher = WindowsWatcher()
         self.watcher.start()
         self.transparent_windows: dict[int, TransparentWindow] = {}
         self.draw_commands: dict[int, list] = {} # "hwnd": [["draw_rect"...], ["draw_image"...]...]
@@ -237,10 +265,10 @@ class OverlayManager(QApplication):
                     title = win32gui.GetWindowText(hwnd)
                     log.debug(f'A new layer has been created on the window {hwnd} ({title})')
 
-                neighbors: WindowNeighbors | None = self.watcher._windows_cache.get(hwnd, None)
+                neighbors: WindowNeighbors | None = self.watcher._window_neighbors_cache.get(hwnd, None)
                 if neighbors is None or not isinstance(neighbors.window_above, int):
                     self.watcher.get_window_above(hwnd)
-                hdwp = self.user32.DeferWindowPos(hdwp, self.transparent_windows[hwnd].hwnd_self, self.watcher._windows_cache[hwnd].window_above, 0, 0, 0, 0, flags)
+                hdwp = self.user32.DeferWindowPos(hdwp, self.transparent_windows[hwnd].hwnd_self, self.watcher._window_neighbors_cache[hwnd].window_above, 0, 0, 0, 0, flags)
             self.user32.EndDeferWindowPos(hdwp)
 
         # Deleting a `TransparentWindow` if the window assigned to it does not exist

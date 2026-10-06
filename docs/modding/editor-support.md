@@ -1,18 +1,19 @@
 # Editor support (autocomplete)
 
 The `ModAPI` object is injected by the application, so editors do not know it. **Stub files** describe it to them.
-They are generated from `desktop/mod_api.py`, so the documentation written there (docstrings, types) is what your
-editor shows in hover and completion popups. That makes the stubs the practical API reference for mod authors.
+They are generated from `app/desktop/mod_api.py`, so the documentation written there
+(docstrings, types) is what your editor shows in hover and completion popups. That makes the stubs the reference of
+individual functions; the [API reference](api-reference.md) only covers the concepts.
 
 | File                             | For    |
 |:---------------------------------|--------|
 | `tools/output/stubs/mod_api.lua` | Lua    |
 | `tools/output/stubs/mod_api.pyi` | Python |
 
-Generate (or regenerate after changing `ModAPI`) with:
+The stubs are not stored in repository. Generate them from the repository root (and regenerate after changing `ModAPI`) with:
 
 ```bash
-uv run app/desktop/mod_api.py
+uv run python -m tools.stub_common
 ```
 
 ## Lua

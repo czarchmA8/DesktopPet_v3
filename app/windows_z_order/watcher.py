@@ -1,4 +1,4 @@
-"""Win32 event listener (SetWinEventHook) listening for in z-order changes and then updates the nearest neighbors (above/below) of the given windows"""
+"""Win32 event listener (SetWinEventHook) that watches z-order, geometry, title and state changes of windows and serves cached answers."""
 import ctypes
 import threading
 import time
@@ -56,7 +56,7 @@ _user32.SetWinEventHook.argtypes = [
 _user32.UnhookWinEvent.restype = wintypes.BOOL
 _user32.UnhookWinEvent.argtypes = [wintypes.HANDLE]
 
-# Sentinel distinguishing "never downloaded" from the legal value `None`
+# Sentinel distinguishing "never fetched" from the legal value `None`
 # (e.g., the window at the very top/bottom of the z-order has no neighbor -> the result is `None`)
 _MISSING: object = object()
 
@@ -88,29 +88,40 @@ class WindowsWatcher:
         self._started = threading.Event()
         self._thread: threading.Thread | None = None
         self._thread_id: int | None = None
+        self._start_error: BaseException | None = None
         self._callback = _WinEventProcType(self._on_event)
         self._location_callback = _WinEventProcType(self._on_location_or_name_event)
 
         # Neighbors cache (above/below); fully cleared by clear_cache, but only if the z-order actually changed.
-        self._windows_cache: dict[int, WindowNeighbors] = {}
+        self._window_neighbors_cache: dict[int, WindowNeighbors] = {}
         self._z_order_changes_detected: bool = True
 
-        # Window geometry cache; cleared individually per-hwnd only if a size/position changed for that window.
-        self._rect_cache: dict[int, XYXY_Rectangle] = {}
-        self._resized_windows: set[int] = set()
-
-        # Window title cache; cleared individually per-hwnd only if title changes for that window
+        self._rect_cache: dict[int, XYXY_Rectangle | None] = {}
         self._title_cache: dict[int, str] = {}
-        self._changed_title_windows: set[int] = set()
+        self._foreground_window_cache: int | None = None
+        self._window_exists_cache: dict[int, bool] = {}
+        self._visible_window_cache: dict[int, bool] = {}
+        self._minimized_window_cache: dict[int, bool] = {}
+        self._maximized_window_cache: dict[int, bool] = {}
+        self._fullscreen_window_cache: dict[int, bool] = {}
 
     # -- lifecycle ----------------------------------------------------------
 
     def start(self) -> None:
-        """Starts listening"""
+        """Starts listening. Returns once the hooks are installed; raises if they could not be installed."""
         if self._thread is not None:
             return
-        self._thread = threading.Thread(target=self._run, name="NeighborsWatcher", daemon=True)
+        self._started.clear()
+        self._start_error = None
+        self._thread = threading.Thread(target=self._run, name="WindowsWatcher", daemon=True)
         self._thread.start()
+        if not self._started.wait(timeout=5.0):
+            raise TimeoutError("WindowsWatcher thread did not start")
+        if self._start_error is not None:
+            error = self._start_error
+            self._thread.join(timeout=2.0)
+            self._thread = None
+            raise error
 
     def stop(self) -> None:
         """Stops listening"""
@@ -118,7 +129,10 @@ class WindowsWatcher:
             return
         self._started.wait(timeout=2.0)
         if self._thread_id is not None:
-            win32api.PostThreadMessage(self._thread_id, win32con.WM_QUIT, 0, 0)
+            try:
+                win32api.PostThreadMessage(self._thread_id, win32con.WM_QUIT, 0, 0)
+            except Exception:
+                pass
         self._thread.join(timeout=2.0)
         self._thread = None
         self._thread_id = None
@@ -135,7 +149,8 @@ class WindowsWatcher:
 
     def _run(self) -> None:
         self._thread_id = win32api.GetCurrentThreadId()
-        self._started.set()
+        msg = wintypes.MSG()
+        _user32.PeekMessageW(ctypes.byref(msg), None, win32con.WM_USER, win32con.WM_USER, win32con.PM_NOREMOVE)
 
         hook_a = _user32.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_MINIMIZEEND, 0, self._callback, 0, 0, WINEVENT_OUTOFCONTEXT)
         hook_b = _user32.SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_REORDER, 0, self._callback, 0, 0, WINEVENT_OUTOFCONTEXT)
@@ -147,8 +162,11 @@ class WindowsWatcher:
                 _user32.UnhookWinEvent(hook_b)
             if hook_c:
                 _user32.UnhookWinEvent(hook_c)
-            raise OSError("SetWinEventHook failed")
+            self._start_error = OSError("SetWinEventHook failed")
+            self._started.set()
+            return
 
+        self._started.set()
         try:
             win32gui.PumpMessages() # blocks until WM_QUIT (see stop())
         finally:
@@ -158,12 +176,14 @@ class WindowsWatcher:
 
     def _on_event(self, hook, event, hwnd, id_object, id_child, id_thread, event_time):
         """Handles z-order-relevant events (foreground/create/destroy/reorder/...)."""
-        try:
-            if id_object != OBJID_WINDOW or id_child != CHILDID_SELF:
-                return
-            self._z_order_changes_detected = True
-        except Exception:
-            pass
+        if id_object != OBJID_WINDOW or id_child != CHILDID_SELF:
+            return
+        if event == EVENT_OBJECT_DESTROY and hwnd:
+            with self._lock:
+                for cache in (self._rect_cache, self._title_cache, self._maximized_window_cache, self._fullscreen_window_cache):
+                    cache.pop(hwnd, None)
+                self._window_exists_cache[hwnd] = False
+        self._z_order_changes_detected = True
 
     def _on_location_or_name_event(self, hook, event, hwnd, id_object, id_child, id_thread, event_time):
         """Handles EVENT_OBJECT_LOCATIONCHANGE and EVENT_OBJECT_NAMECHANGE"""
@@ -172,33 +192,43 @@ class WindowsWatcher:
                 return
             with self._lock:
                 if event == EVENT_OBJECT_LOCATIONCHANGE:
-                    self._resized_windows.add(hwnd)
+                    self._rect_cache.pop(hwnd, None)
+                    self._maximized_window_cache.pop(hwnd, None)
+                    self._fullscreen_window_cache.pop(hwnd, None)
                 elif event == EVENT_OBJECT_NAMECHANGE:
-                    self._changed_title_windows.add(hwnd)
+                    self._title_cache.pop(hwnd, None)
         except Exception:
             pass
 
     # -- public API ----------------------------------------------------------
 
     def clear_cache(self) -> None:
-        """Invalidates the neighbor cache, but only if a z-order changes."""
+        """Invalidates the neighbor cache and the foreground/exists/visible/minimized/maximized/fullscreen caches,
+        but only if the z-order changed since the last call."""
         with self._lock:
             if not self._z_order_changes_detected:
                 return
             self._z_order_changes_detected = False
-            self._windows_cache.clear()
+            self._window_neighbors_cache.clear()
+
+            self._foreground_window_cache = None
+            self._window_exists_cache.clear()
+            self._visible_window_cache.clear()
+            self._minimized_window_cache.clear()
+            self._maximized_window_cache.clear()
+            self._fullscreen_window_cache.clear()
 
     def get_real_window_above(self, hwnd: int) -> tuple[int | None, int | None]:
         """Returns the nearest real (non-transparent/non-tool) window above `hwnd`."""
         with self._lock:
-            entry = self._windows_cache.get(hwnd)
+            entry = self._window_neighbors_cache.get(hwnd)
             if entry is not None and entry.real_window_above is not _MISSING and entry.window_above is not _MISSING:
                 return cast(int | None, entry.real_window_above), cast(int | None, entry.window_above)
 
         real_above, above = get_real_window_above(hwnd)
 
         with self._lock:
-            entry = self._windows_cache.setdefault(hwnd, WindowNeighbors())
+            entry = self._window_neighbors_cache.setdefault(hwnd, WindowNeighbors())
             entry.real_window_above = real_above
             entry.window_above = above
         return real_above, above
@@ -206,28 +236,28 @@ class WindowsWatcher:
     def get_window_above(self, hwnd: int) -> int | None:
         """Returns the window immediately above `hwnd` in z-order (may be a transparent/tool window)."""
         with self._lock:
-            entry = self._windows_cache.get(hwnd)
+            entry = self._window_neighbors_cache.get(hwnd)
             if entry is not None and entry.window_above is not _MISSING:
                 return cast(int | None, entry.window_above)
 
         above = get_window_above(hwnd)
 
         with self._lock:
-            entry = self._windows_cache.setdefault(hwnd, WindowNeighbors())
+            entry = self._window_neighbors_cache.setdefault(hwnd, WindowNeighbors())
             entry.window_above = above
         return above
 
     def get_real_window_below(self, hwnd: int) -> tuple[int | None, int | None]:
         """Returns the nearest real (non-transparent/non-tool) window below `hwnd`."""
         with self._lock:
-            entry = self._windows_cache.get(hwnd)
+            entry = self._window_neighbors_cache.get(hwnd)
             if entry is not None and entry.real_window_below is not _MISSING and entry.window_below is not _MISSING:
                 return cast(int | None, entry.real_window_below), cast(int | None, entry.window_below)
 
         real_below, below = get_real_window_below(hwnd)
 
         with self._lock:
-            entry = self._windows_cache.setdefault(hwnd, WindowNeighbors())
+            entry = self._window_neighbors_cache.setdefault(hwnd, WindowNeighbors())
             entry.real_window_below = real_below
             entry.window_below = below
         return real_below, below
@@ -235,48 +265,95 @@ class WindowsWatcher:
     def get_window_below(self, hwnd: int) -> int | None:
         """Returns the window immediately below `hwnd` in z-order (may be a transparent/tool window)."""
         with self._lock:
-            entry = self._windows_cache.get(hwnd)
+            entry = self._window_neighbors_cache.get(hwnd)
             if entry is not None and entry.window_below is not _MISSING:
                 return cast(int | None, entry.window_below)
 
         below = get_window_below(hwnd)
 
         with self._lock:
-            entry = self._windows_cache.setdefault(hwnd, WindowNeighbors())
+            entry = self._window_neighbors_cache.setdefault(hwnd, WindowNeighbors())
             entry.window_below = below
         return below
 
-    def get_window_rect(self, hwnd: int) -> XYXY_Rectangle:
-        """Returns the geometry of `hwnd`."""
+    def get_window_rect(self, hwnd: int) -> XYXY_Rectangle | None:
+        """Returns the geometry of `hwnd` or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
         with self._lock:
-            needs_refresh = hwnd not in self._rect_cache or hwnd in self._resized_windows
-            if not needs_refresh:
-                return self._rect_cache[hwnd]
-            self._resized_windows.discard(hwnd)
+            if hwnd not in self._rect_cache:
+                left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+                rect = XYXY_Rectangle(left, top, right, bottom)
+                self._rect_cache[hwnd] = rect
+            return self._rect_cache[hwnd]
 
-        left, top, right, bottom = win32gui.GetWindowRect(hwnd)
-        rect = XYXY_Rectangle(left, top, right, bottom)
-
+    def get_window_title(self, hwnd: int) -> str | None:
+        """Returns the title of `hwnd` or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
         with self._lock:
-            self._rect_cache[hwnd] = rect
-        return rect
-
-    def get_window_title(self, hwnd: int) -> str:
-        """Returns the title of `hwnd`."""
-        with self._lock:
-            needs_refresh = hwnd not in self._title_cache or hwnd in self._changed_title_windows
-            if not needs_refresh:
-                return self._title_cache[hwnd]
-            self._changed_title_windows.discard(hwnd)
-
-        title = win32gui.GetWindowText(hwnd)
-
-        with self._lock:
-            self._title_cache[hwnd] = title
-        return title
+            if hwnd not in self._title_cache:
+                self._title_cache[hwnd] = win32gui.GetWindowText(hwnd)
+            return self._title_cache[hwnd]
 
     def get_foreground_window_hwnd(self) -> int:
-        return win32gui.GetForegroundWindow()
+        """Returns the hwnd of the foreground (focused) window (0 if there is none)."""
+        with self._lock:
+            if self._foreground_window_cache is None:
+                self._foreground_window_cache = win32gui.GetForegroundWindow()
+            return self._foreground_window_cache
+
+    def is_window_foreground(self, hwnd: int) -> bool | None:
+        """Returns whether `hwnd` is the foreground (focused) window or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
+        return self.get_foreground_window_hwnd() == hwnd
+
+    def window_exists(self, hwnd: int) -> bool:
+        """Returns whether `hwnd` is still a valid window."""
+        with self._lock:
+            if hwnd not in self._window_exists_cache:
+                self._window_exists_cache[hwnd] =  bool(win32gui.IsWindow(hwnd))
+            return self._window_exists_cache[hwnd]
+
+    def is_window_visible(self, hwnd: int) -> bool | None:
+        """Returns whether `hwnd` has the visible style (minimized windows count as visible), None if it does not exist."""
+        if not self.window_exists(hwnd):
+            return None
+        with self._lock:
+            if hwnd not in self._visible_window_cache:
+                self._visible_window_cache[hwnd] = bool(win32gui.IsWindowVisible(hwnd))
+            return self._visible_window_cache[hwnd]
+
+    def is_window_minimized(self, hwnd: int) -> bool | None:
+        """Returns whether `hwnd` is minimized or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
+        with self._lock:
+            if hwnd not in self._minimized_window_cache:
+                self._minimized_window_cache[hwnd] = bool(win32gui.IsIconic(hwnd))
+            return self._minimized_window_cache[hwnd]
+
+    def is_window_maximized(self, hwnd: int) -> bool | None:
+        """Returns whether `hwnd` is maximized or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
+        with self._lock:
+            if hwnd not in self._maximized_window_cache:
+                self._maximized_window_cache[hwnd] = bool(win32gui.IsZoomed(hwnd))
+            return self._maximized_window_cache[hwnd]
+
+    def is_window_fullscreen(self, hwnd: int) -> bool | None:
+        """Returns whether `hwnd` covers its whole monitor including the taskbar, None if it does not exist."""
+        rect = self.get_window_rect(hwnd)
+        if rect is None:
+            return None
+        with self._lock:
+            if hwnd not in self._fullscreen_window_cache:
+                monitor = win32api.MonitorFromWindow(hwnd, win32con.MONITOR_DEFAULTTONEAREST)
+                m = win32api.GetMonitorInfo(monitor)["Monitor"]
+                self._fullscreen_window_cache[hwnd] = rect[0] <= m[0] and rect[1] <= m[1] and rect[2] >= m[2] and rect[3] >= m[3]
+            return self._fullscreen_window_cache[hwnd]
 
 def main() -> None:
     hwnd_input: str = input("Enter window hwnd: ")

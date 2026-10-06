@@ -6,7 +6,7 @@ is an independent **instance**.
 
 ## 1. Folder layout
 
-Each mod is a subfolder of `Mods/`. The folder name is the mod ID.
+Each mod is a subfolder of the `Mods/` folder of the application. The folder name is the mod ID.
 
 ```text
 Mods/
@@ -42,89 +42,108 @@ is stored with the mod metadata but is not enforced by the loader.
 ## 3. How a script runs
 
 1. When the application starts, the script of every **enabled** mod is executed once, from top to bottom.
-2. In its top-level code the script calls `ModAPI.register_entity(...)`.
-3. Optionally the script defines a global function `tick(hitbox_overlay)`.
+2. In its top-level code the script calls `ModAPI.Entity.register(...)`.
+3. Optionally the script defines a global function `tick`, see [Entity lifecycle](api-reference.md#entity-lifecycle).
 4. When the user spawns an entity, its `create_func(instance_id)` is called and returns the callbacks of that instance.
 
 The `ModAPI` object is available in the script without importing anything. Lua and Python use the same API. In Python
 `ModAPI` is a global too, see [Editor support](editor-support.md) for autocomplete.
 
-What each of these calls actually does, what `create_func` must return, and everything else `ModAPI` exposes (drawing,
-windows, mouse, logging, ...) is described in the [API reference](api-reference.md) — see that page for the concepts,
-not repeated here.
+The concepts and the entity lifecycle are in the [API reference](api-reference.md), the individual functions and callbacks in the stubs.
 
 ## 4. Install and enable
 
-1. Copy the mod folder into `Mods/`
-2. Enable the mod in the control panel.
-3. Restart the application. Mods are loaded on startup.
+1. Copy the mod folder into `Mods/`. If the application is running, restart it so that the folder is scanned again.
+2. Enable the mod in the control panel (you are asked to confirm that you trust it, see [Mod security](security.md))
+   and save the changes. The order of the list is the order in which the mods are started.
+3. Restart the application when asked. Mods are loaded on startup.
 4. Spawn the entity from the control panel.
 
 ## 5. Debugging
 
 - `print(...)` and `ModAPI.Logger` write to the application log (`logs/`).
 - If the script fails while loading, the mod is not started and `Error in mod code "<id>": ...` is logged.
-- Errors raised inside `tick` or a callback are **not** caught by the loader, and they interrupt the current frame.
+- Errors raised inside `tick` or a callback are not caught by the loader. They are treated as a crash of the
+  desktop process: the application closes and shows the crash dialog, and the list of enabled mods is saved under the
+  name `ERROR` in the saved mod lists, with all mods disabled for the next start.
 
 ## 6. Complete example
 
 A single-file Lua mod that registers one entity bouncing around the screen, similar to the classic DVD logo. It shows
 a typical `create_func`/`tick_func` pair, reading window info, and drawing with a `hit_id` so the entity can be
 selected. Python mods use the exact same `ModAPI` calls, just with Python syntax, so a separate Python example is not
-needed here — see the [API reference](api-reference.md) for what each call does.
+needed here.
 
-`Mods/bouncing-entity/main.lua`:
+`Mods/first-mod/main.lua`:
 
 ```lua
 print(string.format('Running a lua script from a mod "%s"', ModAPI.Mod.id))
 -- Get the handle of the active window to render over it
-window_hwnd = ModAPI.get_foreground_window_hwnd()
-ModAPI.Logger.debug("Window title: " .. ModAPI.get_window_title(window_hwnd))
+window_hwnd = ModAPI.Overlay.get_foreground_hwnd()
+ModAPI.Logger.debug("Window title: " .. ModAPI.Overlay.get_title(window_hwnd))
 
 -- Creates a single entity instance
 function create_entity(instance_id)
     local x, y = 0, 0
-    local add_to_x, add_to_y = 1, 1
+    local speed_x, speed_y = 120, 120 -- pixels per second
     local visible = true
 
-    local screen_width = 1920
-    local screen_height = 1080
+    local screen_width, screen_height = ModAPI.Overlay.get_primary_screen_size()
     local image_width = 300
     local image_height = 150
 
-    -- Return entity callbacks used by the main application
+    -- Return entity callbacks used by the main application (all of them are optional, `delete_func` is left out here)
     return {
         -- Action callbacks
-        delete_func = nil,
         show_func = function() visible = true end,
         hide_func = function() visible = false end,
         teleport_func = function() x, y = 0, 0 end,
         -- Return detailed entity info displayed in the control panel
         get_info_func = function() return {
             visible = visible,
-            pos = string.format("%s, %s", x, y),
+            pos = string.format("%d, %d", math.floor(x), math.floor(y)),
         } end,
-        tick_func = function(hitbox_overlay)
-            -- Bounce logic for screen edges
-            x = x + add_to_x
-            if x >= screen_width - image_width or x <= 0 then add_to_x = -add_to_x end
-            y = y + add_to_y
-            if y >= screen_height - image_height or y <= 0 then add_to_y = -add_to_y end
+        tick_func = function(dt, hitbox_overlay)
+            -- The window we draw over may have been closed: pick the foreground window instead
+            if not ModAPI.Overlay.exists(window_hwnd) then
+                window_hwnd = ModAPI.Overlay.get_foreground_hwnd()
+            end
+
+            -- Bounce logic for screen edges. Moving by `speed * dt` keeps the speed independent of the FPS
+            x = x + speed_x * dt
+            if x >= screen_width - image_width then
+                x = screen_width - image_width
+                speed_x = -math.abs(speed_x)
+            elseif x <= 0 then
+                x = 0
+                speed_x = math.abs(speed_x)
+            end
+            y = y + speed_y * dt
+            if y >= screen_height - image_height then
+                y = screen_height - image_height
+                speed_y = -math.abs(speed_y)
+            elseif y <= 0 then
+                y = 0
+                speed_y = math.abs(speed_y)
+            end
+
+            -- Drawing functions take whole pixels, so round the position
+            local draw_x, draw_y = math.floor(x), math.floor(y)
 
             if visible then
-                ModAPI.draw_image(window_hwnd, x, y, "preview.png", image_width, image_height, nil, instance_id)
+                ModAPI.Overlay.draw_image(window_hwnd, draw_x, draw_y, "preview.png", image_width, image_height, nil, instance_id)
             end
 
             -- Draw border if hitbox debug overlay is enabled
             if hitbox_overlay then
-                ModAPI.draw_rect(window_hwnd, x, y, image_width, image_height, { 255, 0, 0 }, false)
+                ModAPI.Overlay.draw_rect(window_hwnd, draw_x, draw_y, image_width, image_height, { 255, 0, 0 }, false)
             end
         end,
     }
 end
 
 -- Register entity to make it available in the control panel
-ModAPI.register_entity("first-entity", "First entity", "preview.png", "Bounces off the screen edges", create_entity)
+ModAPI.Entity.register("first-entity", "First entity", "preview.png", "Bounces off the screen edges", create_entity)
 ```
 
 Copy this next to a `preview.png` and an `about.json` (see [step 2](#2-aboutjson)), then follow
@@ -132,6 +151,6 @@ Copy this next to a `preview.png` and an `about.json` (see [step 2](#2-aboutjson
 
 ## Next steps
 
-- [ModAPI reference](api-reference.md): concepts, entity lifecycle and what `ModAPI` exposes
+- [ModAPI reference](api-reference.md): concepts and entity lifecycle
 - [Editor support](editor-support.md): autocomplete and type checking
 - [Mod security](security.md)

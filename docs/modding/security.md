@@ -6,9 +6,10 @@ A mod is code that runs on your computer. This page describes what it can and ca
 
 Lua mods run in a restricted environment:
 
-- The globals `os`, `io`, `file`, `dofile`, `loadfile`, `debug`, `require`, `package`, `load` and `python` are removed.
-- Python objects exposed to Lua (such as `ModAPI`) hide every attribute starting with `_`.
-- `draw_image` can only read files inside the mod's own folder.
+- The Lua functions that give access to files, the operating system, other code and the interpreter itself are removed
+  (`os`, `io`, `file`, `dofile`, `loadfile`, `debug`, `require`, `package`, `load`, `python`).
+- Python objects exposed to Lua, such as `ModAPI`, hide every attribute starting with `_`.
+- Images can only be read from the mod's own folder.
 
 This is not a hard security boundary. There are no CPU or memory limits: a mod that runs an infinite loop freezes the
 application, because mods run inside the frame loop of the desktop process.
@@ -19,12 +20,21 @@ application, because mods run inside the frame loop of the desktop process.
 they can read and write your files, access the network, start programs and reach the internals of the application
 (the `_` prefix of private members is only a convention in Python). Treat a Python mod like any program you install.
 
-## What `ModAPI` exposes to every mod
+## What every mod can do through `ModAPI`
 
-Every enabled mod, Lua or Python, can read:
+This applies to Lua and Python mods alike. A mod can:
 
-- The title, position and z-order neighbors of your windows (`get_window_title`, `get_window_rect`, ...).
-- The cursor position (`ModAPI.Mouse.get_pos`) and clicks on shapes drawn by the mod.
+- **See your windows.** It learns the titles, positions, sizes, state (minimized, maximized, fullscreen, focused) and
+  stacking order of all windows, including those of other programs. Titles often reveal what you are working on.
+- **Follow your mouse.** It knows where the cursor is at any moment and receives mouse button and scroll events.
+- **Draw anywhere on the desktop**, over any window, including content that imitates other programs.
+- **Manage entities.** It can spawn entities, see which entity is selected in the control panel and
+  remove any entity.
+
+## Trusting a mod
+
+When you enable a mod, the control panel warns you and asks for confirmation. You can choose not to be asked again for
+that mod, and later revoke or grant trust from the mod's menu. Trust only means "do not ask"; it checks nothing.
 
 ## Recommendations
 

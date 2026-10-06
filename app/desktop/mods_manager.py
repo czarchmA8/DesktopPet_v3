@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 import json
 from enum import StrEnum, auto
@@ -7,6 +7,7 @@ import uuid
 import importlib.util
 import sys
 from types import ModuleType
+import time
 
 from PySide6.QtGui import QImageReader, QCursor
 from lupa.lua54 import LuaRuntime
@@ -20,19 +21,36 @@ log = logger.get_logger("mods_manager")
 MODS_DIR = config.APP_DIR / "Mods"
 
 class ScriptLanguage(StrEnum):
+    """Language of a mod script."""
     python = auto()
     lua = auto()
 
 @dataclass(frozen=True)
 class Mod:
+    """Metadata of the running mod (`ModAPI.Mod`), read from its `about.json` and its folder."""
     id: str
+    """Name of the mod folder."""
     name: str
+    """`name` from `about.json`, the mod ID if missing."""
     author: str
+    """`author` from `about.json`, `unknown` if missing."""
     version: str
+    """`version` from `about.json`, `0.0.0` if missing."""
     description: str
+    """`description` from `about.json`."""
     dependencies: dict[str, str]
-    preview_path: Path | None
+    """`dependencies` from `about.json`; stored, but not enforced by the loader."""
+    preview_path: str | None
+    """Path of the preview image in the mod folder, or None.."""
     script_language: ScriptLanguage
+    """Language of the mod script."""
+
+@dataclass
+class ModInstance:
+    """A running mod."""
+    id: str
+    script_language: ScriptLanguage
+    runtime: LuaRuntime | ModuleType
 
 @dataclass(frozen=True)
 class Entity:
@@ -48,7 +66,7 @@ def _noop(*args, **kwargs) -> None:
     pass
 
 @dataclass(frozen=True)
-class EntityData:
+class EntityCallbacks:
     """Functions of a specific spawned instance"""
     delete_func: Callable
     show_func: Callable
@@ -57,23 +75,23 @@ class EntityData:
     get_info_func: Callable
     tick_func: Callable
 
-@dataclass
-class ModInstance:
-    script_language: ScriptLanguage
-    runtime: LuaRuntime | ModuleType
-
 def filter_attribute_access(obj, attr_name, is_setting):
+    """Attribute filter of the Lua runtime"""
     if isinstance(attr_name, str) and not attr_name.startswith("_"):
         return attr_name
     raise AttributeError("access denied")
 
 class ModsManager:
+    """Loads mods, runs their scripts and updates the spawned entities every frame."""
+
     def __init__(self, conn, shared_data: SharedState, overlay_manager):
+        from app.desktop.overlay_manager import OverlayManager
+
         self.conn = conn
         self.shared_data: SharedState = shared_data
-        self.overlay_manager = overlay_manager
+        self.overlay_manager: OverlayManager = overlay_manager
 
-        self.displayed_entities: dict[str, EntityData] = {}
+        self.displayed_entities: dict[str, EntityCallbacks] = {}
         self.entity_factories: dict[str, Callable] = {}
         self.spawnable_entities: dict[str, Entity] = {}
         self.spawnable_entities_dirty: bool = False
@@ -81,11 +99,14 @@ class ModsManager:
         self.mouse_events: dict[str, MouseButtonEvent] = {}
         self.mouse_scroll: MouseScroll = MouseScroll()
 
+        self.last_tick_time = 0.0
+
         self.loaded_mods: list[ModInstance] = []
         
         self.load_mods()
 
     def load_mods(self) -> None:
+        """Scans `Mods/` and publishes the valid mods to the shared state."""
         log.info("Loading mod list...")
         active_mods: dict[str, Mod] = {}
         for mod_folder_path in MODS_DIR.iterdir():
@@ -105,13 +126,21 @@ class ModsManager:
         self.conn.send(msg)
 
     def load_mod_from_folder(self, folder: Path) -> Mod | None:
+        """Loads information about the mod. Returns None if the mod is invalid."""
         mod_id = folder.name
         
         about_path = folder / "about.json"
         if not about_path.exists():
             log.warning(f"Error loading mod \"{mod_id}\": File \"about.json\" not found")
             return None
-        about_data = json.loads(about_path.read_text(encoding="utf-8"))
+        try:
+            about_data = json.loads(about_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            log.warning(f"Error loading mod \"{mod_id}\": cannot read \"about.json\": {e}")
+            return None
+        if not isinstance(about_data, dict):
+            log.warning(f"Error loading mod \"{mod_id}\": \"about.json\" must contain a JSON object")
+            return None
     
         supported_image_formats = {
             bytes(fmt.data()).decode("utf-8").lower()
@@ -140,7 +169,7 @@ class ModsManager:
             version=about_data.get("version", "0.0.0"),
             description=about_data.get("description", "No description available."),
             dependencies=about_data.get("dependencies", {}),
-            preview_path=preview_file_path,
+            preview_path=preview_file_path.resolve().as_posix() if preview_file_path is not None else None,
             script_language=script_language
         )
 
@@ -165,7 +194,7 @@ class ModsManager:
             log.warning(f'Error in mod code "{mod_id}": {e}')
             return
 
-        self.loaded_mods.append(ModInstance(ScriptLanguage.python, module))
+        self.loaded_mods.append(ModInstance(mod_id, ScriptLanguage.python, module))
         log.info(f'Mod "{mod_id}" launched')
     
     def _run_lua_mod(self, mod_id: str, script_path: Path) -> None:
@@ -200,12 +229,13 @@ class ModsManager:
         code = script_path.read_text(encoding="utf-8")
         try:
             lua.execute(code)
-            self.loaded_mods.append(ModInstance(ScriptLanguage.lua, lua))
+            self.loaded_mods.append(ModInstance(mod_id, ScriptLanguage.lua, lua))
             log.info(f"Mod \"{mod_id}\" launched")
         except Exception as e:
             log.warning(f"Error in mod code \"{mod_id}\": {e}")
     
     def run_mods(self) -> None:
+        """Runs enabled mods."""
         settings = self.shared_data.settings
         settings["active_mods"] = [mod_id for mod_id in settings["active_mods"] if mod_id in self.shared_data.active_mods]
         self.shared_data.settings = settings
@@ -224,22 +254,28 @@ class ModsManager:
                 log.warning(f"Mod \"{mod_id}\" has no script")
     
     def tick(self) -> None:
+        current_time = time.perf_counter()
+        if self.last_tick_time == 0.0:
+            self.last_tick_time = current_time
+        dt = current_time - self.last_tick_time
+        self.last_tick_time = current_time
+
         hitbox_overlay = self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["hitbox_overlay"]
         # global mod tick
         for mod in self.loaded_mods:
             if mod.script_language == ScriptLanguage.python:
                 tick_func = getattr(mod.runtime, "tick", None)
                 if tick_func is not None:
-                    tick_func(hitbox_overlay)
+                    tick_func(dt, hitbox_overlay)
             elif mod.script_language == ScriptLanguage.lua:
                 if "tick" in mod.runtime.globals():
-                    mod.runtime.globals().tick(hitbox_overlay)
+                    mod.runtime.globals().tick(dt, hitbox_overlay)
             else:
                 raise Exception("Unknown script language")
 
         # instances (entities) tick
-        for entity_data in self.displayed_entities.values():
-            entity_data.tick_func(hitbox_overlay)
+        for entity_data in list(self.displayed_entities.values()):
+            entity_data.tick_func(dt, hitbox_overlay)
 
         # Retrieving detailed information about the selected entity
         selected = self.shared_data.selected_entity
@@ -272,6 +308,7 @@ class ModsManager:
             self.overlay_manager.send_ipc_command(["Update_spawnable_entities_list"])
 
     def spawn_entity(self, mod_id: str, entity_id: str) -> str | None:
+        """Creates an instance of a registered entity and returns its ID, or None on failure."""
         key = f"{mod_id}:{entity_id}"
         create_func = self.entity_factories.get(key)
         if create_func is None:
@@ -279,15 +316,19 @@ class ModsManager:
             return None
 
         instance_id = str(uuid.uuid4())
-        funcs = create_func(instance_id)
-        self.displayed_entities[instance_id] = EntityData(
-            delete_func=funcs["delete_func"] if "delete_func" in funcs else _noop,
-            show_func=funcs["show_func"] if "show_func" in funcs else _noop,
-            hide_func=funcs["hide_func"] if "hide_func" in funcs else _noop,
-            teleport_func=funcs["teleport_func"] if "teleport_func" in funcs else _noop,
-            get_info_func=funcs["get_info_func"] if "get_info_func" in funcs else _noop,
-            tick_func=funcs["tick_func"] if "tick_func" in funcs else _noop,
-        )
+        entity_funcs: dict[str, Callable] = create_func(instance_id)
+        try:
+            self.displayed_entities[instance_id] = EntityCallbacks(**{
+                field.name: entity_funcs[field.name] if field.name in entity_funcs else _noop
+                for field in fields(EntityCallbacks)
+            })
+        except TypeError as e:
+            log.error(
+                f'Error {e}. \n'
+                'The "create_func" function must return a dictionary containing any of these functions: \n'
+                f'{[field.name for field in fields(EntityCallbacks)]}'
+            )
+            return None
 
         displayed = self.overlay_manager.shared_data.displayed_entities
         displayed[instance_id] = key
@@ -297,6 +338,7 @@ class ModsManager:
         return instance_id
 
     def kill_entity(self, instance_id: str) -> None:
+        """Removes an instance and calls its `delete_func`."""
         entity_data = self.displayed_entities.pop(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
@@ -309,6 +351,7 @@ class ModsManager:
         self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
     
     def show_entity(self, instance_id: str) -> None:
+        """Calls the `show_func` of an instance."""
         entity_data = self.displayed_entities.get(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
@@ -316,6 +359,7 @@ class ModsManager:
         entity_data.show_func()
     
     def hide_entity(self, instance_id: str) -> None:
+        """Calls the `hide_func` of an instance."""
         entity_data = self.displayed_entities.get(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
@@ -323,6 +367,7 @@ class ModsManager:
         entity_data.hide_func()
     
     def teleport_entity(self, instance_id: str) -> None:
+        """Calls the `teleport_func` of an instance."""
         entity_data = self.displayed_entities.get(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
@@ -330,6 +375,7 @@ class ModsManager:
         entity_data.teleport_func()
     
     def kill_all_entities(self):
+        """Removes all instances, calling their `delete_func`."""
         for entity_data in self.displayed_entities.values():
             entity_data.delete_func()
         self.displayed_entities.clear()

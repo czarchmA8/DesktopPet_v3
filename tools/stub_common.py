@@ -1,4 +1,6 @@
 import ast
+import inspect
+from collections.abc import Iterator
 from pathlib import Path
 
 import app.config as config
@@ -18,8 +20,14 @@ def collect_classes() -> dict[str, ast.ClassDef]:
                 classes[node.name] = node
     return classes
 
+def is_property(node: ast.FunctionDef) -> bool:
+    return any(isinstance(d, ast.Name) and d.id == "property" for d in node.decorator_list)
+
 def public_methods(cls: ast.ClassDef) -> list[ast.FunctionDef]:
-    return [n for n in cls.body if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")]
+    return [n for n in cls.body if isinstance(n, ast.FunctionDef) and not n.name.startswith("_") and not is_property(n)]
+
+def public_properties(cls: ast.ClassDef) -> list[ast.FunctionDef]:
+    return [n for n in cls.body if isinstance(n, ast.FunctionDef) and not n.name.startswith("_") and is_property(n)]
 
 def public_fields(cls: ast.ClassDef) -> list[tuple[str, ast.expr | None]]:
     """Class-level fields and `self.X: T = ...` declared in __init__, as (name, annotation)."""
@@ -38,9 +46,20 @@ def public_fields(cls: ast.ClassDef) -> list[tuple[str, ast.expr | None]]:
 def nested_classes(cls: ast.ClassDef) -> list[ast.ClassDef]:
     return [n for n in cls.body if isinstance(n, ast.ClassDef)]
 
+def field_docs(cls: ast.ClassDef) -> dict[str, str]:
+    """Attribute docstrings: a string literal right below a class-level `name: type` field."""
+    docs: dict[str, str] = {}
+    for field, following in zip(cls.body, cls.body[1:]):
+        if (isinstance(field, ast.AnnAssign) and isinstance(field.target, ast.Name)
+                and isinstance(following, ast.Expr) and isinstance(following.value, ast.Constant)
+                and isinstance(following.value.value, str)):
+            docs[field.target.id] = inspect.cleandoc(following.value.value)
+    return docs
+
 def annotations(cls: ast.ClassDef) -> list[ast.expr]:
     """Every annotation in the public API of the class (including nested classes)."""
     result = [annotation for _, annotation in public_fields(cls) if annotation]
+    result += [p.returns for p in public_properties(cls) if p.returns]
     for method in public_methods(cls):
         result += [a.annotation for a in method.args.args if a.annotation]
         if method.returns:
@@ -48,6 +67,27 @@ def annotations(cls: ast.ClassDef) -> list[ast.expr]:
     for nested in nested_classes(cls):
         result += annotations(nested)
     return result
+
+def all_classes(cls: ast.ClassDef) -> Iterator[ast.ClassDef]:
+    """The class and its nested classes."""
+    yield cls
+    for nested in nested_classes(cls):
+        yield from all_classes(nested)
+
+def collect_aliases() -> dict[str, ast.expr]:
+    """Type aliases declared in the body of ROOT (`_Name = A | B`), by name."""
+    root = collect_classes()[ROOT]
+    return {target.id: node.value for node in root.body if isinstance(node, ast.Assign)
+            for target in node.targets if isinstance(target, ast.Name) and target.id.startswith("_")}
+
+def used_names(classes: list[ast.ClassDef]) -> set[str]:
+    """Names used in the annotations, aliases and base classes of the given classes (including nested ones)."""
+    names: set[str] = set()
+    for top in classes:
+        expressions = annotations(top) + [base for cls in all_classes(top) for base in cls.bases] + list(collect_aliases().values())
+        for expression in expressions:
+            names.update(node.id for node in ast.walk(expression) if isinstance(node, ast.Name))
+    return names
 
 def collect_used_classes(classes: dict[str, ast.ClassDef] | None = None) -> list[ast.ClassDef]:
     """ROOT + every class referenced from its annotations (transitively)."""
@@ -63,8 +103,8 @@ def collect_used_classes(classes: dict[str, ast.ClassDef] | None = None) -> list
     return list(used.values())
 
 def main() -> None:
-    from generate_python_stubs import write_stub as write_python_stub
-    from generate_lua_stubs import write_stub as write_lua_stub
+    from tools.generate_python_stubs import write_stub as write_python_stub
+    from tools.generate_lua_stubs import write_stub as write_lua_stub
 
     write_python_stub()
     write_lua_stub()

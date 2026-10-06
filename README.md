@@ -16,9 +16,9 @@
 
 ## About
 
-DesktopPet_v3 is a Python application that draws animated characters and objects directly on your desktop. Everything is
-drawn on transparent overlay layers placed at the right spot of the Windows z-order, and the behavior of every entity is
-defined by mods written in Python or Lua.
+DesktopPet_v3 is a Windows application that draws animated characters and objects directly on your desktop. Everything
+is drawn on transparent overlay layers placed at the right spot of the Windows z-order, so an entity can stand on a
+window, hide behind another one or follow the active window.
 
 > [!WARNING]
 > Development is still in progress. Bugs may occur and the mod API may still change.
@@ -33,19 +33,13 @@ defined by mods written in Python or Lua.
 
 ## Key Features
 
-- Animated GIF-based character with multiple states (walking, sitting, sleeping, falling)
-- Physics-driven movement — gravity, collisions, inertia
-- Mouse interactions — catch, drag, throw
-- Follows the active window around the desktop
-- Windows are treated as platforms for the pet and world objects to stand on
-- Dynamic window layering — the pet decides on its own when to bring itself to the front, not strictly tied to the currently active window
-- Interactive objects (balls, food) with collisions between pet and objects, and object-to-object
-- Stats system — happiness, health, hunger, sleepiness, shifting with interaction
-- Control panel for hotkeys, sound volume, FPS, debug level, and multi-language translations
-- Objects Editor — create and edit object hitboxes and physics properties from the control panel
-- Multi-process logging — colored console output, file logs, automatic cleanup
-- Debug mode with hitbox/collision overlay and live state panel
-- Mod system with Lua (sandboxed) and Python scripting.
+- Mod system with Lua and Python scripting: the behavior of every entity is defined by a mod
+- Drawing of images, shapes and text on layers that follow the z-order of the windows on your desktop
+- Information about windows for mods (position, state, stacking order), so entities can react to them
+- Mouse interaction: mods can make what they draw clickable, draggable and scrollable
+- Control panel to enable, order and trust mods, to spawn, show, hide, teleport and remove entities, and to set hotkeys, FPS and the language
+- Debug mode with a hitbox overlay and a live panel with the details of the selected entity
+- Multi-process logging: colored console output, file logs, automatic cleanup
 - Update checker with in-app notification dialog
 
 ---
@@ -79,7 +73,7 @@ defined by mods written in Python or Lua.
 
 4. **Compile translations**
     ```bash
-    uv run tools/update_languages.py
+    uv run python -m tools.update_languages
     ```
 
 5. **Run application**
@@ -105,7 +99,7 @@ uv run python -m app.main --debug 2
 If you want to create an executable .exe file, you can use the included build script:
 
 ```bash
-uv run tools/create_exe.py
+uv run python -m tools.create_exe
 ```
 
 ---
@@ -120,7 +114,7 @@ control panel to work correctly (e.g., `autostart`).
 
 ## Modding
 
-Mods add new entities and behavior to the application. They are written in Lua or Python and live in the `Mods/` folder.
+Mods add entities and their behavior to the application. They are written in Lua or Python and live in the `Mods/` folder.
 
 > [!WARNING]
 > Lua mods run in a restricted sandbox, but **Python mods are not sandboxed**: they run inside the application process
@@ -128,7 +122,7 @@ Mods add new entities and behavior to the application. They are written in Lua o
 > Details: [Mod security](docs/modding/security.md).
 
 - **Create a mod**: [Getting started](docs/modding/getting-started.md), with a complete example.
-- **API reference**: [concepts and what ModAPI exposes](docs/modding/api-reference.md). Exact signatures live as docstrings in [`desktop/mod_api.py`](desktop/mod_api.py) and show up in your editor via [autocomplete](docs/modding/editor-support.md).
+- **API**: [concepts and entity lifecycle](docs/modding/api-reference.md). Documentation of individual functions shows up in your editor ([setup](docs/modding/editor-support.md)).
 
 ## Troubleshooting
 

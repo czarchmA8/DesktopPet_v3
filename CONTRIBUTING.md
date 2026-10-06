@@ -29,11 +29,21 @@ described in the
 
 ## Quality checks
 
-Before opening a pull request run the same quality pipeline that CI runs:
+Before opening a pull request run the quality pipeline:
 
 ```bash
-uv run tools/run_tests.py
+uv run python -m tools.run_tests
 ```
+
+## Translations
+
+The strings of the control panel are translated with Qt Linguist. After adding or changing translatable strings run:
+
+```bash
+uv run python -m tools.update_languages
+```
+
+The whole workflow (regenerating the `.ts` files, translating, compiling the `.qm` files) and the rules for translatable strings are in the docstring of [`tools/update_languages.py`](tools/update_languages.py).
 
 ## Pull requests
 
@@ -49,12 +59,11 @@ Code contributions are greatly appreciated. Here is the general workflow you sho
    If this is your first contribution, you will need to fork and clone the repository using git. If you need help with
    the code you are working on, don't hesitate to ask questions in the associated issue. We will be happy to help you.
 
-   Comment your code. It will be useful for your reviewer and future contributors.
-   Follow [General code guidelines](#code-style)
+   Follow the [code style](#code-style).
 
 3. **Check your changes**
 
-   Run [`uv run tools/run_tests.py`](#quality-checks) and make sure it passes.
+   Run the [quality checks](#quality-checks) and make sure they pass.
 
 4. **Open the pull request**
     - **Pull request titles**
@@ -78,14 +87,7 @@ Code contributions are greatly appreciated. Here is the general workflow you sho
 
     - **Pull request descriptions**
 
-      Once you open a pull request, you will be prompted to follow a template with three simple parts:
-
-        - **Description** - A summary of what your pull request achieves and a rough list of changes.
-        - **Related Issues** - Link to the issue (s) this PR closes or relates to. For example: Closes #123
-        - **Changelog Context** - Added / Changed / Fixed entries, if relevant.
-        - **Breaking Changes** - Optional, if there are any breaking changes document them, including how to migrate older code.
-        - **Notes & open questions** - Notes, open questions and remarks about your changes.
-        - **Checklist** - self-review, tested locally, documentation updated, breaking changes documented, ready for critical review.
+      Fill in the template that opens with the pull request ([`.github/pull_request_template.md`](.github/pull_request_template.md)).
 
 5. **Review process**
 
@@ -102,6 +104,7 @@ Code contributions are greatly appreciated. Here is the general workflow you sho
 
 - **Docstrings**: when possible, document relevant pieces of code
   following [PEP 257](https://peps.python.org/pep-0257/).
+- **ModAPI**: the docstrings in [`app/desktop/mod_api.py`](app/desktop/mod_api.py) are the only reference of individual functions. They are copied into the [editor stubs](docs/modding/editor-support.md), so update them when you change the API and do not repeat them in markdown.
 - **Comments**: comment your code. It will be useful for your reviewer and future contributors.
 - **Naming** follows [PEP 8](https://pep8.org/):
 

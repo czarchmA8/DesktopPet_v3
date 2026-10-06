@@ -65,11 +65,11 @@ def show_error_msg_box(error_msg) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(log_dir))
 
 def run_processes(shared_data: SharedState, error_queue, log_queue) -> str | None:
-    """Starts the PET and DASHBOARD processes and monitors them until both terminate. Returns an error message (if any) or None."""
+    """Starts the DESKTOP and DASHBOARD processes and monitors them until both terminate. Returns an error message (if any) or None."""
     log = logger.get_logger("main")
     conn1, conn2 = Pipe()
 
-    p1 = Process(target=safe_run, args=(run_app_desktop, "PET", conn1, shared_data, error_queue, log_queue), name="PET")
+    p1 = Process(target=safe_run, args=(run_app_desktop, "DESKTOP", conn1, shared_data, error_queue, log_queue), name="DESKTOP")
     p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", conn2, shared_data, error_queue, log_queue), name="DASHBOARD")
     processes = [p1, p2]
     error_msg: str | None = None
