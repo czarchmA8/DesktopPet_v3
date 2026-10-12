@@ -77,6 +77,10 @@
         <translation>Volumen:</translation>
     </message>
     <message>
+        <source>Restore application size and position</source>
+        <translation>Restaurar tamaño y posición de la aplicación</translation>
+    </message>
+    <message>
         <source>App</source>
         <translation>Aplicación</translation>
     </message>
@@ -125,22 +129,6 @@
         <translation>Ocultar todas las entidades</translation>
     </message>
     <message>
-        <source>Kill selected</source>
-        <translation type="vanished">Eliminar selección</translation>
-    </message>
-    <message>
-        <source>Show selected</source>
-        <translation type="vanished">Mostrar selección</translation>
-    </message>
-    <message>
-        <source>Hide selected</source>
-        <translation type="vanished">Ocultar selección</translation>
-    </message>
-    <message>
-        <source>Teleport selected</source>
-        <translation type="vanished">Teletransportar selección</translation>
-    </message>
-    <message>
         <source>Opens the built-in hitbox editor for objects</source>
         <translation>Abre el editor de hitboxes integrado para objetos</translation>
     </message>
@@ -153,10 +141,6 @@
         <translation>Sistema</translation>
     </message>
     <message>
-        <source>This option does not update the software itself.</source>
-        <translation type="vanished">Esta opción no actualiza el software en sí.</translation>
-    </message>
-    <message>
         <source>Check for updates</source>
         <translation>Buscar actualizaciones</translation>
     </message>
@@ -165,20 +149,20 @@
         <translation>Ejecutar al iniciar el sistema</translation>
     </message>
     <message>
+        <source>Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.</source>
+        <translation>Muestra la ventana cuando la aplicación se inicia automáticamente con el sistema. Esta opción no cambia la visualización de la ventana en un inicio normal.</translation>
+    </message>
+    <message>
+        <source>Show window on autostart</source>
+        <translation>Mostrar ventana al iniciar automáticamente</translation>
+    </message>
+    <message>
         <source>Advanced</source>
         <translation>Avanzado</translation>
     </message>
     <message>
         <source>Debug mode</source>
         <translation>Modo de depuración</translation>
-    </message>
-    <message>
-        <source>Displaying hitboxes</source>
-        <translation>Mostrando hitboxes</translation>
-    </message>
-    <message>
-        <source>Information window</source>
-        <translation>Ventana de información</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -195,10 +179,6 @@
     <message>
         <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
         <translation>Guarda el tamaño y la posición de la ventana al cerrarla, y los restaura al iniciar.</translation>
-    </message>
-    <message>
-        <source>Restore window size and position</source>
-        <translation>Restaurar tamaño y posición de la ventana</translation>
     </message>
     <message>
         <source>Kill selected entity</source>
@@ -225,14 +205,6 @@
         <translation>Inicia aplicaciones automáticamente con el sistema</translation>
     </message>
     <message>
-        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
-        <translation>Muestra la ventana al inicio, iniciándose automáticamente con el sistema. Esta opción no cambia cómo se muestra la ventana en un inicio normal.</translation>
-    </message>
-    <message>
-        <source>Show window on startup</source>
-        <translation>Mostrar ventana al inicio</translation>
-    </message>
-    <message>
         <source>General debug mode switch. This option does nothing by itself.</source>
         <translation>Interruptor general del modo de depuración. Esta opción no hace nada por sí sola.</translation>
     </message>
@@ -241,8 +213,8 @@
         <translation>Muestra las hitboxes de entidades normalmente invisibles. Solo funciona para entidades que admiten esta opción.</translation>
     </message>
     <message>
-        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
-        <translation>Muestra una ventana con información general sobre la aplicación. Por ejemplo, FPS y una lista de ventanas monitorizadas.</translation>
+        <source>Display hitboxes</source>
+        <translation>Mostrar hitboxes</translation>
     </message>
     <message>
         <source>Shows a window displaying the current application logs</source>
@@ -251,6 +223,30 @@
     <message>
         <source>Show debug console</source>
         <translation>Mostrar consola de depuración</translation>
+    </message>
+    <message>
+        <source>Saves the console window size and location when closed, and restores them on startup.</source>
+        <translation>Guarda el tamaño y la posición de la ventana de la consola al cerrarla y los restaura al iniciar.</translation>
+    </message>
+    <message>
+        <source>Restore console size and position</source>
+        <translation>Restaurar tamaño y posición de la consola</translation>
+    </message>
+    <message>
+        <source>Shows the console window on application startup.</source>
+        <translation>Muestra la ventana de la consola al iniciar la aplicación.</translation>
+    </message>
+    <message>
+        <source>Show console on startup</source>
+        <translation>Mostrar consola al iniciar</translation>
+    </message>
+    <message>
+        <source>Shows the console window when an error occurs in the application.</source>
+        <translation>Muestra la ventana de la consola cuando se produce un error en la aplicación.</translation>
+    </message>
+    <message>
+        <source>Show console on error</source>
+        <translation>Mostrar consola al producirse un error</translation>
     </message>
     <message>
         <source>Open latest log</source>
@@ -313,10 +309,6 @@
         <translation>Entidades (%1)</translation>
     </message>
     <message>
-        <source> Search entities...</source>
-        <translation type="vanished"> Buscar entidades...</translation>
-    </message>
-    <message>
         <source>Entity details</source>
         <translation>Detalles de la entidad</translation>
     </message>
@@ -333,10 +325,6 @@
         <translation>🗑️ Eliminar entidad</translation>
     </message>
     <message>
-        <source>Position:</source>
-        <translation type="vanished">Posición:</translation>
-    </message>
-    <message>
         <source>Updates the application to the latest version</source>
         <translation>Actualiza la aplicación a la última versión</translation>
     </message>
@@ -347,18 +335,6 @@
     <message>
         <source>🔄 Check for updates</source>
         <translation>🔄 Buscar actualizaciones</translation>
-    </message>
-    <message>
-        <source>Rotation:</source>
-        <translation type="vanished">Rotación:</translation>
-    </message>
-    <message>
-        <source>Velocity:</source>
-        <translation type="vanished">Velocidad:</translation>
-    </message>
-    <message>
-        <source>HWND:</source>
-        <translation type="vanished">HWND:</translation>
     </message>
     <message>
         <source>unknown</source>
@@ -435,10 +411,6 @@
     <message>
         <source>Open folder</source>
         <translation>Abrir carpeta</translation>
-    </message>
-    <message>
-        <source>Remove</source>
-        <translation type="vanished">Eliminar</translation>
     </message>
     <message>
         <source>Delete</source>
@@ -535,16 +507,8 @@
         <translation>Selecciona primero una entidad.</translation>
     </message>
     <message>
-        <source>Failed to save settings: %x</source>
-        <translation type="vanished">Error al guardar la configuración: %x</translation>
-    </message>
-    <message>
         <source>Success</source>
         <translation>Éxito</translation>
-    </message>
-    <message>
-        <source>Assigned &apos;%x&apos;.</source>
-        <translation type="vanished">Asignado &apos;%x&apos;.</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -565,11 +529,6 @@
     <message>
         <source>Registry error</source>
         <translation>Error de registro</translation>
-    </message>
-    <message>
-        <source>Failed to change autostart setting:
-%x</source>
-        <translation type="vanished">Error al cambiar la configuración de inicio automático: %x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

@@ -36,7 +36,7 @@ flowchart LR
 Two mechanisms are used together:
 
 - **Commands** are Python lists of strings sent with `multiprocessing.Pipe`. The first element is the command name. A command usually only tells the other side that the data changed.
-- **Data** lives in `SharedState` (`shared_state.py`). Each process keeps a local copy of the values; `pull()` marks it as stale and a value is re-read from the shared state on its next access (details: the docstring of `SharedState`).
+- **Data** lives in `SharedState` (`ipc.py`). Each process keeps a local copy of the values; `pull()` marks it as stale and a value is re-read from the shared state on its next access (details: the docstring of `SharedState`).
 
 ## Mods
 
@@ -89,8 +89,8 @@ app/
   logger.py                 Multi-process logging, log files, automatic cleanup
   main.py                   Launcher: starts the DASHBOARD and DESKTOP processes
   settings.py               Settings management: defines default values, loads runtime config, and creates settings.json
-  shared_state.py           SharedState: cross-process data with pull()
-  shared_state.pyi          Type hints of the `SharedState` attributes
+  ipc.py                    Inter-Process Communication
+  log_console.py            Console showing logs
   utils_debug.py            Debug window, hitbox rendering, helpers
   version.json              Version and its date
 

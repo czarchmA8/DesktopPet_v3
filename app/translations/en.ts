@@ -77,6 +77,10 @@
         <translation>Volume:</translation>
     </message>
     <message>
+        <source>Restore application size and position</source>
+        <translation>Restore application size and position</translation>
+    </message>
+    <message>
         <source>App</source>
         <translation>App</translation>
     </message>
@@ -125,22 +129,6 @@
         <translation>Hide all entities</translation>
     </message>
     <message>
-        <source>Kill selected</source>
-        <translation type="vanished">Kill selected</translation>
-    </message>
-    <message>
-        <source>Show selected</source>
-        <translation type="vanished">Show selected</translation>
-    </message>
-    <message>
-        <source>Hide selected</source>
-        <translation type="vanished">Hide selected</translation>
-    </message>
-    <message>
-        <source>Teleport selected</source>
-        <translation type="vanished">Teleport selected</translation>
-    </message>
-    <message>
         <source>Opens the built-in hitbox editor for objects</source>
         <translation>Opens the built-in hitbox editor for objects</translation>
     </message>
@@ -153,10 +141,6 @@
         <translation>System</translation>
     </message>
     <message>
-        <source>This option does not update the software itself.</source>
-        <translation type="vanished">This option does not update the software itself.</translation>
-    </message>
-    <message>
         <source>Check for updates</source>
         <translation>Check for updates</translation>
     </message>
@@ -165,20 +149,20 @@
         <translation>Run at system startup</translation>
     </message>
     <message>
+        <source>Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.</source>
+        <translation>Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.</translation>
+    </message>
+    <message>
+        <source>Show window on autostart</source>
+        <translation>Show window on autostart</translation>
+    </message>
+    <message>
         <source>Advanced</source>
         <translation>Advanced</translation>
     </message>
     <message>
         <source>Debug mode</source>
         <translation>Debug mode</translation>
-    </message>
-    <message>
-        <source>Displaying hitboxes</source>
-        <translation>Displaying hitboxes</translation>
-    </message>
-    <message>
-        <source>Information window</source>
-        <translation>Information window</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -195,10 +179,6 @@
     <message>
         <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
         <translation>Saves the window&apos;s size and location when closed, and restores them on startup.</translation>
-    </message>
-    <message>
-        <source>Restore window size and position</source>
-        <translation>Restore window size and position</translation>
     </message>
     <message>
         <source>Kill selected entity</source>
@@ -225,14 +205,6 @@
         <translation>Automatically launches applications with the system</translation>
     </message>
     <message>
-        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
-        <translation>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</translation>
-    </message>
-    <message>
-        <source>Show window on startup</source>
-        <translation>Show window on startup</translation>
-    </message>
-    <message>
         <source>General debug mode switch. This option does nothing by itself.</source>
         <translation>General debug mode switch. This option does nothing by itself.</translation>
     </message>
@@ -241,8 +213,8 @@
         <translation>Shows normally invisible entity hitboxes. Only works for entities that support this option.</translation>
     </message>
     <message>
-        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
-        <translation>Shows a window with general information about the application. For example, FPS and a list of watched windows.</translation>
+        <source>Display hitboxes</source>
+        <translation>Display hitboxes</translation>
     </message>
     <message>
         <source>Shows a window displaying the current application logs</source>
@@ -251,6 +223,30 @@
     <message>
         <source>Show debug console</source>
         <translation>Show debug console</translation>
+    </message>
+    <message>
+        <source>Saves the console window size and location when closed, and restores them on startup.</source>
+        <translation>Saves the console window size and location when closed, and restores them on startup.</translation>
+    </message>
+    <message>
+        <source>Restore console size and position</source>
+        <translation>Restore console size and position</translation>
+    </message>
+    <message>
+        <source>Shows the console window on application startup.</source>
+        <translation>Shows the console window on application startup.</translation>
+    </message>
+    <message>
+        <source>Show console on startup</source>
+        <translation>Show console on startup</translation>
+    </message>
+    <message>
+        <source>Shows the console window when an error occurs in the application.</source>
+        <translation>Shows the console window when an error occurs in the application.</translation>
+    </message>
+    <message>
+        <source>Show console on error</source>
+        <translation>Show console on error</translation>
     </message>
     <message>
         <source>Open latest log</source>
@@ -321,10 +317,6 @@
         <translation>🔄 Check for updates</translation>
     </message>
     <message>
-        <source> Search entities...</source>
-        <translation type="vanished"> Search entities...</translation>
-    </message>
-    <message>
         <source>Entity details</source>
         <translation>Entity details</translation>
     </message>
@@ -339,22 +331,6 @@
     <message>
         <source>🗑️ Kill entity</source>
         <translation>🗑️ Kill entity</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Position:</translation>
-    </message>
-    <message>
-        <source>Rotation:</source>
-        <translation type="vanished">Rotation:</translation>
-    </message>
-    <message>
-        <source>Velocity:</source>
-        <translation type="vanished">Velocity:</translation>
-    </message>
-    <message>
-        <source>HWND:</source>
-        <translation type="vanished">HWND:</translation>
     </message>
     <message>
         <source>unknown</source>
@@ -435,10 +411,6 @@
     <message>
         <source>Open folder</source>
         <translation>Open folder</translation>
-    </message>
-    <message>
-        <source>Remove</source>
-        <translation type="vanished">Remove</translation>
     </message>
     <message>
         <source>Delete</source>
@@ -535,16 +507,8 @@
         <translation>Select a entity first.</translation>
     </message>
     <message>
-        <source>Failed to save settings: %x</source>
-        <translation type="vanished">Failed to save settings: %x</translation>
-    </message>
-    <message>
         <source>Success</source>
         <translation>Success</translation>
-    </message>
-    <message>
-        <source>Assigned &apos;%x&apos;.</source>
-        <translation type="vanished">Assigned &apos;%x&apos;.</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -565,12 +529,6 @@
     <message>
         <source>Registry error</source>
         <translation>Registry error</translation>
-    </message>
-    <message>
-        <source>Failed to change autostart setting:
-%x</source>
-        <translation type="vanished">Failed to change autostart setting:
-%x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

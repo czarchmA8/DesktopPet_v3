@@ -10,7 +10,7 @@ from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent,
 
 import app.utils_debug as utils_debug
 import app.logger as logger
-from app.shared_state import SharedState
+from app.ipc import IpcChannel, SharedState
 from app.windows_z_order.watcher import WindowsWatcher, WindowNeighbors
 from app.desktop.mods_manager import ModsManager
 from app.desktop.input_events import InputState, MouseButtonEvent
@@ -203,7 +203,7 @@ class OverlayManager(QApplication):
     def __init__(self, conn, shared_data: SharedState) -> None:
         super().__init__(sys.argv)
 
-        self.conn = conn
+        self.ipc = IpcChannel(conn, "IPC", "DASHBOARD", log)
         self.shared_data: SharedState = shared_data
 
         self.watcher: WindowsWatcher = WindowsWatcher()
@@ -289,40 +289,30 @@ class OverlayManager(QApplication):
 
         self.process_timer.stop("tick")
 
-    def send_ipc_command(self, msg: list[str]) -> None:
-        """Sends message to other processes"""
-        log.debug(f"Sent IPC: {msg}")
-        self.conn.send(msg)
-
     def _handle_ipc_commands(self) -> None:
         """Checks messages from other processes"""
-        while True:
-            if self.conn.poll():
-                msg = self.conn.recv()
-                log.debug(f"Received IPC: {msg}")
-                if msg[0] == "close_app":
-                    self.watcher.stop()
-                    QCoreApplication.quit()
-                elif msg[0] == "spawn_entity":
-                    self.mods_manager.spawn_entity(msg[1], msg[2])
-                elif msg[0] == "kill_entity":
-                    self.mods_manager.kill_entity(msg[1])
-                elif msg[0] == "show_entity":
-                    self.mods_manager.show_entity(msg[1])
-                elif msg[0] == "hide_entity":
-                    self.mods_manager.hide_entity(msg[1])
-                elif msg[0] == "teleport_entity":
-                    self.mods_manager.teleport_entity(msg[1])
-                elif msg[0] == "kill_all_entities":
-                    self.mods_manager.kill_all_entities()
-                elif msg[0] == "show_all_entities":
-                    self.mods_manager.show_all_entities()
-                elif msg[0] == "hide_all_entities":
-                    self.mods_manager.hide_all_entities()
-                else:
-                    log.error(f"Unknown command: {msg}")
+        for cmd in self.ipc.receive():
+            if cmd[0] == "close_app":
+                self.watcher.stop()
+                QCoreApplication.quit()
+            elif cmd[0] == "spawn_entity":
+                self.mods_manager.spawn_entity(cmd[1], cmd[2])
+            elif cmd[0] == "kill_entity":
+                self.mods_manager.kill_entity(cmd[1])
+            elif cmd[0] == "show_entity":
+                self.mods_manager.show_entity(cmd[1])
+            elif cmd[0] == "hide_entity":
+                self.mods_manager.hide_entity(cmd[1])
+            elif cmd[0] == "teleport_entity":
+                self.mods_manager.teleport_entity(cmd[1])
+            elif cmd[0] == "kill_all_entities":
+                self.mods_manager.kill_all_entities()
+            elif cmd[0] == "show_all_entities":
+                self.mods_manager.show_all_entities()
+            elif cmd[0] == "hide_all_entities":
+                self.mods_manager.hide_all_entities()
             else:
-                return
+                self.ipc.unknown(cmd)
 
 def run_app(conn, shared_data: SharedState, log_queue):
     logger.init_child(log_queue)

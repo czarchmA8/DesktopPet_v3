@@ -77,6 +77,10 @@
         <translation>Głośność:</translation>
     </message>
     <message>
+        <source>Restore application size and position</source>
+        <translation>Przywróć rozmiar i pozycję aplikacji</translation>
+    </message>
+    <message>
         <source>App</source>
         <translation>Aplikacja</translation>
     </message>
@@ -125,22 +129,6 @@
         <translation>Ukryj wszystkie byty</translation>
     </message>
     <message>
-        <source>Kill selected</source>
-        <translation type="vanished">Usuń zaznaczony</translation>
-    </message>
-    <message>
-        <source>Show selected</source>
-        <translation type="vanished">Pokaż zaznaczony</translation>
-    </message>
-    <message>
-        <source>Hide selected</source>
-        <translation type="vanished">Ukryj zaznaczony</translation>
-    </message>
-    <message>
-        <source>Teleport selected</source>
-        <translation type="vanished">Teleportuj zaznaczony</translation>
-    </message>
-    <message>
         <source>Opens the built-in hitbox editor for objects</source>
         <translation>Otwórz wbudowany edytor hitboxów dla obiektów</translation>
     </message>
@@ -153,10 +141,6 @@
         <translation>System</translation>
     </message>
     <message>
-        <source>This option does not update the software itself.</source>
-        <translation type="vanished">Ta opcja nie aktualizuje oprogramowania samodzielnie.</translation>
-    </message>
-    <message>
         <source>Check for updates</source>
         <translation>Sprawdzaj aktualizacje</translation>
     </message>
@@ -165,20 +149,20 @@
         <translation>Uruchamiaj przy starcie systemu</translation>
     </message>
     <message>
+        <source>Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.</source>
+        <translation>Pokazuje okno, gdy aplikacja uruchamia się automatycznie wraz z systemem. Ta opcja nie zmienia wyświetlania okna przy normalnym uruchomieniu.</translation>
+    </message>
+    <message>
+        <source>Show window on autostart</source>
+        <translation>Pokaż okno przy autostarcie</translation>
+    </message>
+    <message>
         <source>Advanced</source>
         <translation>Zaawansowane</translation>
     </message>
     <message>
         <source>Debug mode</source>
         <translation>Tryb debugowania</translation>
-    </message>
-    <message>
-        <source>Displaying hitboxes</source>
-        <translation>Wyświetlanie hitbox-ów</translation>
-    </message>
-    <message>
-        <source>Information window</source>
-        <translation>Okno z informacjami</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -195,10 +179,6 @@
     <message>
         <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
         <translation>Zapisuje rozmiar i położenie okna przy zamknięciu i przywraca je przy uruchomieniu.</translation>
-    </message>
-    <message>
-        <source>Restore window size and position</source>
-        <translation>Przywróć rozmiar i pozycję okna</translation>
     </message>
     <message>
         <source>Kill selected entity</source>
@@ -225,14 +205,6 @@
         <translation>Automatycznie uruchamia aplikacje wraz z systemem</translation>
     </message>
     <message>
-        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
-        <translation>Pokazuje okno przy starcie, uruchamiając się automatycznie razem z systemem. Ta opcja nie zmienia sposobu wyświetlania okna przy normalnym uruchomieniu.</translation>
-    </message>
-    <message>
-        <source>Show window on startup</source>
-        <translation>Pokaż okno przy starcie</translation>
-    </message>
-    <message>
         <source>General debug mode switch. This option does nothing by itself.</source>
         <translation>Ogólny przełącznik trybu debugowania. Ta opcja sama w sobie nic nie robi.</translation>
     </message>
@@ -241,8 +213,8 @@
         <translation>Pokazuje zwykle niewidoczne hitboxy bytów. Działa tylko dla bytów obsługujących tę opcję.</translation>
     </message>
     <message>
-        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
-        <translation>Pokazuje okno z ogólnymi informacjami o aplikacji. Na przykład FPS i listę obserwowanych okien.</translation>
+        <source>Display hitboxes</source>
+        <translation>Wyświetlaj hitboxy</translation>
     </message>
     <message>
         <source>Shows a window displaying the current application logs</source>
@@ -251,6 +223,30 @@
     <message>
         <source>Show debug console</source>
         <translation>Pokaż konsolę debugowania</translation>
+    </message>
+    <message>
+        <source>Saves the console window size and location when closed, and restores them on startup.</source>
+        <translation>Zapisuje rozmiar i położenie okna konsoli przy zamknięciu i przywraca je przy uruchomieniu.</translation>
+    </message>
+    <message>
+        <source>Restore console size and position</source>
+        <translation>Przywróć rozmiar i pozycję konsoli</translation>
+    </message>
+    <message>
+        <source>Shows the console window on application startup.</source>
+        <translation>Pokazuje okno konsoli podczas uruchamiania aplikacji.</translation>
+    </message>
+    <message>
+        <source>Show console on startup</source>
+        <translation>Pokaż konsolę przy starcie</translation>
+    </message>
+    <message>
+        <source>Shows the console window when an error occurs in the application.</source>
+        <translation>Pokazuje okno konsoli, gdy w aplikacji wystąpi błąd.</translation>
+    </message>
+    <message>
+        <source>Show console on error</source>
+        <translation>Pokaż konsolę przy błędzie</translation>
     </message>
     <message>
         <source>Open latest log</source>
@@ -321,10 +317,6 @@
         <translation>🔄 Sprawdź aktualizacje</translation>
     </message>
     <message>
-        <source> Search entities...</source>
-        <translation type="vanished"> Szukaj bytów...</translation>
-    </message>
-    <message>
         <source>Entity details</source>
         <translation>Szczegóły bytu</translation>
     </message>
@@ -339,22 +331,6 @@
     <message>
         <source>🗑️ Kill entity</source>
         <translation>🗑️ Usuń byt</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Pozycja:</translation>
-    </message>
-    <message>
-        <source>Rotation:</source>
-        <translation type="vanished">Rotacja:</translation>
-    </message>
-    <message>
-        <source>Velocity:</source>
-        <translation type="vanished">Prędkość:</translation>
-    </message>
-    <message>
-        <source>HWND:</source>
-        <translation type="vanished">HWND:</translation>
     </message>
     <message>
         <source>unknown</source>
@@ -435,10 +411,6 @@
     <message>
         <source>Open folder</source>
         <translation>Otwórz folder</translation>
-    </message>
-    <message>
-        <source>Remove</source>
-        <translation type="vanished">Usuń</translation>
     </message>
     <message>
         <source>Delete</source>
@@ -535,16 +507,8 @@
         <translation>Najpierw wybierz byt.</translation>
     </message>
     <message>
-        <source>Failed to save settings: %x</source>
-        <translation type="vanished">Nie udało się zapisać ustawień: %x</translation>
-    </message>
-    <message>
         <source>Success</source>
         <translation>Sukces</translation>
-    </message>
-    <message>
-        <source>Assigned &apos;%x&apos;.</source>
-        <translation type="vanished">Przypisano `%x`</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -565,11 +529,6 @@
     <message>
         <source>Registry error</source>
         <translation>Błąd rejestru</translation>
-    </message>
-    <message>
-        <source>Failed to change autostart setting:
-%x</source>
-        <translation type="vanished">Nie udało się zmienić ustawienia autostartu:\n%x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

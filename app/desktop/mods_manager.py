@@ -14,7 +14,7 @@ from lupa.lua54 import LuaRuntime
 
 import app.config as config
 import app.logger as logger
-from app.shared_state import SharedState
+from app.ipc import SharedState
 from app.desktop.input_events import InputState, MouseButtonEvent, MouseScroll
 
 log = logger.get_logger("mods_manager")
@@ -118,12 +118,7 @@ class ModsManager:
 
         self.shared_data.active_mods = active_mods
         log.info(f"Mods loaded: {len(active_mods)}")
-        self.send_ipc_command(["Update_mod_list"])
-    
-    def send_ipc_command(self, msg: list[str]):
-        """Sends message to other processes"""
-        log.debug(f"Sent IPC: {msg}")
-        self.conn.send(msg)
+        self.overlay_manager.ipc.send(["Update_mod_list"])
 
     def load_mod_from_folder(self, folder: Path) -> Mod | None:
         """Loads information about the mod. Returns None if the mod is invalid."""
@@ -305,7 +300,7 @@ class ModsManager:
         if self.spawnable_entities_dirty:
             self.spawnable_entities_dirty = False
             self.overlay_manager.shared_data.spawnable_entities = self.spawnable_entities
-            self.overlay_manager.send_ipc_command(["Update_spawnable_entities_list"])
+            self.overlay_manager.ipc.send(["Update_spawnable_entities_list"])
 
     def spawn_entity(self, mod_id: str, entity_id: str) -> str | None:
         """Creates an instance of a registered entity and returns its ID, or None on failure."""
@@ -333,7 +328,7 @@ class ModsManager:
         displayed = self.overlay_manager.shared_data.displayed_entities
         displayed[instance_id] = key
         self.overlay_manager.shared_data.displayed_entities = displayed
-        self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
+        self.overlay_manager.ipc.send(["Update_displayed_entities"])
 
         return instance_id
 
@@ -348,7 +343,7 @@ class ModsManager:
         displayed = dict(self.overlay_manager.shared_data.displayed_entities)
         displayed.pop(instance_id, None)
         self.overlay_manager.shared_data.displayed_entities = displayed
-        self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
+        self.overlay_manager.ipc.send(["Update_displayed_entities"])
     
     def show_entity(self, instance_id: str) -> None:
         """Calls the `show_func` of an instance."""
@@ -380,7 +375,7 @@ class ModsManager:
             entity_data.delete_func()
         self.displayed_entities.clear()
         self.overlay_manager.shared_data.displayed_entities = {}
-        self.overlay_manager.send_ipc_command(["Update_displayed_entities"])
+        self.overlay_manager.ipc.send(["Update_displayed_entities"])
     
     def show_all_entities(self):
         for entity_data in self.displayed_entities.values():
@@ -391,6 +386,6 @@ class ModsManager:
             entity_data.hide_func()
     
     def select_entity(self, instance_id: str) -> None:
-        self.shared_data.selected_entity = instance_id
-        if self.shared_data.selected_entity in self.shared_data.displayed_entities:
-            self.send_ipc_command(["select_entity", instance_id])
+        if instance_id in self.shared_data.displayed_entities and self.shared_data.selected_entity != instance_id:
+            self.shared_data.selected_entity = instance_id
+            self.overlay_manager.ipc.send(["select_entity", instance_id])

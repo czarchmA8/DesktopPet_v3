@@ -25,7 +25,7 @@ from PySide6.QtGui import QIcon, QPixmap, QDesktopServices, QGuiApplication
 
 import app.config as config
 import app.logger as logger
-from app.shared_state import SharedState
+from app.ipc import IpcChannel, SharedState
 from app.desktop.mods_manager import Mod, Entity
 from app.dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from app.dashboard.translator import Translator, replace_format
@@ -54,12 +54,13 @@ class MainWindow(QMainWindow):
     exit_requested = Signal() # Used only for keyboard shortcuts, so I don't get the "Terminating process DASHBOARD..." message
     translate = QCoreApplication.translate
 
-    def __init__(self, conn, shared_data: SharedState, translator) -> None:
+    def __init__(self, conn, shared_data: SharedState, translator: Translator, ctl) -> None:
         super().__init__()
 
-        self.conn = conn
         self.shared_data: SharedState = shared_data
-        self.translator = translator
+        self.translator: Translator = translator
+        self.ipc = IpcChannel(conn, "IPC", "DESKTOP", log)
+        self.ctl = IpcChannel(ctl, "CTL", "MAIN", log)
 
         self.ui = Ui_MainWindow()
         self.ui.setup_ui(self)
@@ -111,8 +112,8 @@ class MainWindow(QMainWindow):
         self._on_slider_volume_changes(self.shared_data.settings["volume"])
 
         # > Appearance
-        self.ui.checkBox_restore_window_geometry.toggled.connect(self._on_restore_window_geometry_toggle)
-        self.ui.checkBox_restore_window_geometry.setChecked(self.shared_data.settings["window_geometry"]["restore"])
+        self.ui.checkBox_restore_app_window_geometry.toggled.connect(self._on_restore_window_geometry_toggle)
+        self.ui.checkBox_restore_app_window_geometry.setChecked(self.shared_data.settings["window_geometry"]["restore"])
 
         # > Entities
         self.ui.pushButton_open_objects_editor.clicked.connect(self.open_object_editor)
@@ -133,24 +134,28 @@ class MainWindow(QMainWindow):
             self.ui.checkBox_autostart.setToolTip(self.translate("MainWindow", "Autostart is only available for the packaged application, not for the script being run.", None))
         self.ui.checkBox_autostart.toggled.connect(self._on_autostart_toggle)
 
-        self.ui.checkBox_show_window_on_startup.setChecked(self.shared_data.settings["check_for_updates"])
-        self.ui.checkBox_show_window_on_startup.toggled.connect(self._on_show_window_on_startup_toggle)
-        self.ui.checkBox_show_window_on_startup.setEnabled(self.ui.checkBox_autostart.isChecked())
+        self.ui.checkBox_show_app_window_on_autostart.setChecked(self.shared_data.settings["check_for_updates"])
+        self.ui.checkBox_show_app_window_on_autostart.toggled.connect(self._on_show_window_on_startup_toggle)
+        self.ui.checkBox_show_app_window_on_autostart.setEnabled(self.ui.checkBox_autostart.isChecked())
 
         # > Advanced
         self.ui.checkBox_debug_mode.setChecked(self.shared_data.settings["debug"]["active"])
-        self.ui.checkBox_debug_mode.toggled.connect(self.update_debug_visibility)
+        self.ui.checkBox_debug_mode.toggled.connect(self._on_debug_mode_toggle)
+        self._update_debug_checkboxes_enabled()
 
-        self.ui.checkBox_hitboxes_overlay.setChecked(self.shared_data.settings["debug"]["hitbox_overlay"])
-        self.ui.checkBox_hitboxes_overlay.toggled.connect(self.update_debug_visibility)
+        self.ui.checkBox_display_hitboxes.setChecked(self.shared_data.settings["debug"]["hitbox_overlay"])
+        self.ui.checkBox_display_hitboxes.toggled.connect(self.update_debug_settings)
 
-        self.ui.checkBox_debug_information_window.setChecked(self.shared_data.settings["debug"]["debug_window"])
-        self.ui.checkBox_debug_information_window.toggled.connect(self.update_debug_visibility)
+        self.ui.checkBox_show_debug_console.toggled.connect(self._on_console_visibility_toggle)
 
-        self.ui.checkBox_debug_console.setChecked(self.shared_data.settings["debug"]["console"])
-        self.ui.checkBox_debug_console.toggled.connect(self.update_debug_visibility)
+        self.ui.checkBox_restore_console_geometry.setChecked(self.shared_data.settings["debug"]["console"]["window_geometry"]["restore"])
+        self.ui.checkBox_restore_console_geometry.toggled.connect(self.update_debug_settings)
 
-        self.update_debug_check_states()
+        self.ui.checkBox_show_console_on_startup.setChecked(self.shared_data.settings["debug"]["console"]["show_console_on_startup"])
+        self.ui.checkBox_show_console_on_startup.toggled.connect(self.update_debug_settings)
+        
+        self.ui.checkBox_show_console_on_error.setChecked(self.shared_data.settings["debug"]["console"]["show_console_on_error"])
+        self.ui.checkBox_show_console_on_error.toggled.connect(self.update_debug_settings)
 
         self.ui.pushButton_open_app_folder.clicked.connect(self.open_app_folder)
         self.ui.pushButton_open_latest_log.clicked.connect(self.open_latest_log)
@@ -394,42 +399,37 @@ class MainWindow(QMainWindow):
         self.update_label_check_for_updates()
 
         self._update_entity_debug_details(self.shared_data.entity_details)
-
-    # IPC commands
-    def send_ipc_command(self, msg: list[str]) -> None:
-        """Sends message to other processes"""
-        log.debug(f"Sent IPC: {msg}")
-        self.conn.send(msg)
-
+    
     def _handle_ipc_commands(self) -> None:
         """Checks messages from other processes"""
-        while True:
-            if self.conn.poll():
-                msg = self.conn.recv()
-                log.debug(f"Received IPC: {msg}")
-                if msg[0] == "Update_mod_list":
-                    log.debug(f"Mods: {self.shared_data.active_mods}")
-                    self._active_mods_baseline = list(self.shared_data.settings["active_mods"])
-                    self._pending_active_mods = list(self._active_mods_baseline)
-                    self._populate_mods_list()
-                elif msg[0] == "Update_spawnable_entities_list":
-                    log.debug(f"Entities: {self.shared_data.spawnable_entities}")
-                    self._populate_spawnable_entities_list()
-                elif msg[0] == "Update_displayed_entities":
-                    self._populate_displayed_entities_list()
-                elif msg[0] == "select_entity":
-                    self._select_displayed_entity(msg[1])
-                else:
-                    log.error(f"Unknown command: {msg}")
+        for cmd in self.ipc.receive():
+            if cmd[0] == "Update_mod_list":
+                log.debug(f"Mods ({len(self.shared_data.active_mods)}): {self.shared_data.active_mods}")
+                self._active_mods_baseline = list(self.shared_data.settings["active_mods"])
+                self._pending_active_mods = list(self._active_mods_baseline)
+                self._populate_mods_list()
+            elif cmd[0] == "Update_spawnable_entities_list":
+                log.debug(f"Entities ({len(self.shared_data.spawnable_entities)}): {self.shared_data.spawnable_entities}")
+                self._populate_spawnable_entities_list()
+            elif cmd[0] == "Update_displayed_entities":
+                self._populate_displayed_entities_list()
+            elif cmd[0] == "select_entity":
+                self._select_displayed_entity(cmd[1])
             else:
-                return
+                self.ipc.unknown(cmd)
+
+        for cmd in self.ctl.receive():
+            if cmd[0] == "console_visibility_changed":
+                self._on_console_visibility_changed(cmd[1])
+            else:
+                self.ipc.unknown(cmd)
 
     # Closing the application
     def close_app(self, restart=False) -> None:
         """Sends a command to close the second process and closes the current one"""
         if restart:
             self.shared_data.restart_requested = True
-        self.send_ipc_command(["close_app"])
+        self.ipc.send(["close_app"])
         QCoreApplication.quit()
 
     def restart_app(self) -> None:
@@ -755,7 +755,7 @@ class MainWindow(QMainWindow):
         settings = self.shared_data.settings
         settings["language"] = self.ui.comboBox_language.currentData()
         self.shared_data.settings = settings
-        log.debug((lang_code, self.shared_data.settings["language"]))
+        log.debug(f'Changed translation to: {(lang_code, self.shared_data.settings["language"])}')
         self.save_settings_state()
         self.translator.change_language(lang_code)
 
@@ -824,7 +824,7 @@ class MainWindow(QMainWindow):
 
     def _on_autostart_toggle(self, checked) -> None:
         """Toggles application autostart in Windows registry"""
-        self.ui.checkBox_show_window_on_startup.setEnabled(checked)
+        self.ui.checkBox_show_app_window_on_autostart.setEnabled(checked)
 
         key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
@@ -871,24 +871,40 @@ class MainWindow(QMainWindow):
         self.save_settings_state()
 
     # Advanced
-    def update_debug_check_states(self) -> None:
-        """Updates enabled/disabled state of debug checkboxes"""
+    def _update_debug_checkboxes_enabled(self) -> None:
         checked = self.ui.checkBox_debug_mode.isChecked()
-        self.ui.checkBox_hitboxes_overlay.setEnabled(checked)
-        self.ui.checkBox_debug_information_window.setEnabled(checked)
-        self.ui.checkBox_debug_console.setEnabled(checked)
+        self.ui.checkBox_display_hitboxes.setEnabled(checked)
+        self.ui.checkBox_show_debug_console.setEnabled(checked)
 
-    def update_debug_visibility(self, checked: bool | None=None) -> None:
-        """Updates visibility of debug overlays"""
-        self.update_debug_check_states()
-
+    def _on_debug_mode_toggle(self) -> None:
+        self._update_debug_checkboxes_enabled()
+        self._on_console_visibility_toggle()
         settings = self.shared_data.settings
         settings["debug"]["active"] = self.ui.checkBox_debug_mode.isChecked()
-        settings["debug"]["hitbox_overlay"] = self.ui.checkBox_hitboxes_overlay.isChecked()
-        settings["debug"]["debug_window"] = self.ui.checkBox_debug_information_window.isChecked()
-        settings["debug"]["console"] = self.ui.checkBox_debug_console.isChecked()
         self.shared_data.settings = settings
         self.save_settings_state()
+
+    def update_debug_settings(self, checked: bool | None=None) -> None:
+        """Updates visibility of debug overlays"""
+        settings = self.shared_data.settings
+        settings["debug"]["hitbox_overlay"] = self.ui.checkBox_display_hitboxes.isChecked()
+        settings["debug"]["console"]["window_geometry"]["restore"] = self.ui.checkBox_restore_console_geometry.isChecked()
+        settings["debug"]["console"]["show_console_on_startup"] = self.ui.checkBox_show_console_on_startup.isChecked()
+        settings["debug"]["console"]["show_console_on_error"] = self.ui.checkBox_show_console_on_error.isChecked()
+        self.shared_data.settings = settings
+        self.save_settings_state()
+
+    def _on_console_visibility_changed(self, visible: bool) -> None:
+        check_box = self.ui.checkBox_show_debug_console
+        check_box.blockSignals(True)
+        check_box.setChecked(visible)
+        check_box.blockSignals(False)
+    
+    def _on_console_visibility_toggle(self, checked: bool | None=None) -> None:
+        checked = checked if checked is not None else self.ui.checkBox_show_debug_console.isChecked()
+        visible = checked and self.ui.checkBox_debug_mode.isChecked()
+        self.ui.checkBox_show_debug_console.setChecked(visible)
+        self.ctl.send(["set_console_visibility", visible])
 
     def open_app_folder(self) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(config.APP_DIR)))
@@ -1089,26 +1105,26 @@ class MainWindow(QMainWindow):
     # Selected entity commands
     def kill_all_entities(self) -> None:
         """Removes all spawned entities from the world"""
-        self.send_ipc_command(["kill_all_entities"])
+        self.ipc.send(["kill_all_entities"])
 
     def show_all_entities(self):
-        self.send_ipc_command(["show_all_entities"])
+        self.ipc.send(["show_all_entities"])
 
     def hide_all_entities(self):
-        self.send_ipc_command(["hide_all_entities"])
+        self.ipc.send(["hide_all_entities"])
 
     def kill_entity(self, unique_id: str) -> None:
         """Removes a specific displayed entity"""
-        self.send_ipc_command(["kill_entity", unique_id])
+        self.ipc.send(["kill_entity", unique_id])
 
     def show_entity(self, unique_id: str) -> None:
-        self.send_ipc_command(["show_entity", unique_id])
+        self.ipc.send(["show_entity", unique_id])
 
     def hide_entity(self, unique_id: str) -> None:
-        self.send_ipc_command(["hide_entity", unique_id])
+        self.ipc.send(["hide_entity", unique_id])
 
     def teleport_entity(self, unique_id: str) -> None:
-        self.send_ipc_command(["teleport_entity", unique_id])
+        self.ipc.send(["teleport_entity", unique_id])
 
     # ================= SPAWNABLE ENTITIES LIST =================
 
@@ -1238,7 +1254,7 @@ class MainWindow(QMainWindow):
         if entity is None:
             QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
             return
-        self.send_ipc_command(["spawn_entity", entity.mod_id, entity.id])
+        self.ipc.send(["spawn_entity", entity.mod_id, entity.id])
 
     # ================= INFO =================
 
@@ -1321,7 +1337,7 @@ class MainWindow(QMainWindow):
             self.update_check_cooldown = 120
 
         self.update_label_check_for_updates()
-        log.debug(self.ui.label_check_for_updates.text())
+        log.debug(f"{self.latest_release_info}, {self.ui.label_check_for_updates.text()}")
 
     def _on_check_for_updates(self) -> None:
         self.last_time_checked = time.time()
@@ -1354,7 +1370,7 @@ class MainWindow(QMainWindow):
         else:
             log.debug("[UpdateDialog] The user selected 'No' or closed the window.")
 
-def run_app(conn, shared_data: SharedState, log_queue) -> None:
+def run_app(conn, shared_data: SharedState, log_queue, ctl) -> None:
     """Entry point for the dashboard process"""
     logger.init_child(log_queue)
     log.info("Starting the DASHBOARD process...")
@@ -1363,7 +1379,7 @@ def run_app(conn, shared_data: SharedState, log_queue) -> None:
 
     translator = Translator(shared_data.settings["language"])
 
-    window = MainWindow(conn, shared_data, translator)
+    window = MainWindow(conn, shared_data, translator, ctl)
     if shared_data.restarted or not shared_data.args.autostart or (shared_data.args.autostart and shared_data.settings["show_on_autostart"]):
         window.show()
 

@@ -77,6 +77,10 @@
         <translation>आवाज़ (Volume):</translation>
     </message>
     <message>
+        <source>Restore application size and position</source>
+        <translation>एप्लिकेशन का आकार और स्थिति पुनर्स्थापित करें</translation>
+    </message>
+    <message>
         <source>App</source>
         <translation>एप्लिकेशन (App)</translation>
     </message>
@@ -125,22 +129,6 @@
         <translation>सभी इकाइयाँ छिपाएँ</translation>
     </message>
     <message>
-        <source>Kill selected</source>
-        <translation type="vanished">चयनित समाप्त करें</translation>
-    </message>
-    <message>
-        <source>Show selected</source>
-        <translation type="vanished">चयनित दिखाएँ</translation>
-    </message>
-    <message>
-        <source>Hide selected</source>
-        <translation type="vanished">चयनित छिपाएँ</translation>
-    </message>
-    <message>
-        <source>Teleport selected</source>
-        <translation type="vanished">चयनित को टेलीपोर्ट करें</translation>
-    </message>
-    <message>
         <source>Opens the built-in hitbox editor for objects</source>
         <translation>ऑब्जेक्ट्स के लिए अंतर्निहित हिटबॉक्स संपादक खोलता है</translation>
     </message>
@@ -153,10 +141,6 @@
         <translation>सिस्टम</translation>
     </message>
     <message>
-        <source>This option does not update the software itself.</source>
-        <translation type="vanished">यह विकल्प सॉफ़्टवेयर को स्वयं अपडेट नहीं करता है।</translation>
-    </message>
-    <message>
         <source>Check for updates</source>
         <translation>अपडेट के लिए जाँच करें</translation>
     </message>
@@ -165,20 +149,20 @@
         <translation>सिस्टम स्टार्टअप पर चलाएँ</translation>
     </message>
     <message>
+        <source>Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.</source>
+        <translation>जब एप्लिकेशन सिस्टम के साथ अपने-आप शुरू होता है, तो विंडो दिखाता है। यह विकल्प सामान्य स्टार्टअप पर विंडो के प्रदर्शन को नहीं बदलता।</translation>
+    </message>
+    <message>
+        <source>Show window on autostart</source>
+        <translation>ऑटोस्टार्ट पर विंडो दिखाएं</translation>
+    </message>
+    <message>
         <source>Advanced</source>
         <translation>उन्नत</translation>
     </message>
     <message>
         <source>Debug mode</source>
         <translation>डिबग मोड</translation>
-    </message>
-    <message>
-        <source>Displaying hitboxes</source>
-        <translation>हिटबॉक्स प्रदर्शित हो रहे हैं</translation>
-    </message>
-    <message>
-        <source>Information window</source>
-        <translation>जानकारी विंडो</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -195,10 +179,6 @@
     <message>
         <source>Saves the window&apos;s size and location when closed, and restores them on startup.</source>
         <translation>बंद करते समय विंडो का आकार और स्थान सहेजता है, और स्टार्टअप पर उन्हें पुनर्स्थापित करता है।</translation>
-    </message>
-    <message>
-        <source>Restore window size and position</source>
-        <translation>विंडो का आकार और स्थिति पुनर्स्थापित करें</translation>
     </message>
     <message>
         <source>Kill selected entity</source>
@@ -225,14 +205,6 @@
         <translation>सिस्टम के साथ स्वचालित रूप से एप्लिकेशन लॉन्च करता है</translation>
     </message>
     <message>
-        <source>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</source>
-        <translation>सिस्टम के साथ स्वचालित रूप से शुरू होकर स्टार्टअप पर विंडो दिखाता है। यह विकल्प सामान्य स्टार्टअप पर विंडो प्रदर्शित होने के तरीके को नहीं बदलता है।</translation>
-    </message>
-    <message>
-        <source>Show window on startup</source>
-        <translation>स्टार्टअप पर विंडो दिखाएँ</translation>
-    </message>
-    <message>
         <source>General debug mode switch. This option does nothing by itself.</source>
         <translation>सामान्य डिबग मोड स्विच। यह विकल्प अकेले कुछ नहीं करता है।</translation>
     </message>
@@ -241,8 +213,8 @@
         <translation>सामान्य रूप से अदृश्य इकाई हिटबॉक्स दिखाता है। यह केवल उन इकाइयों के लिए काम करता है जो इस विकल्प का समर्थन करती हैं।</translation>
     </message>
     <message>
-        <source>Shows a window with general information about the application. For example, FPS and a list of watched windows.</source>
-        <translation>एप्लिकेशन के बारे में सामान्य जानकारी वाली एक विंडो दिखाता है। उदाहरण के लिए, FPS और देखी जा रही विंडो की सूची।</translation>
+        <source>Display hitboxes</source>
+        <translation>हिटबॉक्स दिखाएं</translation>
     </message>
     <message>
         <source>Shows a window displaying the current application logs</source>
@@ -251,6 +223,30 @@
     <message>
         <source>Show debug console</source>
         <translation>डिबग कंसोल दिखाएँ</translation>
+    </message>
+    <message>
+        <source>Saves the console window size and location when closed, and restores them on startup.</source>
+        <translation>बंद होने पर कंसोल विंडो का आकार और स्थान सहेजता है, और स्टार्टअप पर उन्हें पुनर्स्थापित करता है।</translation>
+    </message>
+    <message>
+        <source>Restore console size and position</source>
+        <translation>कंसोल का आकार और स्थिति पुनर्स्थापित करें</translation>
+    </message>
+    <message>
+        <source>Shows the console window on application startup.</source>
+        <translation>एप्लिकेशन शुरू होने पर कंसोल विंडो दिखाता है।</translation>
+    </message>
+    <message>
+        <source>Show console on startup</source>
+        <translation>स्टार्टअप पर कंसोल दिखाएं</translation>
+    </message>
+    <message>
+        <source>Shows the console window when an error occurs in the application.</source>
+        <translation>एप्लिकेशन में कोई त्रुटि होने पर कंसोल विंडो दिखाता है।</translation>
+    </message>
+    <message>
+        <source>Show console on error</source>
+        <translation>त्रुटि होने पर कंसोल दिखाएं</translation>
     </message>
     <message>
         <source>Open latest log</source>
@@ -313,10 +309,6 @@
         <translation>इकाइयाँ (%1)</translation>
     </message>
     <message>
-        <source> Search entities...</source>
-        <translation type="vanished"> इकाइयाँ खोजें...</translation>
-    </message>
-    <message>
         <source>Entity details</source>
         <translation>इकाई विवरण</translation>
     </message>
@@ -333,10 +325,6 @@
         <translation>🗑️ इकाई समाप्त करें</translation>
     </message>
     <message>
-        <source>Position:</source>
-        <translation type="vanished">स्थिति:</translation>
-    </message>
-    <message>
         <source>Updates the application to the latest version</source>
         <translation>एप्लिकेशन को नवीनतम संस्करण में अपडेट करता है</translation>
     </message>
@@ -347,18 +335,6 @@
     <message>
         <source>🔄 Check for updates</source>
         <translation>🔄 अपडेट के लिए जाँच करें</translation>
-    </message>
-    <message>
-        <source>Rotation:</source>
-        <translation type="vanished">घूर्णन:</translation>
-    </message>
-    <message>
-        <source>Velocity:</source>
-        <translation type="vanished">वेग:</translation>
-    </message>
-    <message>
-        <source>HWND:</source>
-        <translation type="vanished">HWND:</translation>
     </message>
     <message>
         <source>unknown</source>
@@ -435,10 +411,6 @@
     <message>
         <source>Open folder</source>
         <translation>फ़ोल्डर खोलें</translation>
-    </message>
-    <message>
-        <source>Remove</source>
-        <translation type="vanished">हटाएँ</translation>
     </message>
     <message>
         <source>Delete</source>
@@ -535,16 +507,8 @@
         <translation>पहले एक इकाई चुनें।</translation>
     </message>
     <message>
-        <source>Failed to save settings: %x</source>
-        <translation type="vanished">सेटिंग्स सुरक्षित करने में विफल: %x</translation>
-    </message>
-    <message>
         <source>Success</source>
         <translation>सफलता</translation>
-    </message>
-    <message>
-        <source>Assigned &apos;%x&apos;.</source>
-        <translation type="vanished">&apos;%x&apos; असाइन कर दिया गया है।</translation>
     </message>
     <message>
         <source>Shortcut removed.</source>
@@ -565,11 +529,6 @@
     <message>
         <source>Registry error</source>
         <translation>रजिस्ट्री त्रुटि (Registry error)</translation>
-    </message>
-    <message>
-        <source>Failed to change autostart setting:
-%x</source>
-        <translation type="vanished">ऑटो-स्टार्ट सेटिंग बदलने में विफल: %x</translation>
     </message>
     <message>
         <source>New update &quot;%1&quot; from %2 available!</source>

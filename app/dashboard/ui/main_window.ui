@@ -34,9 +34,9 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
-             <width>341</width>
-             <height>1328</height>
+             <y>-938</y>
+             <width>742</width>
+             <height>1388</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -102,12 +102,12 @@
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_15">
                <item>
-                <widget class="QCheckBox" name="checkBox_restore_window_geometry">
+                <widget class="QCheckBox" name="checkBox_restore_app_window_geometry">
                  <property name="toolTip">
                   <string>Saves the window's size and location when closed, and restores them on startup.</string>
                  </property>
                  <property name="text">
-                  <string>Restore window size and position</string>
+                  <string>Restore application size and position</string>
                  </property>
                 </widget>
                </item>
@@ -1315,15 +1315,15 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_show_window_on_startup">
+                <widget class="QCheckBox" name="checkBox_show_app_window_on_autostart">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
                  <property name="toolTip">
-                  <string>Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.</string>
+                  <string>Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.</string>
                  </property>
                  <property name="text">
-                  <string>Show window on startup</string>
+                  <string>Show window on autostart</string>
                  </property>
                 </widget>
                </item>
@@ -1347,7 +1347,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_hitboxes_overlay">
+                <widget class="QCheckBox" name="checkBox_display_hitboxes">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -1355,25 +1355,12 @@
                   <string>Shows normally invisible entity hitboxes. Only works for entities that support this option.</string>
                  </property>
                  <property name="text">
-                  <string>Displaying hitboxes</string>
+                  <string>Display hitboxes</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_debug_information_window">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="toolTip">
-                  <string>Shows a window with general information about the application. For example, FPS and a list of watched windows.</string>
-                 </property>
-                 <property name="text">
-                  <string>Information window</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="checkBox_debug_console">
+                <widget class="QCheckBox" name="checkBox_show_debug_console">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -1382,6 +1369,42 @@
                  </property>
                  <property name="text">
                   <string>Show debug console</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_restore_console_geometry">
+                 <property name="toolTip">
+                  <string>Saves the console window size and location when closed, and restores them on startup.</string>
+                 </property>
+                 <property name="text">
+                  <string>Restore console size and position</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_show_console_on_startup">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>Shows the console window on application startup.</string>
+                 </property>
+                 <property name="text">
+                  <string>Show console on startup</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_show_console_on_error">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="toolTip">
+                  <string>Shows the console window when an error occurs in the application.</string>
+                 </property>
+                 <property name="text">
+                  <string>Show console on error</string>
                  </property>
                 </widget>
                </item>
@@ -1848,8 +1871,8 @@
                <property name="geometry">
                 <rect>
                  <x>0</x>
-                 <y>-152</y>
-                 <width>263</width>
+                 <y>0</y>
+                 <width>159</width>
                  <height>534</height>
                 </rect>
                </property>
@@ -2373,7 +2396,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>196</width>
+                 <width>159</width>
                  <height>428</height>
                 </rect>
                </property>

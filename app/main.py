@@ -3,15 +3,18 @@ import sys
 import traceback
 import json
 import argparse
+import time
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import QTimer
 
 import app.config as config
 from app.settings import load_settings
 import app.logger as logger
-from app.shared_state import SharedState
+from app.log_console import LogWindow
+from app.ipc import IpcChannel, SharedState
 from app.desktop.overlay_manager import run_app as run_app_desktop
 from app.dashboard.dashboard import run_app as run_app_dashboard
 
@@ -19,7 +22,7 @@ def except_hook(cls, exception, traceback_obj) -> None:
     """Global exception hook for uncaught exceptions"""
     sys.__excepthook__(cls, exception, traceback_obj)
 
-def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_queue) -> None:
+def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_queue, *extra) -> None:
     """Safely runs a process function with exception handling"""
     def child_except_hook(cls, exception, traceback_obj):
         error_msg = f"{process_name} PROCESS ERROR:\n{''.join(traceback.format_exception(cls, exception, traceback_obj))}"
@@ -29,7 +32,7 @@ def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_qu
 
     sys.excepthook = child_except_hook
     try:
-        run_func(conn, shared_data, log_queue)
+        run_func(conn, shared_data, log_queue, *extra)
     except Exception:
         error_msg = f"{process_name} PROCESS ERROR:\n{traceback.format_exc()}"
         error_queue.put(error_msg)
@@ -37,8 +40,6 @@ def safe_run(run_func, process_name: str, conn, shared_data, error_queue, log_qu
 
 def show_error_msg_box(error_msg) -> None:
     """Displays an error message dialog box"""
-    QApplication(sys.argv)
-
     msg_box = QMessageBox()
     msg_box.setWindowTitle(f"{config.APP_NAME} - Critical Error")
     msg_box.setWindowIcon(QIcon(str(config.RESOURCE_DIR / "icon.ico")))
@@ -64,61 +65,50 @@ def show_error_msg_box(error_msg) -> None:
         log_dir = str(config.APP_DIR / "logs")
         QDesktopServices.openUrl(QUrl.fromLocalFile(log_dir))
 
-def run_processes(shared_data: SharedState, error_queue, log_queue) -> str | None:
+def run_processes(shared_data: SharedState, error_queue, log_queue, app, ctl_dash) -> str | None:
     """Starts the DESKTOP and DASHBOARD processes and monitors them until both terminate. Returns an error message (if any) or None."""
     log = logger.get_logger("main")
-    conn1, conn2 = Pipe()
+    ipc_desktop, ipc_dash = Pipe()
 
-    p1 = Process(target=safe_run, args=(run_app_desktop, "DESKTOP", conn1, shared_data, error_queue, log_queue), name="DESKTOP")
-    p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", conn2, shared_data, error_queue, log_queue), name="DASHBOARD")
+    p1 = Process(target=safe_run, args=(run_app_desktop, "DESKTOP", ipc_desktop, shared_data, error_queue, log_queue), name="DESKTOP")
+    p2 = Process(target=safe_run, args=(run_app_dashboard, "DASHBOARD", ipc_dash, shared_data, error_queue, log_queue, ctl_dash), name="DASHBOARD")
     processes = [p1, p2]
     error_msg: str | None = None
-    last_console_visible = shared_data.settings["debug"]["active"] and shared_data.settings["debug"]["console"]
 
+    def supervise() -> None:
+        nonlocal error_msg
+
+        if not error_queue.empty():
+            error_msg = error_queue.get()
+            log.critical(f"\n[❌] {error_msg}\n")
+            app.exit()
+            return
+        alive = [p.is_alive() for p in processes]
+        if all(alive):
+            return
+        for p in processes:
+            if not p.is_alive() and p.exitcode != 0:
+                error_msg = f"{p.name} process exited with error code: {p.exitcode}"
+        app.exit()
+
+    timer = QTimer()
+    timer.timeout.connect(supervise)
     try:
-        p1.start()
-        p2.start()
+        for p in processes:
+            p.start()
         log.info("[✅] Both processes started")
-
-        while True:
-            shared_data.pull()
-            console_visible = shared_data.settings["debug"]["active"] and shared_data.settings["debug"]["console"]
-            if console_visible != last_console_visible:
-                if console_visible:
-                    logger.show_console()
-                else:
-                    logger.hide_console()
-                last_console_visible = console_visible
-            
-            if not error_queue.empty():
-                error_msg = error_queue.get()
-                log.critical(f"\n[❌] {error_msg}\n")
-                log.critical("[⚠️] Error caught, closing application...")
-                break
-
-            p1_alive = p1.is_alive()
-            p2_alive = p2.is_alive()
-            if not p1_alive and p2_alive:
-                log.info(f"[⚠️] DESKTOP process ended (exit code: {p1.exitcode}), closing DASHBOARD...")
-                if p1.exitcode != 0:
-                    error_msg = f"DESKTOP process exited with error code: {p1.exitcode}"
-                break
-            if not p2_alive and p1_alive:
-                log.info(f"[⚠️] DASHBOARD process ended (exit code: {p2.exitcode}), closing DESKTOP...")
-                if p2.exitcode != 0:
-                    error_msg = f"DASHBOARD process exited with error code: {p2.exitcode}"
-                break
-            if not p1_alive and not p2_alive:
-                log.info("[✅] Both processes ended normally")
-                break
-
-            p1.join(timeout=1)
-            p2.join(timeout=1)
+        timer.start(200)
+        app.exec()
     except KeyboardInterrupt:
         log.error("[⚠️] User interruption")
     except Exception:
         log.exception("[❌] Unexpected critical error in main loop")
     finally:
+        timer.stop()
+        if error_msg is None:
+            deadline = time.monotonic() + 3
+            for p in processes:
+                p.join(timeout=max(0, deadline - time.monotonic()))
         for p in processes:
             if p.is_alive():
                 log.warning(f"[⚠️] Terminating process {p.name}...")
@@ -147,7 +137,6 @@ def main() -> None:
 
     logger.init(
         file_name="main",
-        console_visible=args.debug == 2 or (settings["debug"]["active"] and settings["debug"]["console"]),
         max_old_logs=settings["debug"]["delete_logs_older_than"]
     )
     log = logger.get_logger("main")
@@ -158,6 +147,12 @@ def main() -> None:
     log.info(f"APP_VERSION: \"{config.APP_VERSION}\"")
     log.info(f"APP_VERSION_DATE: \"{config.APP_VERSION_DATE}\"")
 
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+
+    ctl_main_conn, ctl_dash = Pipe()
+    ctl = IpcChannel(ctl_main_conn, "CTL", "DASHBOARD", log)
+
     error_msg: str | None = None
 
     with Manager() as manager:
@@ -167,6 +162,20 @@ def main() -> None:
         shared_data.restarted = False
 
         log_queue = logger.get_queue()
+        
+        console = LogWindow(logger.get_gui_queue(), shared_data)
+        console.visibility_changed.connect(lambda v: ctl.send(["console_visibility_changed", v]))
+
+        def _handle_ctl_commands() -> None:
+            for msg in ctl.receive():
+                if msg[0] == "set_console_visibility":
+                    console.setVisible(msg[1])
+                else:
+                    ctl.unknown(msg)
+
+        ctl_timer = QTimer()
+        ctl_timer.timeout.connect(_handle_ctl_commands)
+        ctl_timer.start(100)
 
         while True:
             shared_data.active_mods = {}
@@ -176,7 +185,8 @@ def main() -> None:
             shared_data.selected_entity = None
             shared_data.entity_details = {}
 
-            error_msg = run_processes(shared_data, error_queue, log_queue)
+            ctl.send(["console_visibility_changed", console.isVisible()])
+            error_msg = run_processes(shared_data, error_queue, log_queue, app, ctl_dash)
 
             shared_data.pull() # Update changes
             if error_msg is not None or not shared_data.restart_requested:
@@ -186,19 +196,23 @@ def main() -> None:
             log.info("[🔄] Restarting application...")
 
         if error_msg is not None:
-            try:
-                settings = shared_data.settings
-                if settings["active_mods"]:
-                    settings["saved_mods_list"]["ERROR"] = settings["active_mods"]
-                    settings["active_mods"] = []
-                    settings_file_path = config.APP_DIR / "settings.json"
-                    settings_file_path.write_text(json.dumps(settings, indent=4, ensure_ascii=False), encoding="utf-8")
-                    log.info("Saved active mod list to mod list with name \"ERROR\" in \"settings.json\".")
-                else:
-                    log.info('Due to the empty list of active mods, saving the list under the name "ERROR" in the "settings.json" file was omitted.')
-            except Exception as e:
-                log.exception(f"Failed to save active mod list to mod list with name \"ERROR\" in \"settings.json\". Error: {e}")
+            if shared_data.settings["active_mods"]:
+                shared_data.settings["saved_mods_list"]["ERROR"] = shared_data.settings["active_mods"]
+                shared_data.settings["active_mods"] = []
+                log.info('Saved active mod list to mod list with name "ERROR" in settings.')
+            else:
+                log.info('Due to the empty list of active mods, saving the list under the name "ERROR" in settings was omitted.')
 
+        console.save_state_to_settings()
+        
+        try:
+            settings_file_path = config.APP_DIR / "settings.json"
+            settings_file_path.write_text(json.dumps(shared_data.settings, indent=4, ensure_ascii=False), encoding="utf-8")
+            log.info('Saved "settings.json".')
+        except Exception as e:
+            log.exception(f'Failed to save "settings.json". Error: {e}')
+        
+        if error_msg is not None:
             show_error_msg_box(error_msg)
 
         logger.stop()

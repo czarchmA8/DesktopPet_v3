@@ -1,6 +1,4 @@
 import sys
-import ctypes
-from ctypes import wintypes
 import logging
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
@@ -13,65 +11,8 @@ import hashlib
 import app.config
 
 _log_queue: "multiprocessing.Queue" = multiprocessing.Queue()
-_listener = None
-_console_allocated = False
-
-_SC_CLOSE = 0xF060
-_MF_BYCOMMAND = 0x00000000
-_MF_GRAYED = 0x00000001
-
-def _allocate_console(initially_visible: bool) -> None:
-    """Allocates a Windows console and redirects stdout/stderr to it."""
-    global _console_allocated
-    if _console_allocated:
-        return
-
-    _STD_OUTPUT_HANDLE = -11
-    _ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
-
-    if getattr(sys, "frozen", False):
-        kernel32 = ctypes.windll.kernel32
-        if kernel32.GetConsoleWindow() == 0:
-            kernel32.AllocConsole()
-
-        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-        if hwnd:
-            h_menu = ctypes.windll.user32.GetSystemMenu(hwnd, False)
-            if h_menu:
-                ctypes.windll.user32.EnableMenuItem(h_menu, _SC_CLOSE, _MF_BYCOMMAND | _MF_GRAYED)
-        
-        sys.stdout = open("CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1)
-        sys.stderr = open("CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1)
-
-        kernel32 = ctypes.windll.kernel32
-        handle = kernel32.GetStdHandle(_STD_OUTPUT_HANDLE)
-        mode = wintypes.DWORD()
-        if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
-            kernel32.SetConsoleMode(handle, mode.value | _ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-        
-        kernel32.SetConsoleTitleW(f"{app.config.APP_NAME} - Debug Console")
-
-    _console_allocated = True
-    if not initially_visible:
-        hide_console()
-
-def show_console() -> None:
-    """Shows the debug console window."""
-    if not getattr(sys, "frozen", False):
-        return
-    _SW_SHOW = 5
-    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-    if hwnd:
-        ctypes.windll.user32.ShowWindow(hwnd, _SW_SHOW)
-
-def hide_console() -> None:
-    """Hides the debug console window."""
-    if not getattr(sys, "frozen", False):
-        return
-    _SW_HIDE = 0
-    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-    if hwnd:
-        ctypes.windll.user32.ShowWindow(hwnd, _SW_HIDE)
+_listener: QueueListener | None = None
+_gui_queue: "multiprocessing.Queue" = multiprocessing.Queue()
 
 def string_to_ansi(text: str) -> str:
     hash_digest = hashlib.md5(text.encode("utf-8")).hexdigest()
@@ -128,14 +69,14 @@ def _clean_old_logs(logs_folder: Path, prefiks: str, logger, max_old_logs: int =
     if not logs_folder.exists():
         return
 
-    # Znajdź wszystkie pliki logów z danym prefiksem
+    # Find all log files with a given prefix
     log_files = sorted(
         logs_folder.glob(f"{prefiks}_*.log"),
         key=lambda p: p.stat().st_mtime,
         reverse=True  # Najnowsze pierwsze
     )
 
-    # Usuń pliki starsze niż top N
+    # Delete files older than top N
     for file_to_delete in log_files[max_old_logs:]:
         try:
             file_to_delete.unlink()
@@ -150,12 +91,10 @@ def stop():
         _listener.stop()
         _listener = None
 
-def init(file_name: str = "main", console_visible: bool = False, max_old_logs: int = 3) -> None:
+def init(file_name: str = "main", max_old_logs: int = 3) -> None:
     global _listener
     if _listener is not None:
         return
-
-    _allocate_console(initially_visible=console_visible)
 
     logs_folder = app.config.APP_DIR / "logs"
     logs_folder.mkdir(exist_ok=True)
@@ -176,7 +115,13 @@ def init(file_name: str = "main", console_visible: bool = False, max_old_logs: i
         )
     )
 
-    _listener = QueueListener(_log_queue, console_handler, file_handler, respect_handler_level=True)
+    _listener = QueueListener(
+        _log_queue,
+        console_handler,
+        file_handler,
+        QueueHandler(_gui_queue),
+        respect_handler_level=True,
+    )
     _listener.start()
     atexit.register(stop)
 
@@ -187,6 +132,9 @@ def init(file_name: str = "main", console_visible: bool = False, max_old_logs: i
     sys_logger = get_logger("logger_setup")
     sys_logger.info("[✅] Started central logging system")
     _clean_old_logs(logs_folder, file_name, sys_logger, max_old_logs)
+
+def get_gui_queue() -> "multiprocessing.Queue":
+    return _gui_queue
 
 def get_queue() -> "multiprocessing.Queue":
     """Returns the shared multiprocessing queue used for logging."""

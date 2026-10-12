@@ -1,4 +1,44 @@
 from multiprocessing.managers import SyncManager
+from multiprocessing.connection import PipeConnection
+import logging
+from typing import Iterator
+
+class IpcChannel:
+    def __init__(self, conn: PipeConnection, tag: str, peer: str, log: logging.Logger) -> None:
+        self._conn = conn
+        self.tag = tag
+        self.peer = peer
+        self._log = log
+        self._broken = False
+
+    def send(self, msg: list) -> bool:
+        try:
+            self._conn.send(msg)
+        except OSError as e:
+            self._log_broken(f"Failed to send to {self.peer}: {msg} ({e!r})")
+            return False
+        self._log.debug(f"[{self.tag}] Sent to {self.peer}: {msg}")
+        return True
+
+    def receive(self) -> Iterator[list]:
+        while True:
+            try:
+                if not self._conn.poll():
+                    return
+                msg = self._conn.recv()
+            except (EOFError, OSError) as e:
+                self._log_broken(f"Failed to receive from {self.peer}: {e!r}")
+                return
+            self._log.debug(f"[{self.tag}] Received from {self.peer}: {msg}")
+            yield msg
+
+    def unknown(self, msg: list) -> None:
+        self._log.error(f"[{self.tag}] Unknown command from {self.peer}: {msg}")
+
+    def _log_broken(self, text: str) -> None:
+        if not self._broken:
+            self._log.error(f"[{self.tag}] {text}")
+            self._broken = True
 
 class SharedState:
     """

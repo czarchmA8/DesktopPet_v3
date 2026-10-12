@@ -42,7 +42,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 341, 1328))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -938, 742, 1388))
         self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.groupBox_language = QGroupBox(self.scrollAreaWidgetContents)
@@ -96,10 +96,10 @@ class Ui_MainWindow(object):
         self.groupBox_appearance.setObjectName("groupBox_appearance")
         self.verticalLayout_15 = QVBoxLayout(self.groupBox_appearance)
         self.verticalLayout_15.setObjectName("verticalLayout_15")
-        self.checkBox_restore_window_geometry = QCheckBox(self.groupBox_appearance)
-        self.checkBox_restore_window_geometry.setObjectName("checkBox_restore_window_geometry")
+        self.checkBox_restore_app_window_geometry = QCheckBox(self.groupBox_appearance)
+        self.checkBox_restore_app_window_geometry.setObjectName("checkBox_restore_app_window_geometry")
 
-        self.verticalLayout_15.addWidget(self.checkBox_restore_window_geometry)
+        self.verticalLayout_15.addWidget(self.checkBox_restore_app_window_geometry)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_appearance)
@@ -704,11 +704,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.checkBox_autostart)
 
-        self.checkBox_show_window_on_startup = QCheckBox(self.groupBox_system)
-        self.checkBox_show_window_on_startup.setObjectName("checkBox_show_window_on_startup")
-        self.checkBox_show_window_on_startup.setEnabled(False)
+        self.checkBox_show_app_window_on_autostart = QCheckBox(self.groupBox_system)
+        self.checkBox_show_app_window_on_autostart.setObjectName("checkBox_show_app_window_on_autostart")
+        self.checkBox_show_app_window_on_autostart.setEnabled(False)
 
-        self.verticalLayout_5.addWidget(self.checkBox_show_window_on_startup)
+        self.verticalLayout_5.addWidget(self.checkBox_show_app_window_on_autostart)
 
 
         self.verticalLayout_3.addWidget(self.groupBox_system)
@@ -722,23 +722,34 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6.addWidget(self.checkBox_debug_mode)
 
-        self.checkBox_hitboxes_overlay = QCheckBox(self.groupBox_advanced)
-        self.checkBox_hitboxes_overlay.setObjectName("checkBox_hitboxes_overlay")
-        self.checkBox_hitboxes_overlay.setEnabled(False)
+        self.checkBox_display_hitboxes = QCheckBox(self.groupBox_advanced)
+        self.checkBox_display_hitboxes.setObjectName("checkBox_display_hitboxes")
+        self.checkBox_display_hitboxes.setEnabled(False)
 
-        self.verticalLayout_6.addWidget(self.checkBox_hitboxes_overlay)
+        self.verticalLayout_6.addWidget(self.checkBox_display_hitboxes)
 
-        self.checkBox_debug_information_window = QCheckBox(self.groupBox_advanced)
-        self.checkBox_debug_information_window.setObjectName("checkBox_debug_information_window")
-        self.checkBox_debug_information_window.setEnabled(False)
+        self.checkBox_show_debug_console = QCheckBox(self.groupBox_advanced)
+        self.checkBox_show_debug_console.setObjectName("checkBox_show_debug_console")
+        self.checkBox_show_debug_console.setEnabled(False)
 
-        self.verticalLayout_6.addWidget(self.checkBox_debug_information_window)
+        self.verticalLayout_6.addWidget(self.checkBox_show_debug_console)
 
-        self.checkBox_debug_console = QCheckBox(self.groupBox_advanced)
-        self.checkBox_debug_console.setObjectName("checkBox_debug_console")
-        self.checkBox_debug_console.setEnabled(False)
+        self.checkBox_restore_console_geometry = QCheckBox(self.groupBox_advanced)
+        self.checkBox_restore_console_geometry.setObjectName("checkBox_restore_console_geometry")
 
-        self.verticalLayout_6.addWidget(self.checkBox_debug_console)
+        self.verticalLayout_6.addWidget(self.checkBox_restore_console_geometry)
+
+        self.checkBox_show_console_on_startup = QCheckBox(self.groupBox_advanced)
+        self.checkBox_show_console_on_startup.setObjectName("checkBox_show_console_on_startup")
+        self.checkBox_show_console_on_startup.setEnabled(True)
+
+        self.verticalLayout_6.addWidget(self.checkBox_show_console_on_startup)
+
+        self.checkBox_show_console_on_error = QCheckBox(self.groupBox_advanced)
+        self.checkBox_show_console_on_error.setObjectName("checkBox_show_console_on_error")
+        self.checkBox_show_console_on_error.setEnabled(True)
+
+        self.verticalLayout_6.addWidget(self.checkBox_show_console_on_error)
 
         self.pushButton_open_app_folder = QPushButton(self.groupBox_advanced)
         self.pushButton_open_app_folder.setObjectName("pushButton_open_app_folder")
@@ -799,7 +810,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName("scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 140, 406))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 243, 390))
         self.verticalLayout_20 = QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout_20.setSpacing(10)
         self.verticalLayout_20.setObjectName("verticalLayout_20")
@@ -1001,7 +1012,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName("scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 159, 534))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 263, 534))
         self.verticalLayout_26 = QVBoxLayout(self.scrollAreaWidgetContents_4)
         self.verticalLayout_26.setSpacing(10)
         self.verticalLayout_26.setObjectName("verticalLayout_26")
@@ -1286,7 +1297,7 @@ class Ui_MainWindow(object):
         self.scrollArea_5.setWidgetResizable(True)
         self.scrollAreaWidgetContents_5 = QWidget()
         self.scrollAreaWidgetContents_5.setObjectName("scrollAreaWidgetContents_5")
-        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 159, 428))
+        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 196, 428))
         self.verticalLayout_27 = QVBoxLayout(self.scrollAreaWidgetContents_5)
         self.verticalLayout_27.setSpacing(10)
         self.verticalLayout_27.setObjectName("verticalLayout_27")
@@ -1604,9 +1615,9 @@ class Ui_MainWindow(object):
         self.label_volume.setText(QCoreApplication.translate("MainWindow", "Volume:", None))
         self.groupBox_appearance.setTitle(QCoreApplication.translate("MainWindow", "Appearance", None))
 
-        self.checkBox_restore_window_geometry.setToolTip(QCoreApplication.translate("MainWindow", "Saves the window's size and location when closed, and restores them on startup.", None))
+        self.checkBox_restore_app_window_geometry.setToolTip(QCoreApplication.translate("MainWindow", "Saves the window's size and location when closed, and restores them on startup.", None))
 
-        self.checkBox_restore_window_geometry.setText(QCoreApplication.translate("MainWindow", "Restore window size and position", None))
+        self.checkBox_restore_app_window_geometry.setText(QCoreApplication.translate("MainWindow", "Restore application size and position", None))
         self.groupBox_app.setTitle(QCoreApplication.translate("MainWindow", "App", None))
         self.label_show_shortcut_title.setText(QCoreApplication.translate("MainWindow", "Show application", None))
         self.label_show_shortcut_value.setText(QCoreApplication.translate("MainWindow", "No keyboard shortcut", None))
@@ -1693,26 +1704,34 @@ class Ui_MainWindow(object):
 
         self.checkBox_autostart.setText(QCoreApplication.translate("MainWindow", "Run at system startup", None))
 
-        self.checkBox_show_window_on_startup.setToolTip(QCoreApplication.translate("MainWindow", "Shows the window on startup by automatically starting with the system. This option does not change how the window is displayed on normal startup.", None))
+        self.checkBox_show_app_window_on_autostart.setToolTip(QCoreApplication.translate("MainWindow", "Shows the window when the application starts automatically with the system. This option does not change the window display during normal startup.", None))
 
-        self.checkBox_show_window_on_startup.setText(QCoreApplication.translate("MainWindow", "Show window on startup", None))
+        self.checkBox_show_app_window_on_autostart.setText(QCoreApplication.translate("MainWindow", "Show window on autostart", None))
         self.groupBox_advanced.setTitle(QCoreApplication.translate("MainWindow", "Advanced", None))
 
         self.checkBox_debug_mode.setToolTip(QCoreApplication.translate("MainWindow", "General debug mode switch. This option does nothing by itself.", None))
 
         self.checkBox_debug_mode.setText(QCoreApplication.translate("MainWindow", "Debug mode", None))
 
-        self.checkBox_hitboxes_overlay.setToolTip(QCoreApplication.translate("MainWindow", "Shows normally invisible entity hitboxes. Only works for entities that support this option.", None))
+        self.checkBox_display_hitboxes.setToolTip(QCoreApplication.translate("MainWindow", "Shows normally invisible entity hitboxes. Only works for entities that support this option.", None))
 
-        self.checkBox_hitboxes_overlay.setText(QCoreApplication.translate("MainWindow", "Displaying hitboxes", None))
+        self.checkBox_display_hitboxes.setText(QCoreApplication.translate("MainWindow", "Display hitboxes", None))
 
-        self.checkBox_debug_information_window.setToolTip(QCoreApplication.translate("MainWindow", "Shows a window with general information about the application. For example, FPS and a list of watched windows.", None))
+        self.checkBox_show_debug_console.setToolTip(QCoreApplication.translate("MainWindow", "Shows a window displaying the current application logs", None))
 
-        self.checkBox_debug_information_window.setText(QCoreApplication.translate("MainWindow", "Information window", None))
+        self.checkBox_show_debug_console.setText(QCoreApplication.translate("MainWindow", "Show debug console", None))
 
-        self.checkBox_debug_console.setToolTip(QCoreApplication.translate("MainWindow", "Shows a window displaying the current application logs", None))
+        self.checkBox_restore_console_geometry.setToolTip(QCoreApplication.translate("MainWindow", "Saves the console window size and location when closed, and restores them on startup.", None))
 
-        self.checkBox_debug_console.setText(QCoreApplication.translate("MainWindow", "Show debug console", None))
+        self.checkBox_restore_console_geometry.setText(QCoreApplication.translate("MainWindow", "Restore console size and position", None))
+
+        self.checkBox_show_console_on_startup.setToolTip(QCoreApplication.translate("MainWindow", "Shows the console window on application startup.", None))
+
+        self.checkBox_show_console_on_startup.setText(QCoreApplication.translate("MainWindow", "Show console on startup", None))
+
+        self.checkBox_show_console_on_error.setToolTip(QCoreApplication.translate("MainWindow", "Shows the console window when an error occurs in the application.", None))
+
+        self.checkBox_show_console_on_error.setText(QCoreApplication.translate("MainWindow", "Show console on error", None))
         self.pushButton_open_app_folder.setText(QCoreApplication.translate("MainWindow", "Open the application folder", None))
         self.pushButton_open_latest_log.setText(QCoreApplication.translate("MainWindow", "Open latest log", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_settings), QCoreApplication.translate("MainWindow", "Settings", None))

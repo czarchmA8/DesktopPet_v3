@@ -21,12 +21,19 @@ WindowGeometryConfig = TypedDict("WindowGeometryConfig", {
     "screen_name": Optional[str],
 })
 
+ConsoleConfig = TypedDict("ConsoleConfig", {
+    "show_console_on_startup": bool,
+    "show_console_on_error": bool,
+    "window_geometry": WindowGeometryConfig,
+    "hidden_levels": list[int],
+})
+
 DebugConfig = TypedDict("DebugConfig", {
     "delete_logs_older_than": int,
     "active": bool,
     "hitbox_overlay": bool,
     "debug_window": bool,
-    "console": bool,
+    "console": ConsoleConfig,
 })
 
 AppConfig = TypedDict("AppConfig", {
@@ -91,7 +98,19 @@ DEFAULT_SETTINGS: AppConfig = {
         "active": False,
         "hitbox_overlay": False,
         "debug_window": True,
-        "console": False
+        "console": {
+            "show_console_on_startup": False,
+            "show_console_on_error": True,
+            "window_geometry": {
+                "restore": True,
+                "x": None,
+                "y": None,
+                "width": None,
+                "height": None,
+                "screen_name": None
+            },
+            "hidden_levels": [],
+        },
     },
     "active_mods": [],
     "trusted_mods": [],
