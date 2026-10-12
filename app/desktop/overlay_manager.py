@@ -6,7 +6,7 @@ from ctypes import wintypes
 import win32gui, win32con, win32api
 from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtCore import Qt, QTimer, QCoreApplication, QPointF, QRectF
-from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent, QPainterPath, QPainterPathStroker
+from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent, QPainterPath, QPainterPathStroker, QCursor
 
 import app.utils_debug as utils_debug
 import app.logger as logger
@@ -25,7 +25,7 @@ class TransparentWindow(QWidget):
         self.setWindowTitle("TransparentWindow")
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
         vx = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
         vy = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
@@ -40,6 +40,26 @@ class TransparentWindow(QWidget):
         self.draw_commands: list = []
 
         self.show()
+        self._click_through: bool | None = None
+        self._set_click_through(True)
+
+    def _set_click_through(self, enabled: bool) -> None:
+        if self._click_through == enabled:
+            return
+        self._click_through = enabled
+        style = win32gui.GetWindowLong(self.hwnd_self, win32con.GWL_EXSTYLE)
+        style |= win32con.WS_EX_LAYERED
+        if enabled:
+            style |= win32con.WS_EX_TRANSPARENT
+        else:
+            style &= ~win32con.WS_EX_TRANSPARENT
+        win32gui.SetWindowLong(self.hwnd_self, win32con.GWL_EXSTYLE, style)
+
+    def update_click_through(self) -> None:
+        if QApplication.mouseButtons() != Qt.MouseButton.NoButton:
+            return
+        pos = QCursor.pos()
+        self._set_click_through(self._hit_test(pos.x(), pos.y()) is None)
 
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
@@ -140,14 +160,14 @@ class TransparentWindow(QWidget):
         for cmd in reversed(self.draw_commands):
             kind = cmd[0]
             if kind == "rect":
-                _, rx, ry, rw, rh, color, filled, stroke_width, _hit_id = cmd
+                _, rx, ry, rw, rh, color, filled, stroke_width, hit_id = cmd
     
                 if filled:
                     if not (rx <= x <= rx + rw and ry <= y <= ry + rh):
                         continue
                     if color.alpha() <= alpha_hit_threshold:
                         continue
-                    return _hit_id
+                    return hit_id
                 else:
                     rect_path = QPainterPath()
                     rect_path.addRect(QRectF(rx, ry, rw, rh))
@@ -157,7 +177,7 @@ class TransparentWindow(QWidget):
     
                     stroke_path = stroker.createStroke(rect_path)
                     if stroke_path.contains(QPointF(x, y)):
-                        return _hit_id
+                        return hit_id
                     else:
                         continue
     
@@ -181,7 +201,7 @@ class TransparentWindow(QWidget):
                     continue
     
             elif kind == "image":
-                _, ix, iy, iw, ih, pixmap, _opacity, alpha_image, _hit_id = cmd
+                _, ix, iy, iw, ih, pixmap, _opacity, alpha_image, hit_id = cmd
                 w = iw if iw is not None else pixmap.width()
                 h = ih if ih is not None else pixmap.height()
                 if w <= 0 or h <= 0 or not (ix <= x <= ix + w and iy <= y <= iy + h):
@@ -193,7 +213,7 @@ class TransparentWindow(QWidget):
                 img_y = min(max(img_y, 0), alpha_image.height() - 1)
     
                 if alpha_image.pixelColor(img_x, img_y).alpha() > alpha_hit_threshold:
-                    return _hit_id
+                    return hit_id
                 else:
                     continue
     
@@ -285,6 +305,7 @@ class OverlayManager(QApplication):
             self.transparent_windows[hwnd].draw_commands = draw_commands
         for window in self.transparent_windows.values():
             window.repaint()
+            window.update_click_through()
         self.process_timer.stop("windows paint_tick")
 
         self.process_timer.stop("tick")
