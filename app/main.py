@@ -182,8 +182,8 @@ def main() -> None:
             shared_data.spawnable_entities = {}
             shared_data.displayed_entities = {}
             shared_data.restart_requested = False
-            shared_data.selected_entity = None
-            shared_data.entity_details = {}
+            shared_data.selected_entity_instance_id = None
+            shared_data.selected_entity_details = {}
 
             ctl.send(["console_visibility_changed", console.isVisible()])
             error_msg = run_processes(shared_data, error_queue, log_queue, app, ctl_dash)

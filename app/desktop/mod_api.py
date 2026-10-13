@@ -1,16 +1,253 @@
 from __future__ import annotations
 
+import time
+from bisect import bisect_right
 from pathlib import Path
 from dataclasses import replace as dataclasses_replace
 from typing import Callable
 
-from PySide6.QtGui import QColor, QPixmap, QImage, QCursor
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QColor, QPixmap, QImage, QImageReader, QCursor
 from PySide6.QtWidgets import QApplication
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QVideoSink
 
 from app.desktop.input_events import InputState, MouseButtonName, MouseButtonEvent, MouseScroll
-from app.desktop.mods_manager import ModsManager, Entity, Mod
+from app.desktop.mods_manager import ModsManager, EntityMetadata, ModMetadata
 import app.config as config
 import app.logger as logger
+
+class Animation:
+    """Animation made of frames (GIF/APNG/WebP). It starts playing when loaded."""
+
+    def __init__(self, frames: list[tuple[QPixmap, QImage]], ends: list[float], loop: bool) -> None:
+        self.frames = frames
+        self.ends = ends
+        self.loop = loop
+        self.speed = 1.0
+        self._position = 0.0
+        self._playing = True
+        self._last = time.perf_counter()
+
+    def _advance(self) -> None:
+        now = time.perf_counter()
+        if self._playing:
+            self._position += (now - self._last) * self.speed
+            total = self.ends[-1]
+            if self.loop:
+                self._position %= total
+            elif self._position >= total:
+                self._position = total
+                self._playing = False
+        self._last = now
+
+    def play(self) -> None:
+        """Plays the animation from the first frame."""
+        self._position = 0.0
+        self._last = time.perf_counter()
+        self._playing = True
+
+    def pause(self) -> None:
+        """Freezes the animation on the current frame."""
+        self._advance()
+        self._playing = False
+
+    def resume(self) -> None:
+        """Continues a paused animation."""
+        self._last = time.perf_counter()
+        self._playing = True
+
+    def stop(self) -> None:
+        """Stops the animation and rewinds it to the first frame."""
+        self._position = 0.0
+        self._playing = False
+
+    def set_speed(self, speed: float) -> None:
+        """Sets the playback speed; 1.0 is normal, 2.0 twice as fast."""
+        self._advance()
+        self.speed = max(0.0, float(speed))
+
+    def set_loop(self, loop: bool) -> None:
+        """Turns looping on or off."""
+        self.loop = bool(loop)
+
+    def is_playing(self) -> bool:
+        """Returns whether the animation is running (not paused, stopped or finished)."""
+        self._advance()
+        return self._playing
+
+    def is_finished(self) -> bool:
+        """Returns whether a non-looping animation has reached its last frame."""
+        self._advance()
+        return not self.loop and self._position >= self.ends[-1]
+
+    def get_frame(self) -> tuple[QPixmap, QImage]:
+        self._advance()
+        return self.frames[min(bisect_right(self.ends, self._position), len(self.frames) - 1)]
+
+class Video:
+    """Video played by Qt. It starts playing when loaded.
+
+    `get_frame` returns the newest decoded frame, or None before the first one.
+    """
+
+    def __init__(self, path: Path, loop: bool, volume: float = 1.0) -> None:
+        self._QMediaPlayer = QMediaPlayer
+        self._image: QImage | None = None
+        self._frame: tuple[QPixmap, QImage] | None = None
+        self._sink = QVideoSink()
+        self._sink.videoFrameChanged.connect(self._on_frame)
+        self._audio = QAudioOutput()
+        self._audio.setVolume(volume)
+        self._player = QMediaPlayer()
+        self._player.setVideoSink(self._sink)
+        self._player.setAudioOutput(self._audio)
+        self.set_loop(loop)
+        self._player.setSource(QUrl.fromLocalFile(str(path)))
+        self._player.play()
+
+    def _on_frame(self, frame) -> None:
+        image = frame.toImage()
+        if not image.isNull():
+            self._image = image
+            self._frame = None
+
+    def get_frame(self) -> tuple[QPixmap, QImage] | None:
+        if self._frame is None and self._image is not None:
+            self._frame = (QPixmap.fromImage(self._image), self._image)
+        return self._frame
+
+    def play(self) -> None:
+        """Plays the video from the beginning."""
+        self._player.setPosition(0)
+        self._player.play()
+
+    def pause(self) -> None:
+        """Freezes the video on the current frame."""
+        self._player.pause()
+
+    def resume(self) -> None:
+        """Continues a paused video."""
+        self._player.play()
+
+    def stop(self) -> None:
+        """Stops the video; nothing is drawn until `play()`."""
+        self._player.stop()
+        self._image = None
+        self._frame = None
+
+    def set_volume(self, volume: float) -> None:
+        """Sets the volume, 0.0-1.0."""
+        self._audio.setVolume(max(0.0, min(1.0, float(volume))))
+
+    def set_speed(self, speed: float) -> None:
+        """Sets the playback speed; 1.0 is normal, 2.0 twice as fast."""
+        self._player.setPlaybackRate(max(0.01, float(speed)))
+
+    def set_loop(self, loop: bool) -> None:
+        """Turns looping on or off."""
+        loops = self._QMediaPlayer.Loops
+        self._player.setLoops(loops.Infinite if loop else loops.Once)
+
+    def is_playing(self) -> bool:
+        """Returns whether the video is playing right now."""
+        return self._player.playbackState() == self._QMediaPlayer.PlaybackState.PlayingState
+
+    def is_finished(self) -> bool:
+        """Returns whether a non-looping video has reached its end."""
+        return self._player.mediaStatus() == self._QMediaPlayer.MediaStatus.EndOfMedia
+
+    def close(self) -> None:
+        """Stops the video and releases the file. Call it in the entity's `delete_func`."""
+        self._player.stop()
+        self._player.setSource(QUrl())
+
+class Sound:
+    """Sound or music from a file (WAV, MP3, OGG...) played by Qt. It does not play until `play()` is called."""
+
+    MAX_VOICES = 32
+    """Most copies of the sound that can play at once with `play(overlap=True)`."""
+
+    def __init__(self, path: Path, volume: float, loop: bool) -> None:
+        self._QAudioOutput = QAudioOutput
+        self._QMediaPlayer = QMediaPlayer
+        self._path = path
+        self._volume = volume
+        self._loop = loop
+        self._voices = [self._make_voice()]
+
+    def _make_voice(self) -> tuple:
+        loops = self._QMediaPlayer.Loops
+        audio = self._QAudioOutput()
+        audio.setVolume(self._volume)
+        player = self._QMediaPlayer()
+        player.setAudioOutput(audio)
+        player.setLoops(loops.Infinite if self._loop else loops.Once)
+        player.setSource(QUrl.fromLocalFile(str(self._path)))
+        return player, audio
+
+    def _is_playing(self, player) -> bool:
+        return player.playbackState() == self._QMediaPlayer.PlaybackState.PlayingState
+
+    def play(self, overlap: bool = False) -> None:
+        """Plays the sound from the beginning.
+
+        With `overlap=False` a sound that is already playing is restarted. With `overlap=True` it keeps playing and a
+        new copy starts on top of it, up to `MAX_VOICES` copies; after that the first copy is restarted.
+        """
+        if overlap:
+            player = next((p for p, _ in self._voices if not self._is_playing(p)), None)
+            if player is None:
+                if len(self._voices) < self.MAX_VOICES:
+                    self._voices.append(self._make_voice())
+                    player = self._voices[-1][0]
+                else:
+                    player = self._voices[0][0]
+        else:
+            for extra, _ in self._voices[1:]:
+                extra.stop()
+            player = self._voices[0][0]
+        player.setPosition(0)
+        player.play()
+
+    def pause(self) -> None:
+        """Pauses the sound; `resume()` continues it."""
+        for player, _ in self._voices:
+            player.pause()
+
+    def resume(self) -> None:
+        """Continues a paused sound."""
+        for player, _ in self._voices:
+            if player.playbackState() == self._QMediaPlayer.PlaybackState.PausedState:
+                player.play()
+
+    def stop(self) -> None:
+        """Stops the sound, including all overlapping copies."""
+        for player, _ in self._voices:
+            player.stop()
+
+    def set_volume(self, volume: float) -> None:
+        """Sets the volume, 0.0-1.0."""
+        self._volume = max(0.0, min(1.0, float(volume)))
+        for _, audio in self._voices:
+            audio.setVolume(self._volume)
+
+    def set_loop(self, loop: bool) -> None:
+        """Turns looping on or off."""
+        self._loop = bool(loop)
+        loops = self._QMediaPlayer.Loops
+        for player, _ in self._voices:
+            player.setLoops(loops.Infinite if self._loop else loops.Once)
+
+    def is_playing(self) -> bool:
+        """Returns whether any copy of the sound is playing right now."""
+        return any(self._is_playing(player) for player, _ in self._voices)
+
+    def close(self) -> None:
+        """Stops the sound and releases the file. Call it in the entity's `delete_func`."""
+        for player, _ in self._voices:
+            player.stop()
+            player.setSource(QUrl())
+        self._voices = self._voices[:1]
 
 class ModAPI:
     """The API object injected into every mod script; the interface between a mod and the application."""
@@ -19,13 +256,15 @@ class ModAPI:
         self._mods_manager: ModsManager = mods_manager
         self._mod_id: str = mod_id
         self._image_cache: dict[Path, tuple[QPixmap, QImage]] = {}
+        self._animation_cache: dict[tuple[Path, float | None], tuple[list, list]] = {}
 
-        self.Mod: Mod = self._mods_manager.shared_data.active_mods[self._mod_id]
+        self.Mod: ModMetadata = self._mods_manager.shared_data.active_mods[self._mod_id]
 
         self.Entity: ModAPI._Entity = self._Entity(self)
         self.Overlay: ModAPI._Overlay = self._Overlay(self)
         self.Logger: ModAPI._Logger = self._Logger(self)
         self.Mouse: ModAPI._Mouse = self._Mouse(self)
+        self.Media: ModAPI._Media = self._Media(self)
 
     def _print(self, *args, sep: str=" ") -> None:
         """Logs `args` as a debug message, like Python's built-in `print`."""
@@ -71,7 +310,7 @@ class ModAPI:
             - `get_info_func()`: every frame while the entity is selected; returns a table/dict shown as its details.
             - `delete_func()`: the instance is removed, from the control panel or with `kill`."""
             key = f"{self._mod_api._mod_id}:{entity_id}"
-            self._mod_api._mods_manager.spawnable_entities[key] = Entity(
+            self._mod_api._mods_manager.spawnable_entities[key] = EntityMetadata(
                 id=entity_id,
                 name=name,
                 mod_id=self._mod_api._mod_id,
@@ -95,7 +334,7 @@ class ModAPI:
 
         def exists(self, instance_id: str) -> bool:
             """Returns whether the instance `instance_id` is currently spawned."""
-            return instance_id in self._mod_api._mods_manager.displayed_entities
+            return instance_id in self._mod_api._mods_manager.displayed_entities_callbacks
 
         def spawn(self, entity_id: str) -> str | None:
             """Spawns a new instance of an entity and returns its `instance_id`, or None if it is not registered."""
@@ -268,6 +507,58 @@ class ModAPI:
             pixmap, alpha_image = cached
             cmd = ("image", x, y, width, height, pixmap, opacity, alpha_image, hit_id)
             self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+        def draw_media(self, hwnd: int, x: int, y: int, media: Animation | Video, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None) -> None:
+            """Draws the current frame of an `Animation` or `Video` (see `Media`) on the overlay of `hwnd` for the current frame.
+
+            Parameters work like in `draw_image`. Draw it every frame to keep it playing; nothing is drawn while a video has no frame yet.
+            """
+            frame = media.get_frame()
+            if frame is None:
+                return
+            pixmap, alpha_image = frame
+            opacity = 1.0 if opacity is None else float(opacity)
+            cmd = ("image", x, y, width, height, pixmap, opacity, alpha_image, hit_id)
+            self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+    class _Media:
+        """Loading animations, videos and sounds from the mod's own folder. Draw animations and videos with `Overlay.draw_media`."""
+
+        def __init__(self, mod_api: ModAPI) -> None:
+            self._mod_api = mod_api
+
+        def load_animation(self, path: str, loop: bool = True, fps: float | None = None) -> Animation:
+            """Loads an animated GIF/APNG/WebP. Every call returns an `Animation` with its own playback state (frames are shared); it starts playing at once.
+
+            Frame delays come from the file; `fps` overrides them with a constant rate. Raises if the file cannot be loaded.
+            """
+            animation_path = self._mod_api._resolve_mod_path(path)
+            key = (animation_path, fps)
+            cached = self._mod_api._animation_cache.get(key)
+            if cached is None:
+                reader = QImageReader(str(animation_path))
+                frames, ends, total = [], [], 0.0
+                while reader.canRead():
+                    image = reader.read()
+                    if image.isNull():
+                        break
+                    delay_ms = 1000 / fps if fps else (reader.nextImageDelay() or 100)
+                    total += delay_ms / 1000
+                    frames.append((QPixmap.fromImage(image), image.convertToFormat(QImage.Format.Format_ARGB32)))
+                    ends.append(total)
+                if not frames:
+                    raise Exception(f'{self._mod_api._mod_id}: could not load animation "{animation_path}"')
+                cached = (frames, ends)
+                self._mod_api._animation_cache[key] = cached
+            return Animation(cached[0], cached[1], loop)
+
+        def load_video(self, path: str, loop: bool = True, volume: float = 1.0) -> Video:
+            """Loads a video. Call `close()` on it when the entity is deleted."""
+            return Video(self._mod_api._resolve_mod_path(path), loop, volume)
+
+        def load_sound(self, path: str, volume: float = 1.0, loop: bool = False) -> Sound:
+            """Loads a sound; it does not play until `play()` is called. Call `close()` on it when the entity is deleted."""
+            return Sound(self._mod_api._resolve_mod_path(path), max(0.0, min(1.0, float(volume))), loop)
 
     class _Logger:
         """Per-mod logger; messages are written to the application's log files under this mod's ID."""

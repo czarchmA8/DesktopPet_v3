@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon, QPixmap, QDesktopServices, QGuiApplication
 import app.config as config
 import app.logger as logger
 from app.ipc import IpcChannel, SharedState
-from app.desktop.mods_manager import Mod, Entity
+from app.desktop.mods_manager import ModMetadata, EntityMetadata
 from app.dashboard.objects_editor import MainWindow as ObjectsEditorWindow
 from app.dashboard.translator import Translator, replace_format
 from app.dashboard.ui.ui_main_window import Ui_MainWindow
@@ -512,7 +512,7 @@ class MainWindow(QMainWindow):
         self.ui.groupBox_mods_list.setTitle(replace_format(self.translate("MainWindow", "Mods (%1)", None), len(self.shared_data.active_mods)))
 
     # Selected mod
-    def _mod_for_row(self, row: int) -> Mod | None:
+    def _mod_for_row(self, row: int) -> ModMetadata | None:
         item = self.ui.listWidget_mods.item(row)
         if item is None:
             return None
@@ -531,7 +531,7 @@ class MainWindow(QMainWindow):
         self.ui.label_mod_id.setText(mod.id)
         self.ui.label_mod_description.setText(mod.description)
 
-    def _on_mod_toggled(self, mod: Mod, checkbox) -> None:
+    def _on_mod_toggled(self, mod: ModMetadata, checkbox) -> None:
         if checkbox.isChecked():
             if mod.id not in self.shared_data.settings["trusted_mods"]:
                 accepted, dont_ask_again = self._confirm_trust_mod(mod, show_dont_ask_checkbox=True)
@@ -573,7 +573,7 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_discard_mod_changes.setEnabled(has_changes)
         self.ui.pushButton_save_mod_changes.setEnabled(has_changes)
 
-    def _on_mod_menu(self, mod: Mod) -> None:
+    def _on_mod_menu(self, mod: ModMetadata) -> None:
         menu = QMenu(self)
         folder_mod_path_url = QUrl.fromLocalFile(str(MODS_DIR / mod.id))
         menu.addAction(self.translate("MainWindow", "Open folder", None), lambda url=folder_mod_path_url: QDesktopServices.openUrl(url))
@@ -602,7 +602,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", mod.name))
 
     # Trust the mod
-    def _confirm_trust_mod(self, mod: Mod, show_dont_ask_checkbox: bool = True) -> tuple[bool, bool]:
+    def _confirm_trust_mod(self, mod: ModMetadata, show_dont_ask_checkbox: bool = True) -> tuple[bool, bool]:
         """Shows a warning about trusting a mod. Returns (accepted, dont_ask_again)."""
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Icon.Warning)
@@ -620,7 +620,7 @@ class MainWindow(QMainWindow):
         dont_ask_again = dont_ask_checkbox.isChecked() if dont_ask_checkbox else False
         return accepted, dont_ask_again
 
-    def _trust_mod(self, mod: Mod) -> None:
+    def _trust_mod(self, mod: ModMetadata) -> None:
         if mod.id in self.shared_data.settings["trusted_mods"]:
             return
 
@@ -634,7 +634,7 @@ class MainWindow(QMainWindow):
         self.save_settings_state()
         log.debug(f"[mods] trusted: {mod.id}")
 
-    def _untrust_mod(self, mod: Mod) -> None:
+    def _untrust_mod(self, mod: ModMetadata) -> None:
         if mod.id not in self.shared_data.settings["trusted_mods"]:
             return
 
@@ -969,7 +969,7 @@ class MainWindow(QMainWindow):
         self.ui.groupBox_displayed_entities_list.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.displayed_entities)))
 
     # Selected entity
-    def _displayed_entity_for_row(self, row: int) -> Entity | None:
+    def _displayed_entity_for_row(self, row: int) -> EntityMetadata | None:
         item = self.ui.listWidget_displayed_entities_list.item(row)
         if item is None:
             return None
@@ -1156,7 +1156,7 @@ class MainWindow(QMainWindow):
 
         self._category_header_items.clear()
 
-        entities_by_category: dict[str, list[Entity]] = {}
+        entities_by_category: dict[str, list[EntityMetadata]] = {}
         for entity in self.shared_data.spawnable_entities.values():
             entities_by_category.setdefault(self.shared_data.active_mods[entity.mod_id].name, []).append(entity)
 
@@ -1205,7 +1205,7 @@ class MainWindow(QMainWindow):
         self.ui.groupBox_spawnable_entities.setTitle(replace_format(self.translate("MainWindow", "Entities (%1)", None), len(self.shared_data.spawnable_entities)))
 
     # Selected entity
-    def _spawnable_entity_for_row(self, row: int) -> Entity | None:
+    def _spawnable_entity_for_row(self, row: int) -> EntityMetadata | None:
         item = self.ui.listWidget_spawnable_entities_list.item(row)
         if item is None:
             return None
@@ -1237,7 +1237,7 @@ class MainWindow(QMainWindow):
         # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
         QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", entity.name))
 
-    def _on_spawnable_entity_menu(self, entity: Entity) -> None:
+    def _on_spawnable_entity_menu(self, entity: EntityMetadata) -> None:
         menu = QMenu(self)
 
         menu.exec(self.cursor().pos())

@@ -8,6 +8,7 @@ import importlib.util
 import sys
 from types import ModuleType
 import time
+import traceback
 
 from PySide6.QtGui import QImageReader, QCursor
 from lupa.lua54 import LuaRuntime
@@ -26,8 +27,8 @@ class ScriptLanguage(StrEnum):
     lua = auto()
 
 @dataclass(frozen=True)
-class Mod:
-    """Metadata of the running mod (`ModAPI.Mod`), read from its `about.json` and its folder."""
+class ModMetadata:
+    """Metadata of the running mod, read from its `about.json` and its folder."""
     id: str
     """Name of the mod folder."""
     name: str
@@ -53,7 +54,7 @@ class ModInstance:
     runtime: LuaRuntime | ModuleType
 
 @dataclass(frozen=True)
-class Entity:
+class EntityMetadata:
     """Entity metadata goes to shared_data (dashboard reads it)."""
     id: str
     name: str
@@ -91,9 +92,9 @@ class ModsManager:
         self.shared_data: SharedState = shared_data
         self.overlay_manager: OverlayManager = overlay_manager
 
-        self.displayed_entities: dict[str, EntityCallbacks] = {}
+        self.displayed_entities_callbacks: dict[str, EntityCallbacks] = {}
         self.entity_factories: dict[str, Callable] = {}
-        self.spawnable_entities: dict[str, Entity] = {}
+        self.spawnable_entities: dict[str, EntityMetadata] = {}
         self.spawnable_entities_dirty: bool = False
 
         self.mouse_events: dict[str, MouseButtonEvent] = {}
@@ -108,7 +109,7 @@ class ModsManager:
     def load_mods(self) -> None:
         """Scans `Mods/` and publishes the valid mods to the shared state."""
         log.info("Loading mod list...")
-        active_mods: dict[str, Mod] = {}
+        active_mods: dict[str, ModMetadata] = {}
         for mod_folder_path in MODS_DIR.iterdir():
             if not mod_folder_path.is_dir():
                 continue
@@ -120,7 +121,7 @@ class ModsManager:
         log.info(f"Mods loaded: {len(active_mods)}")
         self.overlay_manager.ipc.send(["Update_mod_list"])
 
-    def load_mod_from_folder(self, folder: Path) -> Mod | None:
+    def load_mod_from_folder(self, folder: Path) -> ModMetadata | None:
         """Loads information about the mod. Returns None if the mod is invalid."""
         mod_id = folder.name
         
@@ -157,7 +158,7 @@ class ModsManager:
             log.warning(f"Error loading mod \"{mod_id}\": main script missing")
             return None
     
-        return Mod(
+        return ModMetadata(
             id=mod_id,
             name=about_data.get("name", mod_id),
             author=about_data.get("author", "unknown"),
@@ -269,17 +270,30 @@ class ModsManager:
                 raise Exception("Unknown script language")
 
         # instances (entities) tick
-        for entity_data in list(self.displayed_entities.values()):
-            entity_data.tick_func(dt, hitbox_overlay)
+        for instance_id, entity_callbacks in list(self.displayed_entities_callbacks.items()):
+            if instance_id not in self.displayed_entities_callbacks:
+                continue
+            try:
+                entity_callbacks.tick_func(dt, hitbox_overlay)
+            except Exception:
+                entity_id = self.shared_data.displayed_entities.get(instance_id)
+                log.error(f'Error in tick of entity "{entity_id}" ({instance_id}), entity removed:\n{traceback.format_exc()}')
+                self.kill_entity(instance_id)
 
         # Retrieving detailed information about the selected entity
-        selected = self.shared_data.selected_entity
-        entity = self.displayed_entities.get(selected, None) if selected is not None else None
-        if entity is not None:
-            data = entity.get_info_func()
-            if data is not None:
-                self.shared_data.entity_details = dict(data)
-            else:
+        if self.shared_data.selected_entity in self.displayed_entities_callbacks:
+            try:
+                entity_callbacks = self.displayed_entities_callbacks[self.shared_data.selected_entity]
+                data = entity_callbacks.get_info_func()
+                if data is not None:
+                    self.shared_data.entity_details = dict(data)
+                else:
+                    self.shared_data.entity_details = {}
+            except Exception:
+                entity_id = self.shared_data.displayed_entities.get(self.shared_data.selected_entity)
+                log.error(f'Error in get_info of selected entity "{entity_id}" ({self.shared_data.selected_entity}), entity removed:\n{traceback.format_exc()}')
+                self.kill_entity(self.shared_data.selected_entity)
+                self.shared_data.selected_entity = None
                 self.shared_data.entity_details = {}
         else:
             self.shared_data.entity_details = {}
@@ -313,7 +327,7 @@ class ModsManager:
         instance_id = str(uuid.uuid4())
         entity_funcs: dict[str, Callable] = create_func(instance_id)
         try:
-            self.displayed_entities[instance_id] = EntityCallbacks(**{
+            self.displayed_entities_callbacks[instance_id] = EntityCallbacks(**{
                 field.name: entity_funcs[field.name] if field.name in entity_funcs else _noop
                 for field in fields(EntityCallbacks)
             })
@@ -334,7 +348,7 @@ class ModsManager:
 
     def kill_entity(self, instance_id: str) -> None:
         """Removes an instance and calls its `delete_func`."""
-        entity_data = self.displayed_entities.pop(instance_id, None)
+        entity_data = self.displayed_entities_callbacks.pop(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
             return
@@ -342,12 +356,12 @@ class ModsManager:
 
         displayed = dict(self.overlay_manager.shared_data.displayed_entities)
         displayed.pop(instance_id, None)
-        self.overlay_manager.shared_data.displayed_entities = displayed
+        self.overlay_manager.shared_data.displayed_entities_callbacks = displayed
         self.overlay_manager.ipc.send(["Update_displayed_entities"])
     
     def show_entity(self, instance_id: str) -> None:
         """Calls the `show_func` of an instance."""
-        entity_data = self.displayed_entities.get(instance_id, None)
+        entity_data = self.displayed_entities_callbacks.get(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
             return
@@ -355,7 +369,7 @@ class ModsManager:
     
     def hide_entity(self, instance_id: str) -> None:
         """Calls the `hide_func` of an instance."""
-        entity_data = self.displayed_entities.get(instance_id, None)
+        entity_data = self.displayed_entities_callbacks.get(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
             return
@@ -363,7 +377,7 @@ class ModsManager:
     
     def teleport_entity(self, instance_id: str) -> None:
         """Calls the `teleport_func` of an instance."""
-        entity_data = self.displayed_entities.get(instance_id, None)
+        entity_data = self.displayed_entities_callbacks.get(instance_id, None)
         if entity_data is None:
             log.warning(f'Instance "{instance_id}" not found')
             return
@@ -371,21 +385,21 @@ class ModsManager:
     
     def kill_all_entities(self):
         """Removes all instances, calling their `delete_func`."""
-        for entity_data in self.displayed_entities.values():
+        for entity_data in self.displayed_entities_callbacks.values():
             entity_data.delete_func()
-        self.displayed_entities.clear()
+        self.displayed_entities_callbacks.clear()
         self.overlay_manager.shared_data.displayed_entities = {}
         self.overlay_manager.ipc.send(["Update_displayed_entities"])
     
     def show_all_entities(self):
-        for entity_data in self.displayed_entities.values():
+        for entity_data in self.displayed_entities_callbacks.values():
             entity_data.show_func()
     
     def hide_all_entities(self):
-        for entity_data in self.displayed_entities.values():
+        for entity_data in self.displayed_entities_callbacks.values():
             entity_data.hide_func()
     
     def select_entity(self, instance_id: str) -> None:
         if instance_id in self.shared_data.displayed_entities and self.shared_data.selected_entity != instance_id:
-            self.shared_data.selected_entity = instance_id
+            self.shared_data.selected_entity_instance_id = instance_id
             self.overlay_manager.ipc.send(["select_entity", instance_id])
