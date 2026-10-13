@@ -281,19 +281,19 @@ class ModsManager:
                 self.kill_entity(instance_id)
 
         # Retrieving detailed information about the selected entity
-        if self.shared_data.selected_entity in self.displayed_entities_callbacks:
+        if self.shared_data.selected_entity_instance_id in self.displayed_entities_callbacks:
             try:
-                entity_callbacks = self.displayed_entities_callbacks[self.shared_data.selected_entity]
+                entity_callbacks = self.displayed_entities_callbacks[self.shared_data.selected_entity_instance_id]
                 data = entity_callbacks.get_info_func()
                 if data is not None:
                     self.shared_data.entity_details = dict(data)
                 else:
                     self.shared_data.entity_details = {}
             except Exception:
-                entity_id = self.shared_data.displayed_entities.get(self.shared_data.selected_entity)
-                log.error(f'Error in get_info of selected entity "{entity_id}" ({self.shared_data.selected_entity}), entity removed:\n{traceback.format_exc()}')
-                self.kill_entity(self.shared_data.selected_entity)
-                self.shared_data.selected_entity = None
+                entity_id = self.shared_data.displayed_entities.get(self.shared_data.selected_entity_instance_id)
+                log.error(f'Error in get_info of selected entity "{entity_id}" ({self.shared_data.selected_entity_instance_id}), entity removed:\n{traceback.format_exc()}')
+                self.kill_entity(self.shared_data.selected_entity_instance_id)
+                self.shared_data.selected_entity_instance_id = None
                 self.shared_data.entity_details = {}
         else:
             self.shared_data.entity_details = {}
@@ -356,7 +356,7 @@ class ModsManager:
 
         displayed = dict(self.overlay_manager.shared_data.displayed_entities)
         displayed.pop(instance_id, None)
-        self.overlay_manager.shared_data.displayed_entities_callbacks = displayed
+        self.overlay_manager.shared_data.displayed_entities = displayed
         self.overlay_manager.ipc.send(["Update_displayed_entities"])
     
     def show_entity(self, instance_id: str) -> None:
@@ -400,6 +400,6 @@ class ModsManager:
             entity_data.hide_func()
     
     def select_entity(self, instance_id: str) -> None:
-        if instance_id in self.shared_data.displayed_entities and self.shared_data.selected_entity != instance_id:
+        if instance_id in self.shared_data.displayed_entities and self.shared_data.selected_entity_instance_id != instance_id:
             self.shared_data.selected_entity_instance_id = instance_id
             self.overlay_manager.ipc.send(["select_entity", instance_id])

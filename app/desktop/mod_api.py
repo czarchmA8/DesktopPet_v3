@@ -322,11 +322,11 @@ class ModAPI:
 
         def get_selected(self) -> str | None:
             """Returns the `instance_id` of the entity selected in the control panel, or None."""
-            return self._mod_api._mods_manager.shared_data.selected_entity
+            return self._mod_api._mods_manager.shared_data.selected_entity_instance_id
 
         def is_selected(self, instance_id: str) -> bool:
             """Returns whether `instance_id` is the entity currently selected in the control panel."""
-            return self._mod_api._mods_manager.shared_data.selected_entity == instance_id
+            return self._mod_api._mods_manager.shared_data.selected_entity_instance_id == instance_id
 
         def is_focused(self, hwnd: int, instance_id: str) -> bool:
             """Returns whether `hwnd` is active and `instance_id` is the selected entity."""

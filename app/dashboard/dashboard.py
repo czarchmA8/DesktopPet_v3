@@ -981,7 +981,7 @@ class MainWindow(QMainWindow):
         if current is None:
             return
         unique_id = current.data(Qt.ItemDataRole.UserRole)
-        self.shared_data.selected_entity = unique_id
+        self.shared_data.selected_entity_instance_id = unique_id
         entity_id = self.shared_data.displayed_entities.get(unique_id)
         if entity_id is None:
             self.ui.label_displayed_entity_preview.setPixmap(QPixmap())
@@ -1079,7 +1079,7 @@ class MainWindow(QMainWindow):
             form.addRow(title_label, value_label)
             self._entity_debug_labels[key] = value_label
 
-        frame.setVisible(bool(details) and self.shared_data.selected_entity == self._current_displayed_entity_id())
+        frame.setVisible(bool(details) and self.shared_data.selected_entity_instance_id == self._current_displayed_entity_id())
 
     # Selected entity actions
     def kill_selected_entity(self) -> None:
