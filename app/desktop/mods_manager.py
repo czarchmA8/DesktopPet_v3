@@ -9,6 +9,7 @@ import sys
 from types import ModuleType
 import time
 import traceback
+from copy import deepcopy
 
 from PySide6.QtGui import QImageReader, QCursor
 from lupa.lua54 import LuaRuntime
@@ -103,6 +104,7 @@ class ModsManager:
         self.last_tick_time = 0.0
 
         self.loaded_mods: list[ModInstance] = []
+        self.settings_snapshot: dict = deepcopy(self.shared_data.settings)
         
         self.load_mods()
 
@@ -255,6 +257,8 @@ class ModsManager:
             self.last_tick_time = current_time
         dt = current_time - self.last_tick_time
         self.last_tick_time = current_time
+
+        self.settings_snapshot = deepcopy(self.shared_data.settings)
 
         hitbox_overlay = self.shared_data.settings["debug"]["active"] and self.shared_data.settings["debug"]["hitbox_overlay"]
         # global mod tick

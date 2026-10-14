@@ -2,6 +2,7 @@ import sys
 import time
 import ctypes
 from ctypes import wintypes
+from typing import Literal
 
 import win32gui, win32con, win32api
 from PySide6.QtWidgets import QWidget, QApplication
@@ -11,19 +12,23 @@ from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent,
 import app.utils_debug as utils_debug
 import app.logger as logger
 from app.ipc import IpcChannel, SharedState
-from app.windows_z_order.watcher import WindowsWatcher, WindowNeighbors
+from app.windows_z_order.watcher import WindowsWatcher
 from app.desktop.mods_manager import ModsManager
 from app.desktop.input_events import InputState, MouseButtonEvent
 
 log = logger.get_logger("overlay_manager")
 
 class TransparentWindow(QWidget):
-    def __init__(self, target_hwnd: int, mods_manager: ModsManager) -> None:
+    def __init__(self, target_hwnd: int, mods_manager: ModsManager, always_on_top: bool=False) -> None:
         super().__init__()
         self.mods_manager: ModsManager = mods_manager
+        self.always_on_top: bool = always_on_top
         
         self.setWindowTitle("TransparentWindow")
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
+        if self.always_on_top:
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
@@ -228,10 +233,12 @@ class OverlayManager(QApplication):
 
         self.watcher: WindowsWatcher = WindowsWatcher()
         self.watcher.start()
-        self.transparent_windows: dict[int, TransparentWindow] = {}
-        self.draw_commands: dict[int, list] = {} # "hwnd": [["draw_rect"...], ["draw_image"...]...]
+        self.transparent_windows: dict[int | Literal["top"], TransparentWindow] = {}
+        self.draw_commands: dict[int | Literal["top"], list] = {} # "hwnd": [["draw_rect"...], ["draw_image"...]...]
 
         self.mods_manager = ModsManager(conn, shared_data, self)
+
+        self.transparent_windows["top"] = TransparentWindow(0, self.mods_manager, always_on_top=True)
 
         # Initialization of the Windows API function to bulk update the z-order of multiple windows in a single operation.
         self.user32 = ctypes.windll.user32
@@ -280,21 +287,22 @@ class OverlayManager(QApplication):
             hdwp = self.user32.BeginDeferWindowPos(len(self.draw_commands))
             flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
             for hwnd in self.draw_commands.keys():
+                if not isinstance(hwnd, int):
+                    continue
                 if hwnd not in self.transparent_windows:
                     self.transparent_windows[hwnd] = TransparentWindow(hwnd, self.mods_manager)
-                    title = win32gui.GetWindowText(hwnd)
+                    title = self.watcher.get_window_title(hwnd)
                     log.debug(f'A new layer has been created on the window {hwnd} ({title})')
 
-                neighbors: WindowNeighbors | None = self.watcher._window_neighbors_cache.get(hwnd, None)
-                if neighbors is None or not isinstance(neighbors.window_above, int):
-                    self.watcher.get_window_above(hwnd)
-                hdwp = self.user32.DeferWindowPos(hdwp, self.transparent_windows[hwnd].hwnd_self, self.watcher._window_neighbors_cache[hwnd].window_above, 0, 0, 0, 0, flags)
+                hdwp = self.user32.DeferWindowPos(hdwp, self.transparent_windows[hwnd].hwnd_self, self.watcher.get_window_above(hwnd), 0, 0, 0, 0, flags)
             self.user32.EndDeferWindowPos(hdwp)
 
         # Deleting a `TransparentWindow` if the window assigned to it does not exist
         for hwnd in list(self.transparent_windows):
+            if not isinstance(hwnd, int):
+                continue
             if hwnd not in self.draw_commands:
-                title = win32gui.GetWindowText(hwnd)
+                title = self.watcher.get_window_title(hwnd)
                 log.debug(f'Removed layer assigned to hwnd {hwnd} ({title})')
                 self.transparent_windows[hwnd].close()
                 del self.transparent_windows[hwnd]
@@ -302,6 +310,8 @@ class OverlayManager(QApplication):
 
         self.process_timer.start("windows paint_tick")
         for hwnd, draw_commands in self.draw_commands.items():
+            if not isinstance(hwnd, int) and hwnd != "top":
+                continue
             self.transparent_windows[hwnd].draw_commands = draw_commands
         for window in self.transparent_windows.values():
             window.repaint()

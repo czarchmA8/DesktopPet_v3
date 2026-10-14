@@ -4,7 +4,7 @@ import time
 from bisect import bisect_right
 from pathlib import Path
 from dataclasses import replace as dataclasses_replace
-from typing import Callable
+from typing import Callable, Literal
 
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QColor, QPixmap, QImage, QImageReader, QCursor
@@ -289,6 +289,10 @@ class ModAPI:
 
     _Color = str | tuple[int, int, int] | tuple[int, int, int, int]
 
+    @property
+    def settings(self) -> dict:
+        return self._mods_manager.settings_snapshot
+
     class _Entity:
         """Registering, spawning and removing entities, selection, and clicks on shapes drawn with a hit_id."""
 
@@ -467,25 +471,25 @@ class ModAPI:
 
         # --- Drawing ---
 
-        def draw_rect(self, hwnd: int, x: int, y: int, width: int, height: int, color: ModAPI._Color="#ff0000", filled: bool=True, stroke_width: int=1, hit_id: str | None = None) -> None:
+        def draw_rect(self, hwnd: int | Literal["top"], x: int, y: int, width: int, height: int, color: ModAPI._Color="#ff0000", filled: bool=True, stroke_width: int=1, hit_id: str | None = None) -> None:
             """Draws a rectangle on the overlay of `hwnd` for the current frame."""
             qcolor = self._mod_api._normalize_color(color)
             cmd = ("rect", x, y, width, height, qcolor, filled, stroke_width, hit_id)
             self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
 
-        def draw_line(self, hwnd: int, x1: int, y1: int, x2: int, y2: int, color: ModAPI._Color="#ffffff", width: int=1, hit_id: str | None = None) -> None:
+        def draw_line(self, hwnd: int | Literal["top"], x1: int, y1: int, x2: int, y2: int, color: ModAPI._Color="#ffffff", width: int=1, hit_id: str | None = None) -> None:
             """Draws a line `width` pixels thick on the overlay of `hwnd` for the current frame. A `hit_id` makes it clickable."""
             qcolor = self._mod_api._normalize_color(color)
             cmd = ("line", x1, y1, x2, y2, qcolor, width, hit_id)
             self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
 
-        def draw_text(self, hwnd: int, x: int, y: int, text: str, color: ModAPI._Color="#ffffff", size: int=12) -> None:
+        def draw_text(self, hwnd: int | Literal["top"], x: int, y: int, text: str, color: ModAPI._Color="#ffffff", size: int=12) -> None:
             """Draws text on the overlay of `hwnd` for the current frame. `y` is the baseline of the text and `size` is in points."""
             qcolor = self._mod_api._normalize_color(color)
             cmd = ("text", x, y, str(text), qcolor, size)
             self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
 
-        def draw_image(self, hwnd: int, x: int, y: int, path: str, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None) -> None:
+        def draw_image(self, hwnd: int | Literal["top"], x: int, y: int, path: str, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None) -> None:
             """Draws an image from a file inside the mod's own folder on the overlay of `hwnd` for the current frame.
 
             If only `width` or `height` is given the aspect ratio is kept. `opacity` is 0.0-1.0. Images are cached after the
@@ -508,7 +512,7 @@ class ModAPI:
             cmd = ("image", x, y, width, height, pixmap, opacity, alpha_image, hit_id)
             self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
 
-        def draw_media(self, hwnd: int, x: int, y: int, media: Animation | Video, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None) -> None:
+        def draw_media(self, hwnd: int | Literal["top"], x: int, y: int, media: Animation | Video, width: int | None = None, height: int | None = None, opacity: float = 1.0, hit_id: str | None = None) -> None:
             """Draws the current frame of an `Animation` or `Video` (see `Media`) on the overlay of `hwnd` for the current frame.
 
             Parameters work like in `draw_image`. Draw it every frame to keep it playing; nothing is drawn while a video has no frame yet.
