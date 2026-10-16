@@ -1,5 +1,6 @@
 """Win32 event listener (SetWinEventHook) that watches z-order, geometry, title and state changes of windows and serves cached answers."""
 import ctypes
+import os
 import threading
 import time
 from ctypes import wintypes
@@ -9,6 +10,7 @@ from typing import cast
 import win32api
 import win32con
 import win32gui
+import win32process
 
 from app.windows_z_order.neighbors import get_real_window_above, get_real_window_below, get_window_above, get_window_below
 from app.desktop.physics_utils import XYXY_Rectangle
@@ -33,6 +35,7 @@ EVENT_OBJECT_NAMECHANGE     = 0x800C
 WINEVENT_OUTOFCONTEXT = 0x0000
 OBJID_WINDOW = 0
 CHILDID_SELF = 0
+PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 _user32 = ctypes.windll.user32
 
@@ -56,6 +59,15 @@ _user32.SetWinEventHook.argtypes = [
 _user32.UnhookWinEvent.restype = wintypes.BOOL
 _user32.UnhookWinEvent.argtypes = [wintypes.HANDLE]
 
+# Private kernel32 handle, so setting argtypes does not affect other libraries sharing `ctypes.windll.kernel32`
+_kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+_kernel32.OpenProcess.restype = wintypes.HANDLE
+_kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+_kernel32.CloseHandle.restype = wintypes.BOOL
+_kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+_kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+_kernel32.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+
 # Sentinel distinguishing "never fetched" from the legal value `None`
 # (e.g., the window at the very top/bottom of the z-order has no neighbor -> the result is `None`)
 _MISSING: object = object()
@@ -69,8 +81,8 @@ class WindowNeighbors:
     window_below: int | None | object = _MISSING
 
 class WindowsWatcher:
-    """Listens for changes in z-order and window geometry, and lazily caches
-    neighbor (above/below) and rect information for individual windows on request.
+    """Listens for window events and lazily caches per-window answers on request: neighbors (above/below),
+    rect, client rect, title, existence, owning process (id, executable path), visible/minimized/maximized/fullscreen state, the window list and the foreground window.
 
     Use:
         watcher = WindowsWatcher()
@@ -97,7 +109,10 @@ class WindowsWatcher:
         self._z_order_changes_detected: bool = True
 
         self._rect_cache: dict[int, XYXY_Rectangle | None] = {}
+        self._client_rect_cache: dict[int, XYXY_Rectangle] = {}
+        self._window_list_cache: dict[bool, list[int]] = {}
         self._title_cache: dict[int, str] = {}
+        self._executable_path_cache: dict[int, tuple[int, str | None]] = {} # hwnd -> (process id, executable path or None). The pid guards against a reused hwnd.
         self._foreground_window_cache: int | None = None
         self._window_exists_cache: dict[int, bool] = {}
         self._visible_window_cache: dict[int, bool] = {}
@@ -111,6 +126,12 @@ class WindowsWatcher:
         """Starts listening. Returns once the hooks are installed; raises if they could not be installed."""
         if self._thread is not None:
             return
+        with self._lock:    # events were not observed while stopped
+            self._rect_cache.clear()
+            self._client_rect_cache.clear()
+            self._title_cache.clear()
+            self._executable_path_cache.clear()
+            self._z_order_changes_detected = True
         self._started.clear()
         self._start_error = None
         self._thread = threading.Thread(target=self._run, name="WindowsWatcher", daemon=True)
@@ -180,7 +201,7 @@ class WindowsWatcher:
             return
         if event == EVENT_OBJECT_DESTROY and hwnd:
             with self._lock:
-                for cache in (self._rect_cache, self._title_cache, self._maximized_window_cache, self._fullscreen_window_cache):
+                for cache in (self._rect_cache, self._client_rect_cache, self._title_cache, self._executable_path_cache, self._maximized_window_cache, self._fullscreen_window_cache):
                     cache.pop(hwnd, None)
                 self._window_exists_cache[hwnd] = False
         self._z_order_changes_detected = True
@@ -193,6 +214,8 @@ class WindowsWatcher:
             with self._lock:
                 if event == EVENT_OBJECT_LOCATIONCHANGE:
                     self._rect_cache.pop(hwnd, None)
+                    self._client_rect_cache.pop(hwnd, None)
+                    self._minimized_window_cache.pop(hwnd, None)
                     self._maximized_window_cache.pop(hwnd, None)
                     self._fullscreen_window_cache.pop(hwnd, None)
                 elif event == EVENT_OBJECT_NAMECHANGE:
@@ -203,13 +226,15 @@ class WindowsWatcher:
     # -- public API ----------------------------------------------------------
 
     def clear_cache(self) -> None:
-        """Invalidates the neighbor cache and the foreground/exists/visible/minimized/maximized/fullscreen caches,
-        but only if the z-order changed since the last call."""
+        """Invalidates the neighbor cache, the window list and the foreground/exists/visible/minimized/maximized/fullscreen caches,
+        but only if a window event (create/destroy/show/hide/reorder/foreground/minimize/...) happened since the last call.
+        The rect, client rect and title caches are not touched here; they are invalidated per window by location/name/destroy events."""
         with self._lock:
             if not self._z_order_changes_detected:
                 return
             self._z_order_changes_detected = False
             self._window_neighbors_cache.clear()
+            self._window_list_cache.clear()
 
             self._foreground_window_cache = None
             self._window_exists_cache.clear()
@@ -219,7 +244,7 @@ class WindowsWatcher:
             self._fullscreen_window_cache.clear()
 
     def get_real_window_above(self, hwnd: int) -> tuple[int | None, int | None]:
-        """Returns the nearest real (non-transparent/non-tool) window above `hwnd`."""
+        """Returns (nearest real (non-transparent/non-tool) window above `hwnd`, window directly above `hwnd`); each may be None."""
         with self._lock:
             entry = self._window_neighbors_cache.get(hwnd)
             if entry is not None and entry.real_window_above is not _MISSING and entry.window_above is not _MISSING:
@@ -248,7 +273,7 @@ class WindowsWatcher:
         return above
 
     def get_real_window_below(self, hwnd: int) -> tuple[int | None, int | None]:
-        """Returns the nearest real (non-transparent/non-tool) window below `hwnd`."""
+        """Returns (nearest real (non-transparent/non-tool) window below `hwnd`, window directly below `hwnd`); each may be None."""
         with self._lock:
             entry = self._window_neighbors_cache.get(hwnd)
             if entry is not None and entry.real_window_below is not _MISSING and entry.window_below is not _MISSING:
@@ -277,12 +302,15 @@ class WindowsWatcher:
         return below
 
     def get_window_rect(self, hwnd: int) -> XYXY_Rectangle | None:
-        """Returns the geometry of `hwnd` or None if the window does not exist."""
+        """Returns the geometry of `hwnd` or None if the window does not exist (a minimized window typically has off-screen coordinates)."""
         if not self.window_exists(hwnd):
             return None
         with self._lock:
             if hwnd not in self._rect_cache:
-                left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+                try:
+                    left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+                except win32gui.error:      # destroyed after the cached exists check
+                    return None
                 rect = XYXY_Rectangle(left, top, right, bottom)
                 self._rect_cache[hwnd] = rect
             return self._rect_cache[hwnd]
@@ -295,6 +323,129 @@ class WindowsWatcher:
             if hwnd not in self._title_cache:
                 self._title_cache[hwnd] = win32gui.GetWindowText(hwnd)
             return self._title_cache[hwnd]
+
+    def get_window_client_rect(self, hwnd: int) -> XYXY_Rectangle | None:
+        """Returns the client area of `hwnd` (without title bar, borders and menu) in screen coordinates,
+        or None if the window does not exist. A minimized window has an off-screen or empty client area."""
+        if not self.window_exists(hwnd):
+            return None
+        with self._lock:
+            if hwnd not in self._client_rect_cache:
+                try:
+                    _, _, width, height = win32gui.GetClientRect(hwnd)      # always relative: (0, 0, width, height)
+                    left, top = win32gui.ClientToScreen(hwnd, (0, 0))
+                except win32gui.error:      # destroyed after the cached exists check
+                    return None
+                self._client_rect_cache[hwnd] = XYXY_Rectangle(left, top, left + width, top + height)
+            return self._client_rect_cache[hwnd]
+
+    def get_window_class_name(self, hwnd: int) -> str | None:
+        """Returns the window class name of `hwnd` or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
+        try:
+            return win32gui.GetClassName(hwnd)
+        except win32gui.error:
+            return None
+
+    def get_window_process_id(self, hwnd: int) -> int | None:
+        """Returns the id of the process that owns `hwnd` or None if the window does not exist."""
+        if not self.window_exists(hwnd):
+            return None
+        try:
+            return win32process.GetWindowThreadProcessId(hwnd)[1]
+        except win32gui.error:
+            return None
+
+    @staticmethod
+    def _query_process_image_path(pid: int) -> str | None:
+        """Returns the full executable path of process `pid`, or None if it cannot be opened (protected/elevated or already gone)."""
+        handle = _kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return None
+        try:
+            size = wintypes.DWORD(32768)
+            buffer = ctypes.create_unicode_buffer(size.value)
+            if not _kernel32.QueryFullProcessImageNameW(handle, 0, buffer, ctypes.byref(size)):
+                return None
+            return buffer.value
+        finally:
+            _kernel32.CloseHandle(handle)
+
+    def get_window_executable_path(self, hwnd: int) -> str | None:
+        """Returns the full path of the executable of the process that owns `hwnd`, or None if the window does not exist or the process cannot be queried."""
+        pid = self.get_window_process_id(hwnd)
+        if pid is None:
+            return None
+        with self._lock:
+            cached = self._executable_path_cache.get(hwnd)
+            if cached is not None and cached[0] == pid:
+                return cached[1]
+        path = self._query_process_image_path(pid)
+        with self._lock:
+            self._executable_path_cache[hwnd] = (pid, path)
+        return path
+
+    def get_window_process_name(self, hwnd: int) -> str | None:
+        """Returns the executable file name of the process that owns `hwnd`, or None if unavailable."""
+        path = self.get_window_executable_path(hwnd)
+        return os.path.basename(path) if path else None
+
+    def find_windows_by_process(self, process_name: str, visible_only: bool = True) -> list[int]:
+        """Returns the hwnds of all top-level windows owned by a process whose executable file name equals `process_name`
+        (ignoring case), ordered from the topmost to the bottommost. A name without an extension also matches the
+        executable name without its extension ("notepad" matches "notepad.exe"). An empty name matches nothing."""
+        if not process_name:
+            return []
+        needle = process_name.casefold()
+        match_without_extension = os.path.splitext(needle)[1] == ""
+        matches: list[int] = []
+        for hwnd in self.get_all_windows(visible_only):
+            name = self.get_window_process_name(hwnd)
+            if name is None:
+                continue
+            name = name.casefold()
+            if name == needle or (match_without_extension and os.path.splitext(name)[0] == needle):
+                matches.append(hwnd)
+        return matches
+
+    def get_all_windows(self, visible_only: bool = True) -> list[int]:
+        """Returns the hwnds of all top-level windows ordered from the topmost to the bottommost in the z-order.
+        With `visible_only` hidden windows are skipped (minimized windows still count as visible)."""
+        with self._lock:
+            cached = self._window_list_cache.get(visible_only)
+            if cached is not None:
+                return list(cached)
+
+        hwnds: list[int] = []
+
+        def collect(hwnd: int, _extra) -> bool:
+            if not visible_only or win32gui.IsWindowVisible(hwnd):
+                hwnds.append(hwnd)
+            return True
+
+        win32gui.EnumWindows(collect, None)
+
+        with self._lock:
+            self._window_list_cache[visible_only] = hwnds
+        return list(hwnds)
+
+    def find_windows(self, title: str, exact: bool = False, case_sensitive: bool = False, visible_only: bool = True) -> list[int]:
+        """Returns the hwnds of all top-level windows whose title equals (`exact`) or contains `title`,
+        ordered from the topmost to the bottommost. An empty `title` matches nothing."""
+        if not title:
+            return []
+        needle = title if case_sensitive else title.casefold()
+        matches: list[int] = []
+        for hwnd in self.get_all_windows(visible_only):
+            text = self.get_window_title(hwnd)
+            if text is None:
+                continue
+            if not case_sensitive:
+                text = text.casefold()
+            if (text == needle) if exact else (needle in text):
+                matches.append(hwnd)
+        return matches
 
     def get_foreground_window_hwnd(self) -> int:
         """Returns the hwnd of the foreground (focused) window (0 if there is none)."""

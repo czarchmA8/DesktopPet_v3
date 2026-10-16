@@ -4,10 +4,10 @@ import time
 from bisect import bisect_right
 from pathlib import Path
 from dataclasses import replace as dataclasses_replace
-from typing import Callable, Literal
+from typing import Callable, Literal, cast
 
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QColor, QPixmap, QImage, QImageReader, QCursor
+from PySide6.QtCore import QUrl, QRect, QPointF
+from PySide6.QtGui import QColor, QPixmap, QImage, QImageReader, QCursor, QScreen, QPolygonF
 from PySide6.QtWidgets import QApplication
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer, QVideoSink
 
@@ -85,10 +85,7 @@ class Animation:
         return self.frames[min(bisect_right(self.ends, self._position), len(self.frames) - 1)]
 
 class Video:
-    """Video played by Qt. It starts playing when loaded.
-
-    `get_frame` returns the newest decoded frame, or None before the first one.
-    """
+    """Video played by Qt. It starts playing when loaded."""
 
     def __init__(self, path: Path, loop: bool, volume: float = 1.0) -> None:
         self._QMediaPlayer = QMediaPlayer
@@ -261,7 +258,9 @@ class ModAPI:
         self.Mod: ModMetadata = self._mods_manager.shared_data.active_mods[self._mod_id]
 
         self.Entity: ModAPI._Entity = self._Entity(self)
+        self.Window: ModAPI._Window = self._Window(self)
         self.Overlay: ModAPI._Overlay = self._Overlay(self)
+        self.Screen: ModAPI._Screen = self._Screen(self)
         self.Logger: ModAPI._Logger = self._Logger(self)
         self.Mouse: ModAPI._Mouse = self._Mouse(self)
         self.Media: ModAPI._Media = self._Media(self)
@@ -286,6 +285,18 @@ class ModAPI:
         if isinstance(color, (tuple, list)):
             return QColor(*color)
         return QColor(color)
+
+    @staticmethod
+    def _normalize_points(points) -> QPolygonF:
+        """Converts a list of (x, y) pairs into a QPolygonF."""
+        polygon = QPolygonF()
+        for point in (points.values() if hasattr(points, "values") else points):
+            try:
+                x, y = point.values() if hasattr(point, "values") else point
+            except (TypeError, ValueError):
+                raise ValueError("Polygon points must be (x, y) pairs") from None
+            polygon.append(QPointF(x, y))
+        return polygon
 
     _Color = str | tuple[int, int, int] | tuple[int, int, int, int]
 
@@ -334,7 +345,7 @@ class ModAPI:
 
         def is_focused(self, hwnd: int, instance_id: str) -> bool:
             """Returns whether `hwnd` is active and `instance_id` is the selected entity."""
-            return bool(self._mod_api.Overlay.is_focused(hwnd)) and self.is_selected(instance_id)
+            return bool(self._mod_api.Window.is_focused(hwnd)) and self.is_selected(instance_id)
 
         def exists(self, instance_id: str) -> bool:
             """Returns whether the instance `instance_id` is currently spawned."""
@@ -388,13 +399,11 @@ class ModAPI:
             else:
                 return 0
 
-    class _Overlay:
-        """Windows, screens and drawing on window overlays."""
+    class _Window:
+        """Windows and screens."""
 
-        def __init__(self, mod_api: ModAPI):
+        def __init__(self, mod_api: ModAPI) -> None:
             self._mod_api = mod_api
-
-        # --- Window ---
 
         def exists(self, hwnd: int) -> bool:
             """Returns whether `hwnd` is still a valid window."""
@@ -424,22 +433,79 @@ class ModAPI:
             """Returns the title text of `hwnd`."""
             return self._mod_api._mods_manager.overlay_manager.watcher.get_window_title(hwnd)
 
-        def get_rect(self, hwnd: int) -> tuple[int | float, int | float, int | float, int | float] | None:
-            """Returns the (left, top, right, bottom) screen rectangle of `hwnd`."""
+        def get_rect(self, hwnd: int) -> tuple[int, int, int, int] | None:
+            """Returns the window rectangle (left, top, right, bottom) of `hwnd`."""
             rect = self._mod_api._mods_manager.overlay_manager.watcher.get_window_rect(hwnd)
-            return rect.as_tuple if rect is not None else None
+            return cast(tuple[int, int, int, int], rect.as_tuple) if rect is not None else None
 
-        def get_primary_screen_size(self) -> tuple[int, int]:
-            """Returns (width, height) of the primary screen."""
-            primary_screen = QApplication.primaryScreen()
-            geometry = primary_screen.geometry()
-            return geometry.width(), geometry.height()
+        def get_size(self, hwnd: int) -> tuple[int, int] | None:
+            """Returns the (width, height) of the `hwnd` window."""
+            rect = self._mod_api._mods_manager.overlay_manager.watcher.get_window_rect(hwnd)
+            if rect is None:
+                return None
+            left, top, right, bottom = rect.as_tuple
+            return cast(tuple[int, int], (right - left, bottom - top))
+        
+        def get_client_rect(self, hwnd: int) -> tuple[int, int, int, int] | None:
+            """Returns the (left, top, right, bottom) rectangle of the client area of `hwnd` in screen coordinates:
+            the part of the window without its title bar, borders and menu bar, where its content is drawn.
+            A minimized window has an off-screen or empty client area."""
+            rect = self._mod_api._mods_manager.overlay_manager.watcher.get_window_client_rect(hwnd)
+            return cast(tuple[int, int, int, int], rect.as_tuple) if rect is not None else None
 
-        def get_virtual_screen_size(self) -> tuple[int, int]:
-            """Returns (width, height) of the whole virtual desktop."""
-            primary_screen = QApplication.primaryScreen()
-            virtual_rect = primary_screen.virtualGeometry()
-            return virtual_rect.width(), virtual_rect.height()
+        def get_client_size(self, hwnd: int) -> tuple[int, int] | None:
+            """Returns the (width, height) of the client area of `hwnd`."""
+            rect = self._mod_api._mods_manager.overlay_manager.watcher.get_window_client_rect(hwnd)
+            if rect is None:
+                return None
+            left, top, right, bottom = rect.as_tuple
+            return cast(tuple[int, int], (right - left, bottom - top))
+
+        def get_class_name(self, hwnd: int) -> str | None:
+            """Returns the window class name of `hwnd`."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.get_window_class_name(hwnd)
+
+        def get_process_id(self, hwnd: int) -> int | None:
+            """Returns the id of the process that owns `hwnd`."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.get_window_process_id(hwnd)
+
+        def get_process_name(self, hwnd: int) -> str | None:
+            """Returns the file name of the program that owns `hwnd`, e.g. "chrome.exe", or None if the window does not
+            exist or its process cannot be queried (protected system processes)."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.get_window_process_name(hwnd)
+
+        def get_executable_path(self, hwnd: int) -> str | None:
+            """Returns the full path of the program that owns `hwnd`, or None if
+            the window does not exist or its process cannot be queried (protected system processes)."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.get_window_executable_path(hwnd)
+
+        def get_windows(self, visible_only: bool = True) -> list[int]:
+            """Returns the hwnds of all top-level windows, from the topmost to the bottommost in the z-order.
+            With `visible_only` (default) hidden windows are skipped; minimized windows still count as visible.
+            The list also contains helper and tool windows (many have an empty title) and may contain this
+            application's own overlay windows, so filter it when you need real windows."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.get_all_windows(visible_only)
+
+        def find_windows(self, title: str, exact: bool = False, case_sensitive: bool = False, visible_only: bool = True) -> list[int]:
+            """Returns the hwnds of all top-level windows whose title contains `title` (or equals it with `exact`),
+            from the topmost to the bottommost. The match ignores case unless `case_sensitive`. An empty `title` matches nothing."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.find_windows(title, exact, case_sensitive, visible_only)
+
+        def find_window(self, title: str, exact: bool = False, case_sensitive: bool = False, visible_only: bool = True) -> int | None:
+            """Returns the hwnd of the topmost window whose title contains `title` (or equals it with `exact`), or None."""
+            matches = self.find_windows(title, exact, case_sensitive, visible_only)
+            return matches[0] if matches else None
+
+        def find_windows_by_process(self, process_name: str, visible_only: bool = True) -> list[int]:
+            """Returns the hwnds of all top-level windows owned by a program called `process_name`, from the topmost to
+            the bottommost. The match is on the executable file name and ignores case; a name without an extension also
+            matches the file name without its extension ("notepad" matches "notepad.exe"). An empty name matches nothing."""
+            return self._mod_api._mods_manager.overlay_manager.watcher.find_windows_by_process(process_name, visible_only)
+
+        def find_window_by_process(self, process_name: str, visible_only: bool = True) -> int | None:
+            """Returns the hwnd of the topmost window owned by a program called `process_name` (see `find_windows_by_process`), or None."""
+            matches = self.find_windows_by_process(process_name, visible_only)
+            return matches[0] if matches else None
 
         # --- Z-order ---
 
@@ -469,7 +535,11 @@ class ModAPI:
             """Returns the hwnd of the current foreground (focused) window."""
             return self._mod_api._mods_manager.overlay_manager.watcher.get_foreground_window_hwnd()
 
-        # --- Drawing ---
+    class _Overlay:
+        """Drawing on window overlays."""
+
+        def __init__(self, mod_api: ModAPI) -> None:
+            self._mod_api = mod_api
 
         def draw_rect(self, hwnd: int | Literal["top"], x: int, y: int, width: int, height: int, color: ModAPI._Color="#ff0000", filled: bool=True, stroke_width: int=1, hit_id: str | None = None) -> None:
             """Draws a rectangle on the overlay of `hwnd` for the current frame."""
@@ -524,6 +594,144 @@ class ModAPI:
             opacity = 1.0 if opacity is None else float(opacity)
             cmd = ("image", x, y, width, height, pixmap, opacity, alpha_image, hit_id)
             self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+        def draw_ellipse(self, hwnd: int | Literal["top"], x: int, y: int, width: int, height: int, color: ModAPI._Color="#ff0000", filled: bool=True, stroke_width: int=1, hit_id: str | None = None) -> None:
+            """Draws an ellipse inscribed in the rectangle at (`x`, `y`) of size `width` x `height` on the overlay of `hwnd` for the current frame.
+
+            Parameters work like in `draw_rect`; `stroke_width` is used only when `filled` is false. A `hit_id` makes the
+            filled ellipse (or only its outline when not filled) clickable.
+            """
+            width, height = round(width), round(height)
+            if width <= 0 or height <= 0:
+                return
+            qcolor = self._mod_api._normalize_color(color)
+            cmd = ("ellipse", round(x), round(y), width, height, qcolor, bool(filled), round(stroke_width), hit_id)
+            self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+        def draw_circle(self, hwnd: int | Literal["top"], x: int, y: int, radius: int, color: ModAPI._Color="#ff0000", filled: bool=True, stroke_width: int=1, hit_id: str | None = None) -> None:
+            """Draws a circle with its center at (`x`, `y`) and the given `radius` on the overlay of `hwnd` for the current frame.
+
+            Note that, unlike `draw_rect`, (`x`, `y`) is the center, not the top-left corner. The other parameters work like in
+            `draw_ellipse`. Nothing is drawn if `radius` is not positive.
+            """
+            self.draw_ellipse(hwnd, x - radius, y - radius, radius * 2, radius * 2, color, filled, stroke_width, hit_id)
+
+        def draw_polygon(self, hwnd: int | Literal["top"], points: list[tuple[int, int]], color: ModAPI._Color="#ff0000", filled: bool=True, stroke_width: int=1, hit_id: str | None = None) -> None:
+            """Draws a closed polygon on the overlay of `hwnd` for the current frame.
+
+            `points` is a list of at least 3 (x, y) pairs in screen coordinates; the last point is joined to the first
+            automatically. Other parameters work like in `draw_rect`; a `hit_id` makes the filled polygon (or only its
+            outline when not filled) clickable. Raises if there are fewer than 3 points or a point is not an (x, y) pair.
+            """
+            polygon = self._mod_api._normalize_points(points)
+            if polygon.size() < 3:
+                raise ValueError(f"{self._mod_api._mod_id}: a polygon needs at least 3 points")
+            qcolor = self._mod_api._normalize_color(color)
+            cmd = ("polygon", polygon, qcolor, bool(filled), round(stroke_width), hit_id)
+            self._mod_api._mods_manager.overlay_manager.draw_commands.setdefault(hwnd, []).append(cmd)
+
+    class _Screen:
+        """Connected screens (monitors): size, available size (without the taskbar), position, count and more.
+
+        Screens are addressed by index: 0 is the primary screen, the others follow in the order reported by the
+        system. Indices can change when a monitor is connected or disconnected, so don't store them for long.
+        Rectangles are (left, top, right, bottom) in the same screen coordinates as `Mouse.get_pos`, with exclusive
+        right and bottom edges, like `Overlay.get_rect`. The "available" area is the screen without the taskbar
+        and other areas reserved by the system. Methods taking an `index` return None if there is no such screen.
+        """
+
+        def __init__(self, mod_api: ModAPI) -> None:
+            self._mod_api = mod_api
+
+        @staticmethod
+        def _get(index: int) -> QScreen | None:
+            screens = QApplication.screens()
+            return screens[index] if 0 <= index < len(screens) else None
+
+        @staticmethod
+        def _rect(rect: QRect) -> tuple[int, int, int, int]:
+            return rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height()
+
+        def get_count(self) -> int:
+            """Returns the number of connected screens."""
+            return len(QApplication.screens())
+
+        def get_name(self, index: int = 0) -> str | None:
+            """Returns the name of screen `index`."""
+            screen = self._get(index)
+            return None if screen is None else screen.name()
+
+        def get_rect(self, index: int = 0) -> tuple[int, int, int, int] | None:
+            """Returns the full (left, top, right, bottom) rectangle of screen `index`."""
+            screen = self._get(index)
+            return None if screen is None else self._rect(screen.geometry())
+
+        def get_size(self, index: int = 0) -> tuple[int, int] | None:
+            """Returns the full (width, height) of screen `index`."""
+            screen = self._get(index)
+            if screen is None:
+                return None
+            geometry = screen.geometry()
+            return geometry.width(), geometry.height()
+
+        def get_available_rect(self, index: int = 0) -> tuple[int, int, int, int] | None:
+            """Returns the (left, top, right, bottom) rectangle of screen `index` without the taskbar."""
+            screen = self._get(index)
+            return None if screen is None else self._rect(screen.availableGeometry())
+
+        def get_available_size(self, index: int = 0) -> tuple[int, int] | None:
+            """Returns the (width, height) of screen `index` without the taskbar."""
+            screen = self._get(index)
+            if screen is None:
+                return None
+            geometry = screen.availableGeometry()
+            return geometry.width(), geometry.height()
+
+        def get_virtual_rect(self) -> tuple[int, int, int, int]:
+            """Returns the (left, top, right, bottom) rectangle of the whole virtual desktop (all screens together).
+            `left` and `top` can be negative when a screen lies to the left of or above the primary one."""
+            return self._rect(QApplication.primaryScreen().virtualGeometry())
+
+        def get_virtual_size(self) -> tuple[int, int]:
+            """Returns (width, height) of the whole virtual desktop."""
+            virtual_rect = QApplication.primaryScreen().virtualGeometry()
+            return virtual_rect.width(), virtual_rect.height()
+
+        def get_index_at(self, x: int, y: int) -> int | None:
+            """Returns the index of the screen containing the point (x, y), or None if it is outside all screens."""
+            for index, screen in enumerate(QApplication.screens()):
+                left, top, right, bottom = self._rect(screen.geometry())
+                if left <= x < right and top <= y < bottom:
+                    return index
+            return None
+
+        def get_scale_factor(self, index: int = 0) -> float | None:
+            """Returns the display scaling of screen `index` (1.0 = 100%, 1.5 = 150%, ...)."""
+            screen = self._get(index)
+            return None if screen is None else screen.devicePixelRatio()
+
+        def get_refresh_rate(self, index: int = 0) -> float | None:
+            """Returns the refresh rate of screen `index` in Hz."""
+            screen = self._get(index)
+            return None if screen is None else screen.refreshRate()
+
+        def get_info(self, index: int = 0) -> dict | None:
+            """Returns everything known about screen `index` as a dict, or None."""
+            screen = self._get(index)
+            if screen is None:
+                return None
+            geometry, available = screen.geometry(), screen.availableGeometry()
+            return {
+                "index": index,
+                "name": screen.name(),
+                "is_primary": index == 0,
+                "rect": self._rect(geometry),
+                "size": (geometry.width(), geometry.height()),
+                "available_rect": self._rect(available),
+                "available_size": (available.width(), available.height()),
+                "scale_factor": screen.devicePixelRatio(),
+                "refresh_rate": screen.refreshRate(),
+            }
 
     class _Media:
         """Loading animations, videos and sounds from the mod's own folder. Draw animations and videos with `Overlay.draw_media`."""
