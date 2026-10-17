@@ -23,7 +23,7 @@ class TransparentWindow(QWidget):
         super().__init__()
         self.mods_manager: ModsManager = mods_manager
         self.always_on_top: bool = always_on_top
-        
+
         self.setWindowTitle("TransparentWindow")
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
         if self.always_on_top:
@@ -104,6 +104,20 @@ class TransparentWindow(QWidget):
                 else:
                     painter.drawPixmap(x, y, pixmap)
                 painter.setOpacity(1.0)
+            elif kind == "ellipse":
+                _, x, y, w, h, color, filled, stroke_width, hit_id = cmd
+                pen = QPen(color)
+                pen.setWidth(stroke_width)
+                painter.setPen(pen)
+                painter.setBrush(color if filled else Qt.BrushStyle.NoBrush)
+                painter.drawEllipse(x, y, w, h)
+            elif kind == "polygon":
+                _, polygon, color, filled, stroke_width, hit_id = cmd
+                pen = QPen(color)
+                pen.setWidth(stroke_width)
+                painter.setPen(pen)
+                painter.setBrush(color if filled else Qt.BrushStyle.NoBrush)
+                painter.drawPolygon(polygon)
             else:
                 raise Exception(f"Unknown command \"{cmd}\". This shouldn't have happened!")
         painter.end()
@@ -142,7 +156,7 @@ class TransparentWindow(QWidget):
         else:
             pressed_at = self.mods_manager.mouse_events[button].pressed_at
         released_at = time.time() if button_state == InputState.released else None
-        
+
         event = MouseButtonEvent(
             state=button_state,
             x=x,
@@ -166,7 +180,7 @@ class TransparentWindow(QWidget):
             kind = cmd[0]
             if kind == "rect":
                 _, rx, ry, rw, rh, color, filled, stroke_width, hit_id = cmd
-    
+
                 if filled:
                     if not (rx <= x <= rx + rw and ry <= y <= ry + rh):
                         continue
@@ -176,52 +190,109 @@ class TransparentWindow(QWidget):
                 else:
                     rect_path = QPainterPath()
                     rect_path.addRect(QRectF(rx, ry, rw, rh))
-    
+
                     stroker = QPainterPathStroker()
                     stroker.setWidth(max(stroke_width, 1))
-    
+
                     stroke_path = stroker.createStroke(rect_path)
                     if stroke_path.contains(QPointF(x, y)):
                         return hit_id
                     else:
                         continue
-    
+
             elif kind == "line":
                 _, x1, y1, x2, y2, color, width, hit_id = cmd
-    
+
                 if color.alpha() <= alpha_hit_threshold:
                     continue
-    
+
                 line_path = QPainterPath()
                 line_path.moveTo(x1, y1)
                 line_path.lineTo(x2, y2)
-    
+
                 stroker = QPainterPathStroker()
                 stroker.setWidth(max(width, 1))
-    
+
                 stroke_path = stroker.createStroke(line_path)
                 if stroke_path.contains(QPointF(x, y)):
                     return hit_id
                 else:
                     continue
-    
+
             elif kind == "image":
                 _, ix, iy, iw, ih, pixmap, _opacity, alpha_image, hit_id = cmd
                 w = iw if iw is not None else pixmap.width()
                 h = ih if ih is not None else pixmap.height()
                 if w <= 0 or h <= 0 or not (ix <= x <= ix + w and iy <= y <= iy + h):
                     continue
-    
+
                 img_x = int((x - ix) / w * alpha_image.width())
                 img_y = int((y - iy) / h * alpha_image.height())
                 img_x = min(max(img_x, 0), alpha_image.width() - 1)
                 img_y = min(max(img_y, 0), alpha_image.height() - 1)
-    
+
                 if alpha_image.pixelColor(img_x, img_y).alpha() > alpha_hit_threshold:
                     return hit_id
                 else:
                     continue
-    
+
+            elif kind == "ellipse":
+                _, ex, ey, ew, eh, color, filled, stroke_width, hit_id = cmd
+
+                if color.alpha() <= alpha_hit_threshold:
+                    continue
+
+                if filled:
+                    # Inside the ellipse: ((x - cx) / rx)^2 + ((y - cy) / ry)^2 <= 1 (ew, eh > 0 is guaranteed by draw_ellipse)
+                    rx, ry = ew / 2, eh / 2
+                    dx, dy = (x - (ex + rx)) / rx, (y - (ey + ry)) / ry
+                    if dx * dx + dy * dy <= 1:
+                        return hit_id
+                    continue
+
+                half = max(stroke_width, 1) / 2
+                if not (ex - half <= x <= ex + ew + half and ey - half <= y <= ey + eh + half):
+                    continue
+
+                ellipse_path = QPainterPath()
+                ellipse_path.addEllipse(QRectF(ex, ey, ew, eh))
+
+                stroker = QPainterPathStroker()
+                stroker.setWidth(max(stroke_width, 1))
+
+                if stroker.createStroke(ellipse_path).contains(QPointF(x, y)):
+                    return hit_id
+                else:
+                    continue
+
+            elif kind == "polygon":
+                _, polygon, color, filled, stroke_width, hit_id = cmd
+
+                if color.alpha() <= alpha_hit_threshold:
+                    continue
+
+                point = QPointF(x, y)
+                half = max(stroke_width, 1) / 2
+                if not polygon.boundingRect().adjusted(-half, -half, half, half).contains(point):
+                    continue
+
+                if filled:
+                    if polygon.containsPoint(point, Qt.FillRule.OddEvenFill):
+                        return hit_id
+                    continue
+
+                polygon_path = QPainterPath()
+                polygon_path.addPolygon(polygon)
+                polygon_path.closeSubpath()
+
+                stroker = QPainterPathStroker()
+                stroker.setWidth(max(stroke_width, 1))
+
+                if stroker.createStroke(polygon_path).contains(point):
+                    return hit_id
+                else:
+                    continue
+
         return None
 
 class OverlayManager(QApplication):
@@ -269,18 +340,18 @@ class OverlayManager(QApplication):
         now = time.perf_counter()
         self.dt = now - self._last_tick_time
         self._last_tick_time = now
-        
+
         self.process_timer.start("check IPC")
         self._handle_ipc_commands()
         self.process_timer.stop("check IPC")
 
         self.watcher.clear_cache()
-        
+
         self.process_timer.start("entities tick")
         self.draw_commands.clear()
         self.mods_manager.tick()
         self.process_timer.stop("entities tick")
-        
+
         self.process_timer.start("update z-order")
         # Creating and updating z-order `TransparentWindow`
         if self.draw_commands:
