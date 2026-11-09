@@ -301,7 +301,8 @@ class ModAPI:
     _Color = str | tuple[int, int, int] | tuple[int, int, int, int]
 
     @property
-    def settings(self) -> dict:
+    def app_settings(self) -> dict:
+        """A copy of the application's own settings, refreshed every frame."""
         return self._mods_manager.settings_snapshot
 
     class _Entity:

@@ -11,6 +11,7 @@ from PySide6.QtGui import QPainter, QPen, QWheelEvent, QMouseEvent, QPaintEvent,
 
 import app.utils_debug as utils_debug
 import app.logger as logger
+from app import config
 from app.ipc import IpcChannel, SharedState
 from app.windows_z_order.watcher import WindowsWatcher
 from app.desktop.mods_manager import ModsManager
@@ -397,15 +398,15 @@ class OverlayManager(QApplication):
             if cmd[0] == "close_app":
                 self.watcher.stop()
                 QCoreApplication.quit()
-            elif cmd[0] == "spawn_entity":
+            elif cmd[0] == "spawn_entity": # [mod_id, entity_id]
                 self.mods_manager.spawn_entity(cmd[1], cmd[2])
-            elif cmd[0] == "kill_entity":
+            elif cmd[0] == "kill_entity": # [instance_id]
                 self.mods_manager.kill_entity(cmd[1])
-            elif cmd[0] == "show_entity":
+            elif cmd[0] == "show_entity": # [instance_id]
                 self.mods_manager.show_entity(cmd[1])
-            elif cmd[0] == "hide_entity":
+            elif cmd[0] == "hide_entity": # [instance_id]
                 self.mods_manager.hide_entity(cmd[1])
-            elif cmd[0] == "teleport_entity":
+            elif cmd[0] == "teleport_entity": # [instance_id]
                 self.mods_manager.teleport_entity(cmd[1])
             elif cmd[0] == "kill_all_entities":
                 self.mods_manager.kill_all_entities()
@@ -420,4 +421,6 @@ def run_app(conn, shared_data: SharedState, log_queue):
     logger.init_child(log_queue)
     log.info("Starting the DESKTOP process...")
     app = OverlayManager(conn, shared_data)
+    QApplication.setApplicationName(f"{config.APP_NAME} - {log.name}")
+    QApplication.setApplicationVersion(config.APP_VERSION)
     sys.exit(app.exec())

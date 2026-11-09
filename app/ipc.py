@@ -11,14 +11,12 @@ class IpcChannel:
         self._log = log
         self._broken = False
 
-    def send(self, msg: list) -> bool:
+    def send(self, msg: list) -> None:
         try:
             self._conn.send(msg)
         except OSError as e:
             self._log_broken(f"Failed to send to {self.peer}: {msg} ({e!r})")
-            return False
         self._log.debug(f"[{self.tag}] Sent to {self.peer}: {msg}")
-        return True
 
     def receive(self) -> Iterator[list]:
         while True:

@@ -153,7 +153,7 @@ class MainWindow(QMainWindow):
 
         self.ui.checkBox_show_console_on_startup.setChecked(self.shared_data.settings["debug"]["console"]["show_console_on_startup"])
         self.ui.checkBox_show_console_on_startup.toggled.connect(self.update_debug_settings)
-        
+
         self.ui.checkBox_show_console_on_error.setChecked(self.shared_data.settings["debug"]["console"]["show_console_on_error"])
         self.ui.checkBox_show_console_on_error.toggled.connect(self.update_debug_settings)
 
@@ -178,6 +178,7 @@ class MainWindow(QMainWindow):
         self.ui.listWidget_displayed_entities_list.currentItemChanged.connect(self._on_displayed_entity_selected)
         self.ui.listWidget_displayed_entities_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.listWidget_displayed_entities_list.customContextMenuRequested.connect(self._on_displayed_entities_list_context_menu)
+        self.ui.pushButton_displayed_entity_settings.clicked.connect(lambda: self._open_instance_settings())
         self.ui.toolButton_displayed_entity_browse.clicked.connect(self._on_displayed_entity_browse)
         self.ui.pushButton_kill_selected_entity.clicked.connect(self.kill_selected_entity)
         self.ui.lineEdit_displayed_entity_search.textChanged.connect(lambda: self._populate_displayed_entities_list())
@@ -399,7 +400,7 @@ class MainWindow(QMainWindow):
         self.update_label_check_for_updates()
 
         self._update_entity_debug_details(self.shared_data.entity_details)
-    
+
     def _handle_ipc_commands(self) -> None:
         """Checks messages from other processes"""
         for cmd in self.ipc.receive():
@@ -598,8 +599,7 @@ class MainWindow(QMainWindow):
         if mod is None:
             QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "Select a mod first.", None))
             return
-        # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
-        QMessageBox.information(self, self.translate("MainWindow", "Mod settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", mod.name))
+        self._open_mod_settings(mod.id)
 
     # Trust the mod
     def _confirm_trust_mod(self, mod: ModMetadata, show_dont_ask_checkbox: bool = True) -> tuple[bool, bool]:
@@ -899,7 +899,7 @@ class MainWindow(QMainWindow):
         check_box.blockSignals(True)
         check_box.setChecked(visible)
         check_box.blockSignals(False)
-    
+
     def _on_console_visibility_toggle(self, checked: bool | None=None) -> None:
         checked = checked if checked is not None else self.ui.checkBox_show_debug_console.isChecked()
         visible = checked and self.ui.checkBox_debug_mode.isChecked()
@@ -1003,15 +1003,16 @@ class MainWindow(QMainWindow):
             self.ui.label_displayed_entity_description.setText(entity.description)
         self._update_entity_debug_details({})
 
-    def _on_displayed_entity_menu(self, unique_id: str) -> None:
+    def _on_displayed_entity_menu(self, instance_id: str) -> None:
         menu = QMenu(self)
-        menu.addAction(self.translate("MainWindow", "Delete", None), lambda: self.kill_entity(unique_id))
+        menu.addAction(self.translate("MainWindow", "Delete", None), lambda: self.kill_entity(instance_id))
         # TODO: Dodaj akcję / polecenie do pokazywania i ukrywania entity
         # if True:
-        #     menu.addAction(self.translate("MainWindow", "Show", None), lambda: self.show_entity(unique_id))
+        #     menu.addAction(self.translate("MainWindow", "Show", None), lambda: self.show_entity(instance_id))
         # else:
-        #     menu.addAction(self.translate("MainWindow", "Hide", None), lambda: self.hide_entity(unique_id))
-        menu.addAction(self.translate("MainWindow", "Teleport", None), lambda: self.teleport_entity(unique_id))
+        #     menu.addAction(self.translate("MainWindow", "Hide", None), lambda: self.hide_entity(instance_id))
+        menu.addAction(self.translate("MainWindow", "Teleport", None), lambda: self.teleport_entity(instance_id))
+        menu.addAction(self.translate("MainWindow", "Settings", None), lambda: self._open_instance_settings(instance_id))
         menu.exec(self.cursor().pos())
 
     def _on_displayed_entity_browse(self) -> None:
@@ -1234,12 +1235,13 @@ class MainWindow(QMainWindow):
         if entity is None:
             QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
             return
-        # TODO: Dodaj wyświetlanie ustawień przesłanych przez API moda
-        QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "TODO: settings for %1", None).replace("%1", entity.name))
+        self._open_entity_settings(f"{entity.mod_id}:{entity.id}")
 
     def _on_spawnable_entity_menu(self, entity: EntityMetadata) -> None:
         menu = QMenu(self)
 
+        menu.addAction(self.translate("MainWindow", "Settings", None), lambda: self._open_entity_settings(f"{entity.mod_id}:{entity.id}"))
+        
         menu.exec(self.cursor().pos())
 
     def _on_spawnable_entity_browse(self):
@@ -1255,6 +1257,17 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, self.translate("MainWindow", "Entity settings", None), self.translate("MainWindow", "Select a entity first.", None))
             return
         self.ipc.send(["spawn_entity", entity.mod_id, entity.id])
+
+    # ================= CUSTOM SETTINGS (defined by mods) =================
+
+    def _open_mod_settings(self, mod_id: str) -> None:
+        pass
+
+    def _open_entity_settings(self, entity_id: str) -> None:
+        pass
+
+    def _open_instance_settings(self, instance_id: str | None = None) -> None:
+        pass
 
     # ================= INFO =================
 
@@ -1376,6 +1389,8 @@ def run_app(conn, shared_data: SharedState, log_queue, ctl) -> None:
     log.info("Starting the DASHBOARD process...")
 
     app = QApplication(sys.argv)
+    QApplication.setApplicationName(f"{config.APP_NAME} - {log.name}")
+    QApplication.setApplicationVersion(config.APP_VERSION)
 
     translator = Translator(shared_data.settings["language"])
 
