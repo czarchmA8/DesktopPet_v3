@@ -26,9 +26,9 @@ window, hide behind another one or follow the active window.
 ## Preview
 
 <div align="center">
-  <img src="media/preview_1.gif" width="100%" height="auto" />
-  <video src="media/preview_2.webm" width="100%" height="auto" ></video>
-  <video src="media/preview_3.mp4" width="100%" height="auto" controls autoplay muted loop ></video>
+  <img src="https://github.com/user-attachments/assets/32303845-e3d1-425c-bd04-f0930ad01492" width="100%" height="auto" />
+  <video src="https://github.com/user-attachments/assets/981ff45f-9e3d-454a-bbf8-18a2ddefa0e0" width="100%" height="auto" ></video>
+  <video src="https://github.com/user-attachments/assets/70f43db4-a151-47a0-84a5-4a3efde00d9c" width="100%" height="auto" controls autoplay muted loop ></video>
 </div>
 
 ## Key Features
